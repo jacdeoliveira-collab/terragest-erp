@@ -1,0 +1,11 @@
+-- ==============================================================================
+-- TerraGest SaaS - Schema Modular: Índice de Execução
+-- ==============================================================================
+-- O esquema do banco foi modularizado em arquivos com menos de 90 linhas cada,
+-- respeitando a Regra Arquitetural nº 1 (< 150 linhas por arquivo):
+--
+-- 1. 01_core_obras.sql           -> Função Multi-Tenant, Obras, Índices e RLS
+-- 2. 02_frota_rh.sql             -> Equipamentos, RH Funcionários e RLS
+-- 3. 03_operacoes_campo.sql      -> Daily Bulletins (BDE), Abastecimentos e RLS
+-- 4. 04_manutencao_checklists.sql -> Planos de Manutenção, Checklists Diários e RLS
+-- ==============================================================================
