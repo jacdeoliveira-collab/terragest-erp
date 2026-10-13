@@ -9,8 +9,18 @@ import {
   CheckSquare,
   Fuel,
   Wrench,
-  Tractor
+  Tractor,
+  Shield,
+  BadgePercent,
+  Building2,
+  Navigation,
+  Boxes,
+  CircleDollarSign
 } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import { useTenantContext } from '../../contexts/TenantContext';
+import { isMasterEmail } from '../../services/adminService';
+import { canAccessRoute } from '../../utils/rbac';
 
 interface MenuItem {
   to: string;
@@ -19,19 +29,44 @@ interface MenuItem {
 }
 
 const menuItems: MenuItem[] = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/obras', label: 'Centros de Custo (Obras)', icon: HardHat },
-  { to: '/frota', label: 'Frota & Equipamentos', icon: Truck },
-  { to: '/bde', label: 'Boletim Diário (BDE)', icon: ClipboardList },
+  { to: '/', label: 'Dashboard Executivo', icon: LayoutDashboard },
+  { to: '/comercial', label: 'Comercial & Gestão de Máquinas', icon: BadgePercent },
+  { to: '/obras', label: 'Centros de Custo & Obras', icon: HardHat },
+  { to: '/frota', label: 'Gestão de Frotas & Maquinário', icon: Truck },
+  { to: '/bde', label: 'Boletins Diários de Equipamento', icon: ClipboardList },
+  { to: '/producao', label: 'Produção (Sinaleiro)', icon: Navigation },
+  { to: '/almoxarifado', label: 'Almoxarifado & Insumos', icon: Boxes },
+  { to: '/financeiro', label: 'Gestão Financeira', icon: CircleDollarSign },
   { to: '/rh', label: 'Recursos Humanos', icon: Users },
   { to: '/abastecimento', label: 'Abastecimento & Combustível', icon: Fuel },
   { to: '/manutencao', label: 'Manutenção Preventiva', icon: Wrench },
-  { to: '/checklist', label: 'Checklists Diários', icon: CheckSquare }
+  { to: '/checklist', label: 'Checklists Diários', icon: CheckSquare },
+  { to: '/minha-empresa', label: 'Minha Empresa', icon: Building2 }
 ];
 
 export const Sidebar: React.FC = () => {
+  const { user, perfil_acesso: authPerfil } = useAuth();
+  const { tenantAtivo, isMaster: isMasterTenant } = useTenantContext();
+  const isMaster = Boolean(
+    isMasterTenant ||
+    (user && (
+      isMasterEmail(user.email) ||
+      user.user_metadata?.role === 'master' ||
+      user.user_metadata?.is_master === true ||
+      user.user_metadata?.is_super_admin === true
+    ))
+  );
+  const perfil = tenantAtivo?.perfil_acesso || user?.perfil_acesso || authPerfil || 'ADMIN';
+
+  const visibleMenuItems = menuItems.filter((item) => {
+    if (perfil === 'OPERACIONAL') {
+      return ['/producao', '/bde', '/checklist'].includes(item.to);
+    }
+    return isMaster || canAccessRoute(perfil, item.to);
+  });
+
   return (
-    <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 h-full">
+    <aside className="w-72 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 h-full">
       <div className="p-6 border-b border-slate-800 flex items-center gap-3">
         <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-950">
           <Tractor className="w-5 h-5 text-slate-950 font-bold" />
@@ -43,7 +78,7 @@ export const Sidebar: React.FC = () => {
       </div>
 
       <nav className="p-3.5 space-y-1 flex-1 overflow-y-auto">
-        {menuItems.map((item) => {
+        {visibleMenuItems.map((item) => {
           const Icon = item.icon;
           return (
             <NavLink
@@ -63,6 +98,27 @@ export const Sidebar: React.FC = () => {
             </NavLink>
           );
         })}
+
+        {isMaster && perfil !== 'OPERACIONAL' && (
+          <div className="pt-3 mt-3 border-t border-slate-800">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 px-3 block mb-1">
+              Super Admin
+            </span>
+            <NavLink
+              to="/master"
+              className={({ isActive }) =>
+                `w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                  isActive
+                    ? 'bg-amber-600 text-white shadow-md font-semibold'
+                    : 'text-amber-400/90 hover:text-white hover:bg-amber-950/40'
+                }`
+              }
+            >
+              <Shield className="w-4 h-4 shrink-0" />
+              <span className="truncate">Painel Master</span>
+            </NavLink>
+          </div>
+        )}
       </nav>
 
       <div className="p-4 border-t border-slate-800 text-xs text-slate-500">

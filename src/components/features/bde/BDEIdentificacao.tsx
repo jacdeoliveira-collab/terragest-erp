@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Equipment } from '../../../types/equipment.types';
 import type { Funcionario } from '../../../types/rh.types';
+import { formatMeasurementValue } from '../../../utils/equipmentMeasurement';
 
 interface BDEIdentificacaoProps {
   equipmentId: string;
@@ -43,7 +44,7 @@ export const BDEIdentificacao: React.FC<BDEIdentificacaoProps> = ({
           <option value="">{equipamentosAtivos.length === 0 ? 'Nenhuma máquina ativa' : 'Selecione'}</option>
           {equipamentosAtivos.map((eq) => (
             <option key={eq.id} value={eq.id}>
-              {eq.code} - {eq.name} ({eq.current_hourmeter.toFixed(1)}h)
+              {eq.code} - {eq.name} ({formatMeasurementValue(eq.current_hourmeter, eq)})
             </option>
           ))}
         </select>

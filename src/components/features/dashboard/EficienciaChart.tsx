@@ -11,63 +11,19 @@ import {
 } from 'recharts';
 import { TrendingDown, Gauge } from 'lucide-react';
 import { useBDE } from '../../../hooks/useBDE';
-
-interface PontoEficiencia {
-  data: string;
-  horasPagas: number;
-  horasProduzidas: number;
-  ociosidadeHoras: number;
-  percentualOciosidade: number;
-}
+import { useServicosHorimetro } from '../../../hooks/useServicosHorimetro';
+import { calcularPontosEficiencia, type PontoEficiencia } from '../../../services/dashboardHorasHelper';
 
 export const EficienciaChart: React.FC = () => {
-  const { data: bulletins, isLoading } = useBDE();
+  const { data: bulletins, isLoading: loadingBde } = useBDE();
+  const { servicos, isLoading: loadingServ } = useServicosHorimetro();
 
-  const dadosGrafico = useMemo(() => {
-    if (!bulletins || bulletins.length === 0) return [];
+  const dadosGrafico = useMemo(
+    () => calcularPontosEficiencia(bulletins || [], servicos || []),
+    [bulletins, servicos]
+  );
 
-    const agrupado: Record<string, { pagas: number; produzidas: number }> = {};
-
-    bulletins.forEach((b) => {
-      if (!b.date) return;
-      const partes = b.date.split('-');
-      const dataLabel = partes.length === 3 ? `${partes[2]}/${partes[1]}` : b.date;
-
-      if (!agrupado[dataLabel]) {
-        agrupado[dataLabel] = { pagas: 0, produzidas: 0 };
-      }
-
-      // Horas Máquina
-      const diffMaq = Number(b.final_hourmeter) - Number(b.initial_hourmeter);
-      const horasMaq = Math.max(0, isNaN(diffMaq) ? Number(b.total_hours) || 0 : diffMaq);
-      agrupado[dataLabel].produzidas += horasMaq;
-
-      // Horas Homem (Jornada)
-      if (b.hora_inicio_jornada && b.hora_fim_jornada) {
-        const [h1, m1] = b.hora_inicio_jornada.split(':').map(Number);
-        const [h2, m2] = b.hora_fim_jornada.split(':').map(Number);
-        const mins = (h2 * 60 + m2) - (h1 * 60 + m1);
-        agrupado[dataLabel].pagas += Math.max(0, Number((mins / 60).toFixed(1)));
-      } else {
-        agrupado[dataLabel].pagas += horasMaq;
-      }
-    });
-
-    return Object.keys(agrupado).map((dt): PontoEficiencia => {
-      const pagas = Number(agrupado[dt].pagas.toFixed(1));
-      const produzidas = Number(agrupado[dt].produzidas.toFixed(1));
-      const ociosidadeHoras = Math.max(0, Number((pagas - produzidas).toFixed(1)));
-      const percentualOciosidade = pagas > 0 ? Number(((ociosidadeHoras / pagas) * 100).toFixed(1)) : 0;
-
-      return {
-        data: dt,
-        horasPagas: pagas,
-        horasProduzidas: produzidas,
-        ociosidadeHoras,
-        percentualOciosidade
-      };
-    });
-  }, [bulletins]);
+  const isLoading = loadingBde && loadingServ;
 
   if (isLoading) {
     return (

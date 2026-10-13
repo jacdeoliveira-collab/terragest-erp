@@ -3,6 +3,8 @@ import { ClipboardCheck, FileText, FileSpreadsheet, Plus, AlertTriangle, AlertCi
 import { useChecklists } from '../../../hooks/useChecklists';
 import { Modal } from '../../ui/Modal';
 import { ChecklistForm } from './ChecklistForm';
+import { exportarChecklistsPDF } from '../../../utils/exportOperacionalPdf';
+import { exportToExcel } from '../../../services/exportExcel';
 import type { ChecklistItem } from '../../../types/checklist.types';
 
 export const ChecklistList: React.FC = () => {
@@ -41,7 +43,7 @@ export const ChecklistList: React.FC = () => {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => console.log('Exportar Checklists PDF', data)}
+            onClick={() => exportarChecklistsPDF(data)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 rounded-xl text-xs font-semibold shadow-sm cursor-pointer"
           >
             <FileText className="w-4 h-4 text-rose-600" />
@@ -49,7 +51,7 @@ export const ChecklistList: React.FC = () => {
           </button>
 
           <button
-            onClick={() => console.log('Exportar Checklists Excel', data)}
+            onClick={() => exportToExcel(data as unknown as Record<string, unknown>[], 'Checklists_TerraGest')}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 rounded-xl text-xs font-semibold shadow-sm cursor-pointer"
           >
             <FileSpreadsheet className="w-4 h-4 text-emerald-600" />

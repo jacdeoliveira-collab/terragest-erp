@@ -22,23 +22,38 @@ export function useFechamentoFolha(anoMes: string) {
       const ultimoDia = new Date(ano, mes, 0).getDate();
       const endDate = `${anoStr}-${mesStr}-${String(ultimoDia).padStart(2, '0')}`;
 
-      const [funcRes, bdeRes] = await Promise.all([
-        supabase
-          .from('rh_funcionarios')
-          .select('*')
-          .order('nome', { ascending: true }),
-        supabase
-          .from('daily_bulletins')
-          .select('*')
-          .gte('date', startDate)
-          .lte('date', endDate)
+      const [funcRes, bdeRes, servRes] = await Promise.all([
+        supabase.from('rh_funcionarios').select('*').order('nome', { ascending: true }),
+        supabase.from('daily_bulletins').select('*').gte('date', startDate).lte('date', endDate),
+        supabase.from('servicos_horimetro').select('*').lte('data_inicio', endDate)
       ]);
 
       if (funcRes.error) throw new Error(funcRes.error.message);
-      if (bdeRes.error) throw new Error(bdeRes.error.message);
+
+      const bdes = (bdeRes.data || []) as DailyBulletin[];
+      const servicos = (servRes.data || []).filter((s: any) => {
+        const fim = s.data_fim || s.data_inicio;
+        return fim >= startDate && s.data_inicio <= endDate;
+      }) as any[];
+
+      // Converter serviços comerciais por horímetro em apontamentos compatíveis de jornada
+      const apontamentosServicos: DailyBulletin[] = servicos.map((s) => ({
+        id: s.id,
+        equipment_id: s.maquina_id || '',
+        date: s.data_inicio,
+        total_hours: Number(s.horas_trabalhadas) || 0,
+        horas_produtivas: Number(s.horas_trabalhadas) || 0,
+        operador_id: s.operador_id,
+        operator_name: s.operador_nome,
+        status: 'SYNCED',
+        initial_hourmeter: Number(s.horimetro_inicial) || 0,
+        final_hourmeter: Number(s.horimetro_final) || 0,
+        activities: s.descricao_servico,
+        created_at: s.created_at
+      } as unknown as DailyBulletin));
 
       setFuncionarios((funcRes.data || []) as Funcionario[]);
-      setBulletins((bdeRes.data || []) as DailyBulletin[]);
+      setBulletins([...bdes, ...apontamentosServicos]);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Erro ao buscar dados da folha';
       setError(msg);
@@ -47,22 +62,26 @@ export function useFechamentoFolha(anoMes: string) {
     }
   }, [anoMes]);
 
-  useEffect(() => {
-    carregarDados();
-  }, [carregarDados]);
+  useEffect(() => { carregarDados(); }, [carregarDados]);
 
   const itensFolha: ItemFolhaFechamento[] = useMemo(() => {
     const bdePorOperador: Record<string, DailyBulletin[]> = {};
 
     bulletins.forEach((b) => {
-      const key = b.operador_id || b.operator_name;
-      if (!key) return;
-      if (!bdePorOperador[key]) bdePorOperador[key] = [];
-      bdePorOperador[key].push(b);
+      const keyId = b.operador_id;
+      const keyNome = b.operator_name ? b.operator_name.trim().toLowerCase() : '';
+      if (keyId) {
+        if (!bdePorOperador[keyId]) bdePorOperador[keyId] = [];
+        bdePorOperador[keyId].push(b);
+      }
+      if (keyNome) {
+        if (!bdePorOperador[keyNome]) bdePorOperador[keyNome] = [];
+        bdePorOperador[keyNome].push(b);
+      }
     });
 
     return funcionarios.map((fn) => {
-      const list = bdePorOperador[fn.id] || bdePorOperador[fn.nome] || [];
+      const list = bdePorOperador[fn.id] || bdePorOperador[fn.nome.trim().toLowerCase()] || [];
       return calcularItemFolha(fn, list);
     });
   }, [funcionarios, bulletins]);
@@ -79,11 +98,5 @@ export function useFechamentoFolha(anoMes: string) {
     );
   }, [itensFolha]);
 
-  return {
-    itensFolha,
-    totais,
-    loading,
-    error,
-    recarregar: carregarDados
-  };
+  return { itensFolha, totais, loading, error, recarregar: carregarDados };
 }

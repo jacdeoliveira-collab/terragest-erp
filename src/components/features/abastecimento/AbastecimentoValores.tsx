@@ -6,6 +6,8 @@ interface AbastecimentoValoresProps {
   setTipoCombustivel: (val: TipoCombustivel) => void;
   litros: number;
   setLitros: (val: number) => void;
+  custoUnitario: number;
+  setCustoUnitario: (val: number) => void;
   valorTotal: number;
   setValorTotal: (val: number) => void;
 }
@@ -15,9 +17,33 @@ export const AbastecimentoValores: React.FC<AbastecimentoValoresProps> = ({
   setTipoCombustivel,
   litros,
   setLitros,
+  custoUnitario,
+  setCustoUnitario,
   valorTotal,
   setValorTotal
 }) => {
+  const handleLitrosChange = (novoLitros: number) => {
+    setLitros(novoLitros);
+    if (custoUnitario > 0) {
+      setValorTotal(Number((novoLitros * custoUnitario).toFixed(2)));
+    } else if (valorTotal > 0 && novoLitros > 0) {
+      setCustoUnitario(Number((valorTotal / novoLitros).toFixed(3)));
+    }
+  };
+
+  const handleUnitarioChange = (novoUnitario: number) => {
+    setCustoUnitario(novoUnitario);
+    if (litros > 0) {
+      setValorTotal(Number((litros * novoUnitario).toFixed(2)));
+    }
+  };
+
+  const handleTotalChange = (novoTotal: number) => {
+    setValorTotal(novoTotal);
+    if (litros > 0) {
+      setCustoUnitario(Number((novoTotal / litros).toFixed(3)));
+    }
+  };
   return (
     <div className="space-y-3">
       <div>
@@ -34,7 +60,7 @@ export const AbastecimentoValores: React.FC<AbastecimentoValoresProps> = ({
         </select>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-xl border border-gray-200">
+      <div className="grid grid-cols-3 gap-2.5 p-3 bg-gray-50 rounded-xl border border-gray-200">
         <div>
           <label className="block text-[11px] font-semibold text-gray-600 mb-1">Volume (Litros) *</label>
           <input
@@ -42,9 +68,22 @@ export const AbastecimentoValores: React.FC<AbastecimentoValoresProps> = ({
             step="0.1"
             min="0.1"
             required
-            value={litros}
-            onChange={(e) => setLitros(parseFloat(e.target.value) || 0)}
+            value={litros || ''}
+            placeholder="0.0"
+            onChange={(e) => handleLitrosChange(parseFloat(e.target.value) || 0)}
             className="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg text-xs font-mono font-bold text-gray-900"
+          />
+        </div>
+        <div>
+          <label className="block text-[11px] font-semibold text-gray-600 mb-1">Preço / Litro (R$)</label>
+          <input
+            type="number"
+            step="0.001"
+            min="0"
+            value={custoUnitario || ''}
+            placeholder="0.000"
+            onChange={(e) => handleUnitarioChange(parseFloat(e.target.value) || 0)}
+            className="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg text-xs font-mono text-gray-900"
           />
         </div>
         <div>
@@ -54,9 +93,10 @@ export const AbastecimentoValores: React.FC<AbastecimentoValoresProps> = ({
             step="0.01"
             min="0"
             required
-            value={valorTotal}
-            onChange={(e) => setValorTotal(parseFloat(e.target.value) || 0)}
-            className="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg text-xs font-mono font-bold text-gray-900"
+            value={valorTotal || ''}
+            placeholder="0.00"
+            onChange={(e) => handleTotalChange(parseFloat(e.target.value) || 0)}
+            className="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg text-xs font-mono font-bold text-emerald-800"
           />
         </div>
       </div>

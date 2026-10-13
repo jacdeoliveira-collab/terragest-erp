@@ -13,21 +13,49 @@ interface ObraContextType {
 
 const ObraContext = createContext<ObraContextType | undefined>(undefined);
 
+const STORAGE_KEY = 'terragest_obra_selecionada_id';
+
 export const ObraProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { obras, loading, error, recarregarObras } = useObras();
-  const [obraSelecionada, setObraSelecionada] = useState<Obra | null>(null);
+  const [obraSelecionada, setObraSelecionadaState] = useState<Obra | null>(() => {
+    try {
+      const savedId = localStorage.getItem(STORAGE_KEY);
+      if (savedId === 'TODAS' || savedId === '' || !savedId) return null;
+    } catch {}
+    return null;
+  });
 
-  // Sincroniza a primeira obra ativa ou mantém a selecionada se ainda existir
+  const setObraSelecionada = (obra: Obra | null) => {
+    setObraSelecionadaState(obra);
+    try {
+      localStorage.setItem(STORAGE_KEY, obra ? obra.id : 'TODAS');
+    } catch {}
+  };
+
   useEffect(() => {
     if (obras.length > 0) {
-      setObraSelecionada((prev) => {
+      try {
+        const savedId = localStorage.getItem(STORAGE_KEY);
+        if (savedId === 'TODAS' || savedId === '') {
+          setObraSelecionadaState(null);
+          return;
+        }
+        if (savedId) {
+          const found = obras.find((o) => o.id === savedId);
+          if (found) {
+            setObraSelecionadaState(found);
+            return;
+          }
+        }
+      } catch {}
+      setObraSelecionadaState((prev) => {
         if (prev && obras.some((o) => o.id === prev.id)) {
           return obras.find((o) => o.id === prev.id) || prev;
         }
-        return obras[0];
+        return prev;
       });
     } else {
-      setObraSelecionada(null);
+      setObraSelecionadaState(null);
     }
   }, [obras]);
 
@@ -54,3 +82,4 @@ export function useObraContext(): ObraContextType {
   }
   return context;
 }
+

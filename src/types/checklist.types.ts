@@ -7,14 +7,19 @@ export interface ChecklistItem {
   operador_id?: string;
   operador_nome?: string;
   data: string;
-  nivel_oleo_ok: boolean;
-  vazamentos_ok: boolean;
+  horimetro_atual?: number;
+  nivel_oleo?: boolean;
+  nivel_oleo_ok?: boolean;
+  vazamentos?: boolean;
+  vazamentos_ok?: boolean;
   nivel_arrefecimento_ok?: boolean;
   freios_comandos_ok?: boolean;
   pneus_esteiras_ok?: boolean;
   iluminacao_alarme_ok?: boolean;
-  status_geral_aprovado: boolean;
+  status_geral?: string;
+  status_geral_aprovado?: boolean;
   observacoes?: string;
+  assinado_por_pin?: boolean;
   created_at?: string;
 }
 
@@ -22,3 +27,4 @@ export type CreateChecklistDTO = Omit<
   ChecklistItem,
   'id' | 'created_at' | 'maquina_codigo' | 'maquina_nome' | 'operador_nome'
 >;
+

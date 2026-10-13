@@ -16,14 +16,23 @@ export function useCreateFuncionario() {
         throw new Error('Sessão expirada. Faça login novamente para salvar registros.');
       }
 
+      const tenantId =
+        (typeof window !== 'undefined' ? localStorage.getItem('terragest_tenant_ativo_id') : null) ||
+        (user.user_metadata?.tenant_id as string | undefined);
+
       const payload = {
+        tenant_id: tenantId || null,
         nome: input.nome.trim(),
+        pin_assinatura: input.pin_assinatura?.trim() || null,
         cpf: input.cpf?.trim() || null,
         rg: input.rg?.trim() || null,
         cnh: input.cnh?.trim() || null,
         validade_cnh: input.validade_cnh || null,
         endereco_completo: input.endereco_completo?.trim() || null,
         ctps: input.ctps?.trim() || null,
+        pis_pasep: input.pis_pasep?.trim() || null,
+        titulo_eleitor: input.titulo_eleitor?.trim() || null,
+        reservista: input.reservista?.trim() || null,
         aso_validade: input.aso_validade || null,
         drive_url_documentos: input.drive_url_documentos?.trim() || null,
         cargo: input.cargo,
@@ -34,8 +43,7 @@ export function useCreateFuncionario() {
         salario_base: input.salario_base || 0,
         custo_hora_normal: input.custo_hora_normal || 0,
         valor_hora_extra: input.valor_hora_extra || 0,
-        limite_horas_diario: input.limite_horas_diario || 8,
-        tenant_id: user.id
+        limite_horas_diario: input.limite_horas_diario || 8
       };
 
       const { data, error: insertError } = await supabase

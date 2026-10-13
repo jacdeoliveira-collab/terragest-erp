@@ -5,16 +5,30 @@ interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
+  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl';
   children: React.ReactNode;
 }
 
-export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
+const WIDTH_CLASSES: Record<string, string> = {
+  sm: 'max-w-sm',
+  md: 'max-w-md',
+  lg: 'max-w-lg',
+  xl: 'max-w-xl',
+  '2xl': 'max-w-2xl',
+  '3xl': 'max-w-3xl',
+  '4xl': 'max-w-4xl',
+  '5xl': 'max-w-5xl'
+};
+
+export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, maxWidth = 'lg', children }) => {
   if (!isOpen) return null;
 
+  const widthClass = WIDTH_CLASSES[maxWidth] || 'max-w-lg';
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs animate-fade-in">
       <div 
-        className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-100 flex flex-col"
+        className={`bg-white rounded-2xl w-full ${widthClass} max-h-[92vh] overflow-y-auto shadow-2xl border border-gray-100 flex flex-col text-slate-900`}
         role="dialog"
       >
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">

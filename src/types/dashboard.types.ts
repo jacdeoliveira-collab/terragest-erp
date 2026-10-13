@@ -14,5 +14,9 @@ export interface DashboardMetrics {
   custoCombustivel: number;
   litrosConsumidos: number;
   custoCombustivelFormatado: string;
+  faturamentoAprovado: number;
+  propostasPendentesCount: number;
+  valorPendente: number;
   dadosGraficoHoras: PontoGraficoHoras[];
 }
+

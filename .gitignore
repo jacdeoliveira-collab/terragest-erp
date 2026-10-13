@@ -29,3 +29,6 @@ google-credentials.json
 .env
 .env.local
 .env.*.local
+scratch/
+scratch_*.mjs
+*.traineddata

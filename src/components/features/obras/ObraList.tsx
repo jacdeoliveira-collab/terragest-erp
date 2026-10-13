@@ -1,89 +1,65 @@
 import React, { useState } from 'react';
-import { HardHat, FileText, FileSpreadsheet, Plus, AlertCircle } from 'lucide-react';
+import { FileText, FileSpreadsheet, Plus, AlertCircle, Building2 } from 'lucide-react';
 import { useObraContext } from '../../../contexts/ObraContext';
 import { Modal } from '../../ui/Modal';
 import { ObraForm } from './ObraForm';
+import { ObraResumoModal } from './modal/ObraResumoModal';
 import { gerarRelatorioObrasPDF, gerarExcelObras } from '../../../utils/exportObras';
-import type { Obra } from '../../../types/obras.types';
+import type { Obra, StatusObra } from '../../../types/obras.types';
+
+function renderStatusBadge(status: StatusObra) {
+  const map: Record<string, string> = {
+    EM_ANDAMENTO: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    ATIVA: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    PARALISADA: 'bg-amber-50 text-amber-700 border-amber-200',
+    NAO_INICIADA: 'bg-blue-50 text-blue-700 border-blue-200',
+    CONCLUIDA: 'bg-slate-100 text-slate-700 border-slate-200'
+  };
+  const cls = map[status] || 'bg-gray-100 text-gray-700 border-gray-200';
+  return <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${cls}`}>{status}</span>;
+}
 
 export const ObraList: React.FC = () => {
   const { obras, loading, error, recarregarObras } = useObraContext();
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [obraResumo, setObraResumo] = useState<Obra | null>(null);
+  const [obraEdit, setObraEdit] = useState<Obra | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const handleCreated = () => {
-    setIsModalOpen(false);
+    setIsEditOpen(false);
+    setObraEdit(null);
     recarregarObras();
   };
 
-  if (loading) {
-    return (
-      <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center text-sm text-gray-400">
-        Carregando canteiros de obras e centros de custo...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-rose-50 border border-rose-200 rounded-2xl p-6 text-sm text-rose-700 flex items-center gap-3">
-        <AlertCircle className="w-5 h-5 shrink-0 text-rose-500" />
-        <span>{error}</span>
-      </div>
-    );
-  }
+  if (loading) return <div className="p-12 text-center text-sm text-gray-400">Carregando canteiros de obras...</div>;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden text-left">
       <div className="p-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-base font-bold text-gray-900">Centros de Custo & Canteiros de Obras</h2>
-          <p className="text-xs text-gray-500">Gestão de frentes de serviço para rateio operacional de frotas e BDEs</p>
+          <p className="text-xs text-gray-500">Clique na obra para ver o resumo operacional, financeiro e máquinas</p>
         </div>
-
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => gerarRelatorioObrasPDF(obras)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 rounded-xl text-xs font-semibold shadow-sm cursor-pointer"
-          >
+          <button onClick={() => gerarRelatorioObrasPDF(obras)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 rounded-xl text-xs font-semibold cursor-pointer">
             <FileText className="w-4 h-4 text-rose-600" />
-            <span>Exportar PDF</span>
+            <span>PDF</span>
           </button>
-
-          <button
-            onClick={() => gerarExcelObras(obras)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 rounded-xl text-xs font-semibold shadow-sm cursor-pointer"
-          >
+          <button onClick={() => gerarExcelObras(obras)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 rounded-xl text-xs font-semibold cursor-pointer">
             <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
-            <span>Exportar Excel</span>
+            <span>Excel</span>
           </button>
-
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm cursor-pointer ml-1"
-          >
+          <button onClick={() => { setObraEdit(null); setIsEditOpen(true); }} className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold cursor-pointer">
             <Plus className="w-4 h-4" />
             <span>Nova Obra</span>
           </button>
         </div>
       </div>
 
+      {error && <div className="m-4 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs flex items-center gap-2"><AlertCircle className="w-4 h-4 text-rose-500" /><span>{error}</span></div>}
+
       {obras.length === 0 ? (
-        <div className="flex flex-col items-center justify-center p-12 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-400 mb-3">
-            <HardHat className="w-6 h-6" />
-          </div>
-          <h3 className="text-sm font-semibold text-gray-800 mb-1">Nenhuma obra cadastrada nesta empresa</h3>
-          <p className="text-xs text-gray-400 max-w-sm mb-5">
-            Cadastre os canteiros de trabalho para alocar os apontamentos de máquinas e os abastecimentos.
-          </p>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Nova Obra</span>
-          </button>
-        </div>
+        <div className="p-12 text-center text-gray-400">Nenhuma obra cadastrada nesta empresa.</div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
@@ -91,41 +67,45 @@ export const ObraList: React.FC = () => {
               <tr>
                 <th className="p-3.5">Nome da Obra</th>
                 <th className="p-3.5">Cliente / Contratante</th>
-                <th className="p-3.5">Localização</th>
+                <th className="p-3.5">Localização / Prazos</th>
+                <th className="p-3.5">CNO / ART</th>
                 <th className="p-3.5 text-center">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-gray-700">
-              {obras.map((obra: Obra) => {
-                const isAtiva = obra.status === 'ATIVA' || obra.status === 'EM_ANDAMENTO';
-                const isParalisada = obra.status === 'PARALISADA';
-
-                return (
-                  <tr key={obra.id} className="hover:bg-gray-50/60 transition-colors">
-                    <td className="p-3.5 font-semibold text-gray-900">{obra.nome}</td>
-                    <td className="p-3.5 text-gray-600">{obra.cliente || '-'}</td>
-                    <td className="p-3.5 text-gray-500">{obra.localizacao || '-'}</td>
-                    <td className="p-3.5 text-center">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${
-                        isAtiva
-                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                          : isParalisada
-                          ? 'bg-amber-50 text-amber-700 border-amber-200'
-                          : 'bg-gray-100 text-gray-600 border-gray-200'
-                      }`}>
-                        {isAtiva ? 'ATIVA' : isParalisada ? 'PARALISADA' : 'CONCLUÍDA'}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
+              {obras.map((obra: Obra) => (
+                <tr
+                  key={obra.id}
+                  onClick={() => setObraResumo(obra)}
+                  className="hover:bg-emerald-50/50 transition-colors cursor-pointer"
+                  title="Clique para abrir o resumo financeiro e operacional"
+                >
+                  <td className="p-3.5 font-semibold text-gray-900 hover:text-emerald-700">{obra.nome}</td>
+                  <td className="p-3.5">
+                    <div className="flex items-center gap-1.5">
+                      <Building2 className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                      <span>{obra.cliente_nome || obra.cliente || 'Não informado'}</span>
+                    </div>
+                  </td>
+                  <td className="p-3.5 text-gray-500 truncate max-w-[200px]">{obra.endereco_completo || obra.localizacao || '-'}</td>
+                  <td className="p-3.5 font-mono text-[11px] text-gray-600">{obra.cno || obra.art_crea || '-'}</td>
+                  <td className="p-3.5 text-center">{renderStatusBadge(obra.status)}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
       )}
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Cadastrar Centro de Custo / Obra">
-        <ObraForm onSuccess={handleCreated} onCancel={() => setIsModalOpen(false)} />
+      <ObraResumoModal
+        isOpen={Boolean(obraResumo)}
+        onClose={() => setObraResumo(null)}
+        obra={obraResumo}
+        onEditar={(o) => { setObraEdit(o); setIsEditOpen(true); }}
+      />
+
+      <Modal isOpen={isEditOpen} onClose={() => { setIsEditOpen(false); setObraEdit(null); }} title={obraEdit ? `Editar Obra: ${obraEdit.nome}` : "Cadastrar Nova Obra"}>
+        <ObraForm onSuccess={handleCreated} onCancel={() => { setIsEditOpen(false); setObraEdit(null); }} obraInicial={obraEdit} />
       </Modal>
     </div>
   );

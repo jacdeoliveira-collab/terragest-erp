@@ -2,65 +2,89 @@ import React from 'react';
 import { Upload, CheckCircle } from 'lucide-react';
 
 interface DadosDocumentaisProps {
-  cpf: string;
-  setCpf: (val: string) => void;
-  rg: string;
-  setRg: (val: string) => void;
-  cnh: string;
-  setCnh: (val: string) => void;
-  validadeCnh: string;
-  setValidadeCnh: (val: string) => void;
-  ctps: string;
-  setCtps: (val: string) => void;
-  asoValidade: string;
-  setAsoValidade: (val: string) => void;
-  arquivoDocumento: File | null;
-  setArquivoDocumento: (file: File | null) => void;
+  cpf: string; setCpf: (val: string) => void;
+  rg: string; setRg: (val: string) => void;
+  cnh: string; setCnh: (val: string) => void;
+  validadeCnh: string; setValidadeCnh: (val: string) => void;
+  ctps: string; setCtps: (val: string) => void;
+  pisPasep: string; setPisPasep: (val: string) => void;
+  tituloEleitor: string; setTituloEleitor: (val: string) => void;
+  reservista: string; setReservista: (val: string) => void;
+  asoValidade: string; setAsoValidade: (val: string) => void;
+  arquivoDocumento: File | null; setArquivoDocumento: (file: File | null) => void;
   driveUrlDocumentos?: string;
 }
 
 export const DadosDocumentais: React.FC<DadosDocumentaisProps> = ({
-  cpf,
-  setCpf,
-  rg,
-  setRg,
-  cnh,
-  setCnh,
-  validadeCnh,
-  setValidadeCnh,
-  ctps,
-  setCtps,
-  asoValidade,
-  setAsoValidade,
-  arquivoDocumento,
-  setArquivoDocumento,
-  driveUrlDocumentos
+  cpf, setCpf, rg, setRg, cnh, setCnh, validadeCnh, setValidadeCnh,
+  ctps, setCtps, pisPasep, setPisPasep, tituloEleitor, setTituloEleitor,
+  reservista, setReservista, asoValidade, setAsoValidade,
+  arquivoDocumento, setArquivoDocumento, driveUrlDocumentos
 }) => {
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
-          <label className="block font-semibold text-gray-700 mb-1">CPF (apenas números ou pontuado)</label>
+          <label className="block font-semibold text-gray-700 mb-1">CPF</label>
           <input
             placeholder="000.000.000-00"
             value={cpf}
             onChange={(e) => setCpf(e.target.value)}
-            className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-emerald-500"
+            className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-emerald-500 font-mono"
           />
         </div>
         <div>
           <label className="block font-semibold text-gray-700 mb-1">RG (Identidade)</label>
           <input
-            placeholder="Ex: 12.345.678-9 SSP/SP"
+            placeholder="Ex: 12.345.678-9 SSP"
             value={rg}
             onChange={(e) => setRg(e.target.value)}
             className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-emerald-500"
           />
         </div>
+        <div>
+          <label className="block font-semibold text-gray-700 mb-1">CTPS (Nº e Série)</label>
+          <input
+            placeholder="Ex: 1234567 Série 001"
+            value={ctps}
+            onChange={(e) => setCtps(e.target.value)}
+            className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-emerald-500"
+          />
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div>
+          <label className="block font-semibold text-gray-700 mb-1">PIS/PASEP</label>
+          <input
+            placeholder="000.00000.00-0"
+            value={pisPasep}
+            onChange={(e) => setPisPasep(e.target.value)}
+            className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-emerald-500 font-mono"
+          />
+        </div>
+        <div>
+          <label className="block font-semibold text-gray-700 mb-1">Título de Eleitor</label>
+          <input
+            placeholder="0000 0000 0000"
+            value={tituloEleitor}
+            onChange={(e) => setTituloEleitor(e.target.value)}
+            className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-emerald-500 font-mono"
+          />
+        </div>
+        <div>
+          <label className="block font-semibold text-gray-700 mb-1">Certificado de Reservista</label>
+          <input
+            placeholder="Nº Certificado / CSM"
+            value={reservista}
+            onChange={(e) => setReservista(e.target.value)}
+            className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-emerald-500"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="sm:col-span-2">
           <label className="block font-semibold text-gray-700 mb-1">CNH (Número e Categoria)</label>
           <input
             placeholder="Ex: 01234567890 - Cat D/E"
@@ -80,45 +104,30 @@ export const DadosDocumentais: React.FC<DadosDocumentaisProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block font-semibold text-gray-700 mb-1">CTPS (Nº e Série / Digital)</label>
-          <input
-            placeholder="Ex: 1234567 Série 001-0"
-            value={ctps}
-            onChange={(e) => setCtps(e.target.value)}
-            className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-emerald-500"
-          />
-        </div>
-        <div>
-          <label className="block font-semibold text-gray-700 mb-1">Validade ASO (NR-7) *</label>
-          <input
-            type="date"
-            value={asoValidade}
-            onChange={(e) => setAsoValidade(e.target.value)}
-            className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-emerald-500"
-          />
-        </div>
+      <div>
+        <label className="block font-semibold text-gray-700 mb-1">Validade ASO (NR-7) *</label>
+        <input
+          type="date"
+          value={asoValidade}
+          onChange={(e) => setAsoValidade(e.target.value)}
+          className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-emerald-500"
+        />
       </div>
 
       <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-1.5">
         <label className="block font-semibold text-gray-700 flex items-center justify-between">
           <span className="flex items-center gap-1.5">
             <Upload className="w-3.5 h-3.5 text-emerald-600" />
-            Documentos Escaneados (Upload Google Drive)
+            Documentos Escaneados (Google Drive)
           </span>
-          {driveUrlDocumentos && (
-            <span className="text-[10px] text-emerald-700 font-normal">Link existente salvo</span>
-          )}
+          {driveUrlDocumentos && <span className="text-[10px] text-emerald-700">Link existente salvo</span>}
         </label>
-        
         <input
           type="file"
           accept=".pdf,image/*"
           onChange={(e) => setArquivoDocumento(e.target.files?.[0] || null)}
           className="w-full text-xs text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"
         />
-
         {arquivoDocumento && (
           <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-medium pt-1">
             <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />

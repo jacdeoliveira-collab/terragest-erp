@@ -21,8 +21,8 @@ export const EquipmentView: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h3 className="text-lg font-bold text-white">Inventário de Frotas e Drones</h3>
-          <p className="text-xs text-slate-400">Gerenciamento de tratores, escavadeiras, geradores e aeronaves agrícolas</p>
+          <h3 className="text-lg font-bold text-white">Inventário de Frotas & Linha Amarela</h3>
+          <p className="text-xs text-slate-400">Gerenciamento de tratores, escavadeiras, pás carregadeiras e caminhões basculantes</p>
         </div>
         <div className="flex items-center gap-3">
           <ExportActions
@@ -43,7 +43,7 @@ export const EquipmentView: React.FC = () => {
       ) : equipment.length === 0 ? (
         <EmptyState
           title="Nenhum equipamento cadastrado"
-          description="Cadastre tratores, escavadeiras hidráulicas, geradores trifásicos ou drones agrícolas da linha DJI Agras."
+          description="Cadastre tratores de esteira, escavadeiras hidráulicas, pás carregadeiras e caminhões da frota."
           actionLabel="Cadastrar Primeiro Equipamento"
           onAction={() => setIsModalOpen(true)}
         />

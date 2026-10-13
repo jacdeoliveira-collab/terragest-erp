@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "verificar:financeiro": "node scripts/verificar_financeiro_supabase.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",
@@ -16,12 +17,15 @@
     "dexie": "^4.4.6",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",
+    "jsqr": "^1.4.0",
     "jsrsasign": "^11.1.5",
     "lucide-react": "^1.47.0",
+    "pdfjs-dist": "^6.4.299",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-router-dom": "^7.18.4",
     "recharts": "^3.10.1",
+    "tesseract.js": "^7.0.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

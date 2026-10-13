@@ -1,8 +1,5 @@
-/**
- * TerraGest SaaS - Serviço de Upload com Conta de Serviço Google Drive
- * Arquivo: driveService.ts (< 150 linhas)
- */
 import { KJUR } from 'jsrsasign';
+import { supabase } from '../lib/supabase';
 import serviceAccount from '../../google-credentials.json';
 
 export const DRIVE_CONFIG = {
@@ -16,11 +13,9 @@ export function getDriveFolderId(pastaTipo: 'rh' | 'frota'): string {
 
 let cachedAccessToken: { token: string; expiresAt: number } | null = null;
 
-async function getGoogleDriveAccessToken(): Promise<string> {
+async function getServiceAccountToken(): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
-  if (cachedAccessToken && cachedAccessToken.expiresAt > now + 60) {
-    return cachedAccessToken.token;
-  }
+  if (cachedAccessToken && cachedAccessToken.expiresAt > now + 60) return cachedAccessToken.token;
 
   const header = JSON.stringify({ alg: 'RS256', typ: 'JWT' });
   const claimSet = JSON.stringify({
@@ -30,27 +25,33 @@ async function getGoogleDriveAccessToken(): Promise<string> {
     exp: now + 3600,
     iat: now
   });
-
   const jwt = KJUR.jws.JWS.sign(null, header, claimSet, serviceAccount.private_key);
-
   const res = await fetch(serviceAccount.token_uri, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: `grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=${jwt}`
   });
-
-  if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(`Falha na autenticação com Google Drive API: ${errorText}`);
-  }
-
+  if (!res.ok) throw new Error(`Falha na autenticação da conta de serviço Google Drive: ${await res.text()}`);
   const tokenData = await res.json();
-  cachedAccessToken = {
-    token: tokenData.access_token,
-    expiresAt: now + (tokenData.expires_in || 3600)
-  };
-
+  cachedAccessToken = { token: tokenData.access_token, expiresAt: now + (tokenData.expires_in || 3600) };
   return cachedAccessToken.token;
+}
+
+async function getAccessTokenForUpload(): Promise<string> {
+  try {
+    const { data: userData } = await supabase.auth.getUser();
+    const activeTenant = typeof window !== 'undefined' ? localStorage.getItem('terragest_tenant_ativo_id') : null;
+    const tenantId = activeTenant || userData.user?.user_metadata?.tenant_id || '00000000-0000-0000-0000-000000000001';
+    const { data: integ } = await supabase
+      .from('tenant_integrations')
+      .select('access_token')
+      .eq('tenant_id', tenantId)
+      .eq('provider', 'GOOGLE_DRIVE')
+      .maybeSingle();
+
+    if (integ?.access_token) return integ.access_token;
+  } catch {}
+  return getServiceAccountToken();
 }
 
 export async function uploadParaGoogleDrive(
@@ -59,57 +60,47 @@ export async function uploadParaGoogleDrive(
 ): Promise<{ sucesso: boolean; driveUrl?: string; fileId?: string; erro?: string }> {
   try {
     const folderId = getDriveFolderId(pastaTipo);
-    const token = await getGoogleDriveAccessToken();
+    const token = await getAccessTokenForUpload();
 
-    const metadata = {
-      name: `${Date.now()}_${arquivo.name}`,
-      parents: [folderId]
-    };
-
+    const metadata = { name: `${Date.now()}_${arquivo.name}`, parents: [folderId] };
     const boundary = '-------314159265358979323846';
     const delimiter = `\r\n--${boundary}\r\n`;
     const closeDelimiter = `\r\n--${boundary}--`;
 
-    const reader = new FileReader();
-    const fileDataPromise = new Promise<ArrayBuffer>((resolve, reject) => {
+    const fileBytes = await new Promise<ArrayBuffer>((resolve, reject) => {
+      const reader = new FileReader();
       reader.onload = () => resolve(reader.result as ArrayBuffer);
       reader.onerror = reject;
       reader.readAsArrayBuffer(arquivo);
     });
-    const fileBytes = await fileDataPromise;
 
     const metadataHeader = `${delimiter}Content-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n`;
     const mediaHeader = `${delimiter}Content-Type: ${arquivo.type || 'application/octet-stream'}\r\n\r\n`;
-
-    const blob = new Blob(
-      [metadataHeader, mediaHeader, new Uint8Array(fileBytes), closeDelimiter],
-      { type: `multipart/related; boundary=${boundary}` }
-    );
+    const blob = new Blob([metadataHeader, mediaHeader, new Uint8Array(fileBytes), closeDelimiter], {
+      type: `multipart/related; boundary=${boundary}`
+    });
 
     const uploadRes = await fetch(
       'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink,webContentLink',
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`
-        },
-        body: blob
-      }
+      { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: blob }
     );
 
     if (!uploadRes.ok) {
       const errTxt = await uploadRes.text();
-      throw new Error(`Erro no envio para Google Drive: ${errTxt}`);
+      let friendly = errTxt;
+      try {
+        const json = JSON.parse(errTxt);
+        friendly = json?.error?.message || friendly;
+      } catch {}
+      if (friendly.includes('storage quota')) {
+        friendly = 'Cota do Drive pessoal: Conecte sua conta do Google em "Minha Empresa > Integrações" para autorizar o upload direto na sua cota de armazenamento.';
+      }
+      throw new Error(`Google Drive: ${friendly}`);
     }
 
     const fileResult = await uploadRes.json();
     const driveUrl = fileResult.webViewLink || `https://drive.google.com/file/d/${fileResult.id}/view`;
-
-    return {
-      sucesso: true,
-      driveUrl,
-      fileId: fileResult.id
-    };
+    return { sucesso: true, driveUrl, fileId: fileResult.id };
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Falha desconhecida no upload para o Drive';
     return { sucesso: false, erro: msg };

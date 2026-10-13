@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { ExtratoBancoHoras } from '../types/rh.types';
+import { desenharCabecalhoPdf, desenharRodapeTerraGest } from './pdf/pdfEmpresaLayout';
 
 export function exportarEspelhoBancoHorasPDF(
   extratos: ExtratoBancoHoras[],
@@ -15,25 +16,12 @@ export function exportarEspelhoBancoHorasPDF(
   const mesAtualNome = meses[agora.getMonth()];
   const periodo = periodoReferencia || `${mesAtualNome} de ${agora.getFullYear()}`;
 
-  // Cabeçalho institucional
-  doc.setFillColor(16, 185, 129); // emerald-600
-  doc.rect(0, 0, 210, 8, 'F');
+  const startY = desenharCabecalhoPdf(
+    doc,
+    'ESPELHO DE PONTO & BANCO DE HORAS CONSOLIDADO',
+    `Mês de Referência: ${periodo}  •  Emitido em: ${agora.toLocaleString('pt-BR')}`
+  );
 
-  doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(17, 24, 39);
-  doc.text('TerraGest - Gestão Operacional & RH', 14, 18);
-
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(75, 85, 99);
-  doc.text('Espelho de Ponto & Extrato Consolidado do Banco de Horas', 14, 25);
-
-  doc.setFontSize(9);
-  doc.setTextColor(107, 114, 128);
-  doc.text(`Mês de Referência: ${periodo}  |  Emitido em: ${agora.toLocaleString('pt-BR')}`, 14, 31);
-
-  // Linhas da tabela
   const colunas = [
     'Colaborador / Cargo',
     'Total Reg.',
@@ -49,17 +37,17 @@ export function exportarEspelhoBancoHorasPDF(
     item.saldoHoras > 0 ? `+${item.saldoHoras.toFixed(1)}h` : `${item.saldoHoras.toFixed(1)}h`,
     item.horasExtras > 0 ? `${item.horasExtras.toFixed(1)}h` : '0.0h',
     `R$ ${item.custoEstimadoExtra.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-    '' // Espaço reservado em branco para visto/assinatura manual
+    ''
   ]);
 
   autoTable(doc, {
-    startY: 36,
+    startY,
     head: [colunas],
     body: linhas,
     theme: 'grid',
     styles: {
       fontSize: 8.5,
-      cellPadding: 4,
+      cellPadding: 3.5,
       valign: 'middle',
       textColor: [31, 41, 55]
     },
@@ -75,13 +63,14 @@ export function exportarEspelhoBancoHorasPDF(
       2: { cellWidth: 20, halign: 'right' },
       3: { cellWidth: 22, halign: 'right' },
       4: { cellWidth: 28, halign: 'right' },
-      5: { cellWidth: 46, halign: 'center' } // Coluna ampla para assinatura física
+      5: { cellWidth: 46, halign: 'center' }
     },
     alternateRowStyles: {
       fillColor: [249, 250, 251]
     }
   });
 
+  desenharRodapeTerraGest(doc, 1, 1);
   const mesFormatado = mesAtualNome.toLowerCase();
   doc.save(`espelho_horas_${mesFormatado}.pdf`);
 }

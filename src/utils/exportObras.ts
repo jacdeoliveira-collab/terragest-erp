@@ -1,17 +1,16 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { Obra } from '../types/obras.types';
+import { desenharCabecalhoPdf, desenharRodapeTerraGest } from './pdf/pdfEmpresaLayout';
 
 export function gerarRelatorioObrasPDF(obras: Obra[]): void {
   const doc = new jsPDF();
 
-  doc.setFontSize(14);
-  doc.setTextColor(17, 24, 39);
-  doc.text('TerraGest - Centros de Custo & Canteiros de Obras', 14, 16);
-
-  doc.setFontSize(9);
-  doc.setTextColor(107, 114, 128);
-  doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')} | Total de Obras: ${obras.length}`, 14, 23);
+  const startY = desenharCabecalhoPdf(
+    doc,
+    'RELATÓRIO DE CENTROS DE CUSTO & CANTEIROS DE OBRAS',
+    `Total de Obras Cadastradas: ${obras.length}  •  Emissão: ${new Date().toLocaleString('pt-BR')}`
+  );
 
   const colunas = ['Nome da Obra', 'Cliente / Contratante', 'Localização', 'Status'];
   const linhas = obras.map((o) => [
@@ -22,7 +21,7 @@ export function gerarRelatorioObrasPDF(obras: Obra[]): void {
   ]);
 
   autoTable(doc, {
-    startY: 28,
+    startY,
     head: [colunas],
     body: linhas,
     theme: 'striped',
@@ -31,6 +30,7 @@ export function gerarRelatorioObrasPDF(obras: Obra[]): void {
     alternateRowStyles: { fillColor: [249, 250, 251] }
   });
 
+  desenharRodapeTerraGest(doc, 1, 1);
   doc.save('terragest_obras.pdf');
 }
 

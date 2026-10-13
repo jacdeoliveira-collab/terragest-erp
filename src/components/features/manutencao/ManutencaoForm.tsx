@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Wrench, DollarSign } from 'lucide-react';
 import { useEquipments } from '../../../hooks/useEquipments';
+import { useObras } from '../../../hooks/useObras';
+import { useCategoriasCustos } from '../../../hooks/useCategoriasCustos';
 import { useCreateManutencao } from '../../../hooks/useCreateManutencao';
+import { ManutencaoDadosTab } from './ManutencaoDadosTab';
+import { ManutencaoCustosTab } from './ManutencaoCustosTab';
+import type { TipoManutencao } from '../../../types/manutencao.types';
+import { isVehicleOrTruck } from '../../../utils/equipmentMeasurement';
 
 interface ManutencaoFormProps {
   onSuccess: () => void;
@@ -10,19 +16,29 @@ interface ManutencaoFormProps {
 
 export const ManutencaoForm: React.FC<ManutencaoFormProps> = ({ onSuccess, onCancel }) => {
   const { data: equipments, isLoading: loadingEquips } = useEquipments({ onlyActives: true });
+  const { obras, loading: loadingObras } = useObras();
+  const { categorias, loading: loadingCategorias } = useCategoriasCustos('MANUTENCAO');
   const { createManutencao, isSubmitting, error, limparErro } = useCreateManutencao();
 
+  const [activeTab, setActiveTab] = useState<'dados' | 'custos'>('dados');
   const [maquinaId, setMaquinaId] = useState('');
-  const [tipoServico, setTipoServico] = useState('Troca de Óleo do Motor');
+  const [tipoManutencao, setTipoManutencao] = useState<TipoManutencao>('PREVENTIVA');
+  const [dataServico, setDataServico] = useState(new Date().toISOString().slice(0, 10));
+  const [descricaoServico, setDescricaoServico] = useState('');
   const [intervaloHoras, setIntervaloHoras] = useState<number>(250);
   const [ultimoHorimetro, setUltimoHorimetro] = useState<number>(0);
   const [mecanico, setMecanico] = useState('');
+  const [obraId, setObraId] = useState('');
+  const [categoriaCustoId, setCategoriaCustoId] = useState('');
+  const [valorPecas, setValorPecas] = useState<number>(0);
+  const [valorMaoObra, setValorMaoObra] = useState<number>(0);
 
   const handleMaquinaSelect = (id: string) => {
     setMaquinaId(id);
     const equip = equipments.find((e) => e.id === id);
     if (equip) {
       setUltimoHorimetro(equip.current_hourmeter);
+      setIntervaloHoras(isVehicleOrTruck(equip) ? 10000 : 250);
     }
   };
 
@@ -32,10 +48,17 @@ export const ManutencaoForm: React.FC<ManutencaoFormProps> = ({ onSuccess, onCan
 
     const result = await createManutencao({
       maquina_id: maquinaId,
-      tipo_servico_nome: tipoServico,
+      tipo_manutencao: tipoManutencao,
+      tipo_servico_nome: descricaoServico.slice(0, 60),
+      descricao_servico: descricaoServico,
+      data_servico: dataServico,
       intervalo_horas: intervaloHoras,
       ultimo_horimetro_realizado: ultimoHorimetro,
       responsavel_mecanico: mecanico || undefined,
+      obra_id: obraId || undefined,
+      categoria_custo_id: categoriaCustoId || undefined,
+      valor_pecas: valorPecas,
+      valor_mao_obra: valorMaoObra,
       status: 'EM_DIA'
     });
 
@@ -45,7 +68,7 @@ export const ManutencaoForm: React.FC<ManutencaoFormProps> = ({ onSuccess, onCan
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3.5 text-left">
+    <form onSubmit={handleSubmit} className="text-left space-y-4">
       {error && (
         <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
@@ -53,92 +76,69 @@ export const ManutencaoForm: React.FC<ManutencaoFormProps> = ({ onSuccess, onCan
         </div>
       )}
 
-      <div>
-        <label className="block text-xs font-semibold text-gray-700 mb-1">Máquina / Equipamento *</label>
-        <select
-          required
-          value={maquinaId}
-          onChange={(e) => handleMaquinaSelect(e.target.value)}
-          disabled={loadingEquips || equipments.length === 0}
-          className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-xl text-xs text-gray-900 focus:ring-2 focus:ring-emerald-500"
+      <div className="flex border-b border-gray-200 gap-2">
+        <button
+          type="button"
+          onClick={() => setActiveTab('dados')}
+          className={`flex items-center gap-1.5 py-2 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer ${
+            activeTab === 'dados' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
         >
-          <option value="">{equipments.length === 0 ? 'Nenhuma máquina' : 'Selecione a máquina'}</option>
-          {equipments.map((eq) => (
-            <option key={eq.id} value={eq.id}>
-              {eq.code} - {eq.name} ({eq.current_hourmeter.toFixed(1)}h)
-            </option>
-          ))}
-        </select>
+          <Wrench className="w-3.5 h-3.5" />
+          <span>Dados da Manutenção</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('custos')}
+          className={`flex items-center gap-1.5 py-2 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer ${
+            activeTab === 'custos' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <DollarSign className="w-3.5 h-3.5" />
+          <span>Apropriação de Custos</span>
+        </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">Tipo de Serviço *</label>
-          <select
-            value={tipoServico}
-            onChange={(e) => setTipoServico(e.target.value)}
-            className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-xl text-xs text-gray-900 focus:ring-2 focus:ring-emerald-500"
-          >
-            <option value="Troca de Óleo do Motor">Troca de Óleo do Motor</option>
-            <option value="Filtros Hidráulicos">Filtros Hidráulicos</option>
-            <option value="Lubrificação Geral">Lubrificação Geral (Engraxamento)</option>
-            <option value="Revisão Completa">Revisão Completa (Trem de Força)</option>
-          </select>
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">Intervalo (Horas) *</label>
-          <select
-            value={intervaloHoras}
-            onChange={(e) => setIntervaloHoras(Number(e.target.value))}
-            className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-xl text-xs text-gray-900 focus:ring-2 focus:ring-emerald-500"
-          >
-            <option value={250}>250 horas (Padrão Óleo/Filtros)</option>
-            <option value={500}>500 horas (Intermediária)</option>
-            <option value={1000}>1000 horas (Geral/Hidráulico)</option>
-            <option value={2000}>2000 horas (Overhaul Completo)</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">Último Horímetro Realizado *</label>
-          <input
-            type="number"
-            step="0.1"
-            required
-            value={ultimoHorimetro}
-            onChange={(e) => setUltimoHorimetro(parseFloat(e.target.value) || 0)}
-            className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-xl text-xs text-gray-900 font-mono"
+      <div className="min-h-[220px]">
+        {activeTab === 'dados' ? (
+          <ManutencaoDadosTab
+            maquinaId={maquinaId} setMaquinaId={setMaquinaId}
+            tipoManutencao={tipoManutencao} setTipoManutencao={setTipoManutencao}
+            dataServico={dataServico} setDataServico={setDataServico}
+            descricaoServico={descricaoServico} setDescricaoServico={setDescricaoServico}
+            ultimoHorimetro={ultimoHorimetro} setUltimoHorimetro={setUltimoHorimetro}
+            intervaloHoras={intervaloHoras} setIntervaloHoras={setIntervaloHoras}
+            mecanico={mecanico} setMecanico={setMecanico}
+            equipments={equipments} loadingEquips={loadingEquips}
+            onMaquinaSelect={handleMaquinaSelect}
           />
-        </div>
-
-        <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1">Mecânico / Oficina</label>
-          <input
-            placeholder="Ex: Oficina Central / Mecânico João"
-            value={mecanico}
-            onChange={(e) => setMecanico(e.target.value)}
-            className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-xl text-xs text-gray-900"
+        ) : (
+          <ManutencaoCustosTab
+            obraId={obraId} setObraId={setObraId}
+            categoriaCustoId={categoriaCustoId} setCategoriaCustoId={setCategoriaCustoId}
+            valorPecas={valorPecas} setValorPecas={setValorPecas}
+            valorMaoObra={valorMaoObra} setValorMaoObra={setValorMaoObra}
+            obras={obras} loadingObras={loadingObras}
+            categorias={categorias} loadingCategorias={loadingCategorias}
           />
-        </div>
+        )}
       </div>
 
       <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold"
+          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold cursor-pointer"
         >
           Cancelar
         </button>
         <button
           type="submit"
-          disabled={isSubmitting || equipments.length === 0}
-          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-semibold shadow-sm"
+          disabled={isSubmitting || !maquinaId}
+          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-semibold shadow-sm cursor-pointer"
         >
-          {isSubmitting ? 'Salvando...' : 'Cadastrar Plano'}
+          {isSubmitting ? 'Salvando...' : 'Salvar Ordem de Serviço'}
         </button>
       </div>
     </form>

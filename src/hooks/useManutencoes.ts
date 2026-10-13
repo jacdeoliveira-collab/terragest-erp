@@ -1,8 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { useTenantContext } from '../contexts/TenantContext';
+import { useObraContext } from '../contexts/ObraContext';
+import { isVehicleOrTruck } from '../utils/equipmentMeasurement';
+import { calcularStatusRevisao } from '../utils/revisaoAlertas';
 import type { PlanoManutencaoItem } from '../types/manutencao.types';
+import { aplicarFiltroTenant, DEFAULT_LEGACY_TENANT } from '../utils/tenantFilter';
 
 export function useManutencoes() {
+  const { tenantAtivoId } = useTenantContext();
+  const { obraSelecionada } = useObraContext();
   const [data, setData] = useState<PlanoManutencaoItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -12,68 +19,74 @@ export function useManutencoes() {
       setIsLoading(true);
       setError(null);
 
-      const { data: userData } = await supabase.auth.getUser();
-      const tenantId = userData.user?.user_metadata?.tenant_id as string | undefined;
+      const currentTenant = tenantAtivoId || DEFAULT_LEGACY_TENANT;
 
-      let query = supabase
-        .from('planos_manutencao')
-        .select(`
-          *,
-          equipment:maquina_id (code, name, current_hourmeter)
-        `)
-        .order('created_at', { ascending: false });
+      let queryPlanos = supabase.from('planos_manutencao').select('*').order('created_at', { ascending: false });
+      let queryEquips = supabase.from('equipment').select('id, code, name, current_hourmeter, category, type');
+      let queryObras = supabase.from('obras').select('id, nome');
 
-      if (tenantId) {
-        query = query.eq('tenant_id', tenantId);
+      queryPlanos = aplicarFiltroTenant(queryPlanos, currentTenant);
+      queryEquips = aplicarFiltroTenant(queryEquips, currentTenant);
+      queryObras = aplicarFiltroTenant(queryObras, currentTenant);
+
+      if (obraSelecionada?.id) {
+        queryPlanos = queryPlanos.eq('obra_id', obraSelecionada.id);
       }
 
-      const { data: responseData, error: responseError } = await query;
+      const [planosRes, equipsRes, obrasRes] = await Promise.all([queryPlanos, queryEquips, queryObras]);
 
-      if (responseError) {
-        throw new Error(responseError.message);
+      if (planosRes.error) {
+        throw new Error(planosRes.error.message);
       }
 
-      interface SupabasePlanoRaw extends PlanoManutencaoItem {
-        equipment?: { code: string; name: string; current_hourmeter: number };
-        servico?: string;
-        ultimo_horimetro?: number;
-      }
+      const equipsMap = new Map((equipsRes.data || []).map((eq) => [eq.id, eq]));
+      const obrasMap = new Map((obrasRes.data || []).map((ob) => [ob.id, ob.nome]));
 
-      const formatados: PlanoManutencaoItem[] = ((responseData as SupabasePlanoRaw[]) || []).map((item) => {
-        const ultHorimetro = Number(item.ultimo_horimetro_realizado ?? item.ultimo_horimetro ?? 0);
-        const intervHoras = Number(item.intervalo_horas ?? 250);
-        const proxAlvo = ultHorimetro + intervHoras;
-        const horimetroAtual = Number(item.equipment?.current_hourmeter) || 0;
+      const formatados: PlanoManutencaoItem[] = (planosRes.data || []).map((raw) => {
+        const eq = equipsMap.get(raw.maquina_id);
+        const obraNome = raw.obra_id ? obrasMap.get(raw.obra_id) : undefined;
+        const ultHorimetro = Number(raw.ultimo_horimetro_realizado ?? raw.ultimo_horimetro ?? 0);
+        const intervHoras = Number(raw.intervalo_horas ?? 250);
+        const proxAlvo = Number(raw.horimetro_proxima_troca) || (ultHorimetro + intervHoras);
+        const horimetroAtual = Number(eq?.current_hourmeter) || 0;
+        const valorPecas = Number(raw.valor_pecas) || 0;
+        const valorMaoObra = Number(raw.valor_mao_obra) || 0;
 
-        let statusCalc: 'EM_DIA' | 'PROXIMO_VENCIMENTO' | 'ATRASADO' = 'EM_DIA';
-        if (horimetroAtual >= proxAlvo) {
-          statusCalc = 'ATRASADO';
-        } else if (proxAlvo - horimetroAtual <= 30) {
-          statusCalc = 'PROXIMO_VENCIMENTO';
-        }
+        const isKm = isVehicleOrTruck(eq);
+        const statusCalc = calcularStatusRevisao(horimetroAtual, proxAlvo, isKm);
 
         return {
-          ...item,
-          tipo_servico_nome: item.tipo_servico_nome || item.servico || 'Revisão Preventiva',
+          ...raw,
+          tipo_servico: raw.tipo_servico || raw.tipo_servico_nome || raw.servico || 'Manutenção Preventiva',
+          tipo_servico_nome: raw.tipo_servico_nome || raw.servico || raw.descricao_servico || 'Manutenção Preventiva',
+          descricao_servico: raw.descricao_servico || raw.tipo_servico_nome || raw.servico || '',
+          data_servico: raw.data_servico || raw.data_ultima_execucao || raw.created_at?.slice(0, 10),
+          tipo_manutencao: raw.tipo_manutencao || 'PREVENTIVA',
           ultimo_horimetro_realizado: ultHorimetro,
           intervalo_horas: intervHoras,
-          maquina_codigo: item.equipment?.code,
-          maquina_nome: item.equipment?.name,
+          maquina_codigo: eq?.code,
+          maquina_nome: eq?.name,
+          unidade_medicao: isKm ? 'km' : 'h',
           horimetro_atual_maquina: horimetroAtual,
           proximo_horimetro_alvo: proxAlvo,
-          status: statusCalc
+          horimetro_proxima_troca: proxAlvo,
+          obra_nome: obraNome,
+          valor_pecas: valorPecas,
+          valor_mao_obra: valorMaoObra,
+          valor_total: valorPecas + valorMaoObra,
+          status: raw.status === 'REALIZADO' ? 'EM_DIA' : statusCalc
         };
       });
 
       setData(formatados);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Falha ao buscar planos de manutenção';
+      const msg = err instanceof Error ? err.message : 'Falha ao buscar manutenções';
       setError(msg);
       setData([]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [tenantAtivoId, obraSelecionada?.id]);
 
   useEffect(() => {
     fetchPlanos();

@@ -1,14 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Calendar, RefreshCw, AlertCircle, FileSpreadsheet } from 'lucide-react';
 import { useFechamentoFolha } from './useFechamentoFolha';
 import { TabelaFechamentoFolha } from './TabelaFechamentoFolha';
-import { ResumoCardsFolha } from './ResumoCardsFolha';
+import { ResumoCardsFolha, type FiltroFolha } from './ResumoCardsFolha';
 
 export const FechamentoFolha: React.FC = () => {
   const mesAtualPadrao = new Date().toISOString().slice(0, 7); // YYYY-MM
   const [mesSelecionado, setMesSelecionado] = useState<string>(mesAtualPadrao);
+  const [filtroFolha, setFiltroFolha] = useState<FiltroFolha>('TODOS');
 
   const { itensFolha, totais, loading, error, recarregar } = useFechamentoFolha(mesSelecionado);
+
+  const itensFiltrados = useMemo(() => {
+    if (filtroFolha === 'EXTRAS') return itensFolha.filter((it) => it.totalHorasExtras > 0);
+    if (filtroFolha === 'ESTOURO') return itensFolha.filter((it) => it.estourouLimite);
+    return itensFolha;
+  }, [itensFolha, filtroFolha]);
 
   const exportarCSV = () => {
     if (!itensFolha.length) return;
@@ -89,13 +96,15 @@ export const FechamentoFolha: React.FC = () => {
         </div>
       )}
 
-      {/* Cards de Resumo */}
+      {/* Cards de Resumo Interativos */}
       <ResumoCardsFolha
         totalFolha={totais.totalFolha}
         totalHorasExtrasValor={totais.totalHorasExtrasValor}
         totalHorasExtrasQtd={totais.totalHorasExtrasQtd}
         operadoresComEstouro={totais.operadoresComEstouro}
         totalOperadores={itensFolha.length}
+        filtroAtivo={filtroFolha}
+        onSelectFiltro={setFiltroFolha}
       />
 
       {/* Tabela Principal */}
@@ -109,6 +118,11 @@ export const FechamentoFolha: React.FC = () => {
               Cruzamento financeiro com base nas jornadas e boletins de Linha Amarela / Terraplanagem
             </p>
           </div>
+          {filtroFolha !== 'TODOS' && (
+            <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-lg border border-emerald-200">
+              Filtro ativo: {filtroFolha === 'EXTRAS' ? 'Horas Extras' : 'Estouro de Limite'} ({itensFiltrados.length} operador(es))
+            </span>
+          )}
         </div>
 
         {loading ? (
@@ -116,7 +130,7 @@ export const FechamentoFolha: React.FC = () => {
             Processando jornadas e fechamento de folha do mês...
           </div>
         ) : (
-          <TabelaFechamentoFolha itens={itensFolha} />
+          <TabelaFechamentoFolha itens={itensFiltrados} />
         )}
       </div>
     </div>

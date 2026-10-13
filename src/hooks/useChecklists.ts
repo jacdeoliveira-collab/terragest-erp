@@ -1,8 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { useTenantContext } from '../contexts/TenantContext';
 import type { ChecklistItem } from '../types/checklist.types';
+import { aplicarFiltroTenant, DEFAULT_LEGACY_TENANT } from '../utils/tenantFilter';
 
 export function useChecklists() {
+  const { tenantAtivoId } = useTenantContext();
   const [data, setData] = useState<ChecklistItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -12,8 +15,7 @@ export function useChecklists() {
       setIsLoading(true);
       setError(null);
 
-      const { data: userData } = await supabase.auth.getUser();
-      const tenantId = userData.user?.user_metadata?.tenant_id as string | undefined;
+      const currentTenant = tenantAtivoId || DEFAULT_LEGACY_TENANT;
 
       let query = supabase
         .from('checklists_diarios')
@@ -24,9 +26,7 @@ export function useChecklists() {
         `)
         .order('data', { ascending: false });
 
-      if (tenantId) {
-        query = query.eq('tenant_id', tenantId);
-      }
+      query = aplicarFiltroTenant(query, currentTenant);
 
       const { data: responseData, error: responseError } = await query;
 
@@ -54,7 +54,7 @@ export function useChecklists() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [tenantAtivoId]);
 
   useEffect(() => {
     fetchChecklists();

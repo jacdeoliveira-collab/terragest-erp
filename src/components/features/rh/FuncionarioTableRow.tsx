@@ -1,66 +1,141 @@
 import React from 'react';
-import { AlertTriangle, ExternalLink, Shield } from 'lucide-react';
-import { gerarFichaEpiPDF } from '../../../utils/epiPdfGenerator';
+import { AlertTriangle, Clock, Eye, Edit3, UserX, ShieldCheck, Key } from 'lucide-react';
 import type { Funcionario } from '../../../types/rh.types';
 
 interface FuncionarioTableRowProps {
   item: Funcionario;
   hoje: string;
+  dataLimite30Dias: string;
+  onVerPerfil: (f: Funcionario) => void;
+  onVerHistorico?: (f: Funcionario) => void;
+  onEditar: (f: Funcionario) => void;
+  onVerCompliance?: (f: Funcionario) => void;
+  onConfigurarPin?: (f: Funcionario) => void;
+  onInativar: (id: string, novoStatus: 'ATIVO' | 'INATIVO') => void;
 }
 
-export const FuncionarioTableRow: React.FC<FuncionarioTableRowProps> = ({ item, hoje }) => {
-  const docVencido = item.validade_documento ? item.validade_documento < hoje : false;
+const renderStatusValidade = (dataStr?: string, hojeStr: string = '', limiteStr: string = '') => {
+  if (!dataStr) return <span className="text-gray-400 font-mono">-</span>;
+  if (dataStr < hojeStr) {
+    return (
+      <span className="inline-flex items-center gap-1 font-mono text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded">
+        <AlertTriangle className="w-3 h-3 text-rose-500 shrink-0" />
+        {dataStr} <span className="text-[9px] uppercase">(Vencido)</span>
+      </span>
+    );
+  }
+  if (dataStr <= limiteStr) {
+    return (
+      <span className="inline-flex items-center gap-1 font-mono text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
+        <Clock className="w-3 h-3 text-amber-600 shrink-0" />
+        {dataStr} <span className="text-[9px] uppercase">(30d)</span>
+      </span>
+    );
+  }
+  return <span className="font-mono text-gray-700 text-[11px]">{dataStr}</span>;
+};
 
-  const handleGerarEPI = () => {
-    gerarFichaEpiPDF(item);
-  };
+export const FuncionarioTableRow: React.FC<FuncionarioTableRowProps> = ({
+  item,
+  hoje,
+  dataLimite30Dias,
+  onVerPerfil,
+  onVerHistorico,
+  onEditar,
+  onVerCompliance,
+  onConfigurarPin,
+  onInativar
+}) => {
+  const isAtivo = item.status === 'ATIVO';
+  const cnhData = item.vencimento_cnh || item.validade_cnh;
+  const asoData = item.vencimento_aso || item.aso_validade;
 
   return (
-    <tr className="hover:bg-gray-50/60 transition-colors">
-      <td className="p-3.5 font-medium text-gray-900">{item.nome}</td>
-      <td className="p-3.5 text-gray-600">{item.cargo.replace('_', ' ')}</td>
-      <td className="p-3.5 font-mono text-gray-500">{item.registro_documento || '-'}</td>
-      <td className="p-3.5">
-        {item.validade_documento ? (
-          <span className={`inline-flex items-center gap-1 font-mono ${docVencido ? 'text-rose-600 font-bold' : 'text-gray-700'}`}>
-            {docVencido && <AlertTriangle className="w-3.5 h-3.5 text-rose-500 shrink-0" />}
-            {item.validade_documento}
-            {docVencido && <span className="text-[10px] text-rose-500 uppercase">(Vencido)</span>}
-          </span>
-        ) : '-'}
-      </td>
-      <td className="p-3.5 text-center">
-        <div className="flex items-center justify-center gap-1.5">
-          {item.drive_url_documentos ? (
-            <a
-              href={item.drive_url_documentos}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-[11px] font-semibold transition-colors"
-              title="Visualizar documento do colaborador"
+    <tr className="hover:bg-gray-50/60 transition-colors text-xs">
+      <td className="p-3 font-semibold text-gray-900">
+        <div>
+          {onVerHistorico ? (
+            <button
+              type="button"
+              onClick={() => onVerHistorico(item)}
+              className="text-left font-bold text-gray-900 hover:text-emerald-700 hover:underline cursor-pointer flex items-center gap-1"
+              title="Clique para ver o histórico de produção e máquinas operadas"
             >
-              <ExternalLink className="w-3 h-3" />
-              <span>Ver PDF</span>
-            </a>
+              <span>{item.nome}</span>
+            </button>
           ) : (
-            <span className="text-gray-400 font-mono">-</span>
+            <span>{item.nome}</span>
           )}
-
-          <button
-            onClick={handleGerarEPI}
-            type="button"
-            className="inline-flex items-center gap-1 px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer"
-            title="Gerar Ficha de EPI (NR-6)"
-          >
-            <Shield className="w-3 h-3 text-amber-600" />
-            <span>Ficha EPI</span>
-          </button>
+          <span className="block text-[10px] text-gray-400 font-mono">
+            CPF: {item.cpf || item.registro_documento || '-'}
+          </span>
         </div>
       </td>
-      <td className="p-3.5 text-center">
-        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+      <td className="p-3 text-gray-600">{item.cargo.replace('_', ' ')}</td>
+      <td className="p-3">{renderStatusValidade(cnhData, hoje, dataLimite30Dias)}</td>
+      <td className="p-3">{renderStatusValidade(asoData, hoje, dataLimite30Dias)}</td>
+      <td className="p-3 text-center">
+        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${isAtivo ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-600 border-gray-300'}`}>
           {item.status}
         </span>
+      </td>
+      <td className="p-3 text-center">
+        <div className="flex items-center justify-center gap-1.5">
+          {onVerHistorico && (
+            <button
+              onClick={() => onVerHistorico(item)}
+              className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-[11px] font-semibold cursor-pointer"
+              title="Histórico de Produção & Horímetros"
+            >
+              <Clock className="w-3 h-3 text-emerald-600" />
+              <span>Produção</span>
+            </button>
+          )}
+          <button
+            onClick={() => onVerPerfil(item)}
+            className="inline-flex items-center gap-1 px-2 py-1 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-[11px] font-semibold cursor-pointer"
+            title="Ver Perfil e EPIs"
+          >
+            <Eye className="w-3 h-3 text-slate-500" />
+            <span>Perfil</span>
+          </button>
+          <button
+            onClick={() => onEditar(item)}
+            className="inline-flex items-center gap-1 px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-[11px] font-semibold cursor-pointer"
+            title="Editar Colaborador"
+          >
+            <Edit3 className="w-3 h-3 text-amber-600" />
+            <span>Editar</span>
+          </button>
+          {onVerCompliance && (
+            <button
+              onClick={() => onVerCompliance(item)}
+              className="inline-flex items-center gap-1 px-2 py-1 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 rounded-lg text-[11px] font-semibold cursor-pointer"
+              title="Compliance e Anexos (Drive)"
+            >
+              <ShieldCheck className="w-3 h-3 text-emerald-600" />
+              <span>Anexos</span>
+            </button>
+          )}
+          {onConfigurarPin && (
+            <button
+              onClick={() => onConfigurarPin(item)}
+              className="inline-flex items-center gap-1 px-2 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-lg text-[11px] font-semibold cursor-pointer"
+              title="Configurar PIN de Assinatura"
+            >
+              <Key className="w-3 h-3 text-purple-600" />
+              <span>PIN</span>
+            </button>
+          )}
+          <button
+            onClick={() => onInativar(item.id, isAtivo ? 'INATIVO' : 'ATIVO')}
+            className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold border cursor-pointer ${isAtivo ? 'bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-200' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200'}`}
+            title={isAtivo ? 'Inativar Colaborador (não deleta)' : 'Reativar Colaborador'}
+          >
+            {isAtivo ? <UserX className="w-3 h-3 text-rose-500" /> : <ShieldCheck className="w-3 h-3 text-emerald-600" />}
+            <span>{isAtivo ? 'Inativar' : 'Ativar'}</span>
+          </button>
+        </div>
       </td>
     </tr>
   );

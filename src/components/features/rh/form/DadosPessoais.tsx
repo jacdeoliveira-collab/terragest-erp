@@ -12,6 +12,8 @@ interface DadosPessoaisProps {
   setTelefone: (val: string) => void;
   enderecoCompleto: string;
   setEnderecoCompleto: (val: string) => void;
+  pinAssinatura?: string;
+  setPinAssinatura?: (val: string) => void;
 }
 
 export const DadosPessoais: React.FC<DadosPessoaisProps> = ({
@@ -24,7 +26,9 @@ export const DadosPessoais: React.FC<DadosPessoaisProps> = ({
   telefone,
   setTelefone,
   enderecoCompleto,
-  setEnderecoCompleto
+  setEnderecoCompleto,
+  pinAssinatura = '',
+  setPinAssinatura
 }) => {
   return (
     <div className="space-y-3">
@@ -80,14 +84,26 @@ export const DadosPessoais: React.FC<DadosPessoaisProps> = ({
           />
         </div>
         <div>
-          <label className="block font-semibold text-gray-700 mb-1">Endereço Residencial Completo</label>
+          <label className="block font-semibold text-gray-700 mb-1">PIN Checklist (4 Dígitos)</label>
           <input
-            placeholder="Rua, Número, Bairro, Cidade - UF"
-            value={enderecoCompleto}
-            onChange={(e) => setEnderecoCompleto(e.target.value)}
-            className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-emerald-500"
+            type="password"
+            maxLength={4}
+            placeholder="Ex: 1234"
+            value={pinAssinatura}
+            onChange={(e) => setPinAssinatura && setPinAssinatura(e.target.value.replace(/\D/g, '').slice(0, 4))}
+            className="w-full px-3 py-1.5 bg-white border border-gray-300 rounded-xl text-gray-900 font-mono tracking-widest text-center focus:ring-2 focus:ring-amber-500"
           />
         </div>
+      </div>
+
+      <div>
+        <label className="block font-semibold text-gray-700 mb-1">Endereço Residencial Completo</label>
+        <input
+          placeholder="Rua, Número, Bairro, Cidade - UF"
+          value={enderecoCompleto}
+          onChange={(e) => setEnderecoCompleto(e.target.value)}
+          className="w-full px-3 py-1.5 bg-gray-50 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-emerald-500"
+        />
       </div>
     </div>
   );

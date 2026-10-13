@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { useTenantContext } from '../contexts/TenantContext';
 import type { CreateBDEDTO } from '../types/bde.types';
 
 export function useCreateBDE() {
+  const { tenantAtivoId } = useTenantContext();
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const createBDE = async (input: CreateBDEDTO) => {
+    if (isSubmitting) return { data: null, error: null };
     try {
       setIsSubmitting(true);
       setError(null);
@@ -15,8 +18,8 @@ export function useCreateBDE() {
       if (!user) {
         throw new Error('Sessão expirada. Faça login novamente para salvar registros.');
       }
+      const tenantId = tenantAtivoId || (user.user_metadata?.tenant_id as string | undefined);
 
-      // Cálculo líquido da jornada do operador (hora_fim - hora_inicio)
       let calculatedHours = Number(input.total_hours);
       if (isNaN(calculatedHours) || calculatedHours <= 0) {
         if (input.hora_inicio_jornada && input.hora_fim_jornada) {
@@ -31,7 +34,12 @@ export function useCreateBDE() {
         calculatedHours = Math.max(0, Number(input.final_hourmeter) - Number(input.initial_hourmeter));
       }
 
+      const productiveHours = input.horas_produtivas !== undefined && !isNaN(Number(input.horas_produtivas))
+        ? Number(input.horas_produtivas)
+        : Math.max(0, Number(input.final_hourmeter) - Number(input.initial_hourmeter));
+
       const payload = {
+        tenant_id: tenantId || null,
         obra_id: input.obra_id,
         equipment_id: input.equipment_id,
         operador_id: input.operador_id || null,
@@ -45,11 +53,16 @@ export function useCreateBDE() {
         initial_hourmeter: Number(input.initial_hourmeter),
         final_hourmeter: Number(input.final_hourmeter),
         total_hours: calculatedHours,
+        horas_produtivas: productiveHours,
+        horas_ociosas: Number(input.horas_ociosas) || 0,
+        estaca_inicial: input.estaca_inicial?.trim() || null,
+        estaca_final: input.estaca_final?.trim() || null,
+        status_aprovacao: input.status_aprovacao || 'PENDENTE',
         fuel_liters: Number(input.fuel_liters) || 0,
         service_description: input.service_description.trim(),
         notes: input.notes?.trim() || null,
         status: input.status || 'SUBMITTED',
-        tenant_id: user.id
+        assinado_por_pin: input.assinado_por_pin ?? true
       };
 
       const { data, error: insertError } = await supabase

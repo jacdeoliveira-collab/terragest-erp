@@ -1,22 +1,17 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { DailyBulletin } from '../types/bde.types';
+import { desenharCabecalhoPdf, desenharRodapeTerraGest } from './pdf/pdfEmpresaLayout';
 
 export function gerarRelatorioBDE(dadosBDE: DailyBulletin[], nomeObra?: string): void {
   const doc = new jsPDF();
 
-  doc.setFontSize(14);
-  doc.setTextColor(17, 24, 39);
-  doc.text('TerraGest - Relatório de Boletim Diário de Equipamento', 14, 16);
-
-  doc.setFontSize(10);
-  doc.setTextColor(75, 85, 99);
   const obraTexto = nomeObra ? `Obra: ${nomeObra}` : 'Obra: Todas / Geral';
-  doc.text(obraTexto, 14, 23);
-
-  doc.setFontSize(8);
-  doc.setTextColor(107, 114, 128);
-  doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 28);
+  const startY = desenharCabecalhoPdf(
+    doc,
+    'RELATÓRIO DE BOLETIM DIÁRIO DE EQUIPAMENTO (BDE)',
+    `${obraTexto}  •  Emissão: ${new Date().toLocaleString('pt-BR')}  •  Total: ${dadosBDE.length} registro(s)`
+  );
 
   const colunas = ['Data', 'Máquina', 'Operador', 'H. Inicial', 'H. Final', 'Total Horas'];
   const linhas = dadosBDE.map((b) => [
@@ -29,7 +24,7 @@ export function gerarRelatorioBDE(dadosBDE: DailyBulletin[], nomeObra?: string):
   ]);
 
   autoTable(doc, {
-    startY: 33,
+    startY,
     head: [colunas],
     body: linhas,
     theme: 'striped',
@@ -38,6 +33,7 @@ export function gerarRelatorioBDE(dadosBDE: DailyBulletin[], nomeObra?: string):
     alternateRowStyles: { fillColor: [249, 250, 251] }
   });
 
+  desenharRodapeTerraGest(doc, 1, 1);
   doc.save('bde_relatorio_obra.pdf');
 }
 

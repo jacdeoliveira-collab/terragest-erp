@@ -14,7 +14,7 @@ export function useEquipment() {
       const data = await fetchEquipmentList();
       setEquipment(data);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Falha ao carregar maquinário e drones');
+      setError(err instanceof Error ? err.message : 'Falha ao carregar maquinário e equipamentos');
     } finally {
       setLoading(false);
     }

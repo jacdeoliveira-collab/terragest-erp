@@ -1,16 +1,16 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { DashboardMetrics } from '../types/dashboard.types';
+import { desenharCabecalhoPdf, desenharRodapeTerraGest } from '../utils/pdf/pdfEmpresaLayout';
 
 export function exportDashboardPDF(metrics: DashboardMetrics, obraNome = 'Geral'): void {
   const doc = new jsPDF();
   
-  doc.setFontSize(16);
-  doc.text('TerraGest - Relatório Executivo de Produtividade', 14, 18);
-
-  doc.setFontSize(10);
-  doc.text(`Obra/Canteiro: ${obraNome}`, 14, 25);
-  doc.text(`Emissão: ${new Date().toLocaleString('pt-BR')}`, 14, 30);
+  const startY = desenharCabecalhoPdf(
+    doc,
+    'RELATÓRIO EXECUTIVO DE PRODUTIVIDADE',
+    `Obra / Canteiro: ${obraNome}  •  Emissão: ${new Date().toLocaleString('pt-BR')}`
+  );
 
   const dadosKpis = [
     ['Horas Totais Apontadas', `${metrics.totalHoras.toFixed(1)} h`],
@@ -20,14 +20,14 @@ export function exportDashboardPDF(metrics: DashboardMetrics, obraNome = 'Geral'
   ];
 
   autoTable(doc, {
-    startY: 36,
+    startY,
     head: [['Indicador Operacional', 'Valor Atual']],
     body: dadosKpis,
-    styles: { fontSize: 10 },
-    headStyles: { fillColor: [5, 150, 105] }
+    styles: { fontSize: 9.5, cellPadding: 3 },
+    headStyles: { fillColor: [16, 185, 129] }
   });
 
-  const posY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 12;
+  const posY = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 10;
 
   if (metrics.dadosGraficoHoras.length > 0) {
     const dadosGrafico = metrics.dadosGraficoHoras.map((p) => [p.data, `${p.horas} h`]);
@@ -35,14 +35,15 @@ export function exportDashboardPDF(metrics: DashboardMetrics, obraNome = 'Geral'
       startY: posY,
       head: [['Data de Operação', 'Horas Realizadas']],
       body: dadosGrafico,
-      styles: { fontSize: 9 },
+      styles: { fontSize: 8.5, cellPadding: 2.5 },
       headStyles: { fillColor: [15, 23, 42] }
     });
   } else {
-    doc.setFontSize(9);
+    doc.setFontSize(8.5);
     doc.setTextColor(120);
     doc.text('Nenhuma operação com horímetro registrada para o período selecionado.', 14, posY);
   }
 
-  doc.save(`Relatorio_Executivo_TerraGest_${new Date().toISOString().slice(0, 10)}.pdf`);
+  desenharRodapeTerraGest(doc, 1, 1);
+  doc.save(`Relatorio_Executivo_${new Date().toISOString().slice(0, 10)}.pdf`);
 }

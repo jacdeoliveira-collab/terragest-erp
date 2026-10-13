@@ -3,7 +3,8 @@ export type ModuloChave =
   | 'BDE'
   | 'OBRAS'
   | 'RH'
-  | 'REGULATORY_MAPA';
+  | 'COMERCIAL'
+  | 'MANUTENCAO';
 
 export interface TenantModulo {
   id: string;
