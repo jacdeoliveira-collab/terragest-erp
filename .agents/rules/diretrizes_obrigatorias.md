@@ -23,3 +23,8 @@ Estas regras são **mandatórias e inegociáveis** em todas as tarefas, componen
   - Cards e linhas de tabelas em componentes dedicados (`...CardItem.tsx`, `...RowItem.tsx`).
   - Cabeçalhos, rodapés e barras de ação em submódulos próprios.
   - Funções utilitárias e geradores de relatório (como PDF) divididos por seções lógicas.
+
+## 5. Blindagem Contra Arquivos Pesados no Supabase (Zero Bloat / Zero Base64)
+- Proibido salvar strings Base64 (`data:image/`, `data:application/`), blobs ou arquivos binários em colunas de tabelas do Supabase ou no Supabase Storage.
+- O cliente Supabase possui interceptor ativo (`src/lib/supabaseGuard.ts`) que sanitiza e bloqueia qualquer tentativa de inserção de mídias pesadas.
+- Imagens de painéis de horímetro, cupons de diesel, comprovantes de pagamento e laudos devem ser armazenados **exclusivamente no Google Drive**; no Supabase, apenas a URL externa do arquivo (`https://drive.google.com/...`) pode ser persistida.
