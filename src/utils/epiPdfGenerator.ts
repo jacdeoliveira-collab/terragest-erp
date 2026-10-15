@@ -2,14 +2,16 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { Funcionario, EpiEntregue } from '../types/rh.types';
 import { getEmpresaAtivaCache } from '../services/empresaAtivaService';
-import { SITE_TERRAGEST } from './pdf/pdfEmpresaLayout';
+import { desenharRodapeTerraGest } from './pdf/pdfEmpresaLayout';
 import { desenharLogoNoPdf } from './pdf/pdfLogoHelper';
+import { obterDadosAssinaturaEmpresa, desenharAssinaturaDigital } from './pdf/pdfAssinaturaEmpresaHelper';
 
 export function gerarFichaEpiPDF(colaborador: Funcionario, epis?: EpiEntregue[]): void {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const empresa = getEmpresaAtivaCache() || {};
-  const razaoSocial = empresa.razao_social || empresa.nome || 'TERRAGEST CONSTRUÇÕES';
-  const cnpj = empresa.cnpj ? `CNPJ: ${empresa.cnpj}` : '';
+  const dadosEmp = obterDadosAssinaturaEmpresa(empresa);
+  const razaoSocial = dadosEmp.razaoSocial;
+  const cnpj = dadosEmp.cnpj;
 
   // Faixa superior decorativa
   doc.setFillColor(16, 185, 129);
@@ -113,26 +115,24 @@ export function gerarFichaEpiPDF(colaborador: Funcionario, epis?: EpiEntregue[])
   const finalY = ((doc as unknown as { lastAutoTable?: { finalY: number } }).lastAutoTable?.finalY || 180) + 12;
 
   if (finalY < 270) {
+    desenharAssinaturaDigital(doc, 130, finalY - 14, 38, 12, empresa);
+    doc.setDrawColor(156, 163, 175);
+    doc.line(18, finalY, 90, finalY);
+    doc.line(115, finalY, 187, finalY);
     doc.setFontSize(7.5);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(55, 65, 81);
-    doc.text('___________________________________________', 18, finalY);
-    doc.text(`Colaborador: ${colaborador.nome}`, 18, finalY + 4);
-
-    doc.text('___________________________________________', 115, finalY);
-    doc.text('Responsável Técnico / Segurança (SST)', 115, finalY + 4);
+    doc.text(`Colaborador: ${colaborador.nome}`, 54, finalY + 4, { align: 'center' });
+    if (dadosEmp.textoResponsavel) {
+      doc.text(dadosEmp.textoResponsavel, 151, finalY + 4, { align: 'center' });
+      doc.text('Responsável Técnico / Segurança (SST)', 151, finalY + 7.5, { align: 'center' });
+    } else {
+      doc.text('Responsável Técnico / Segurança (SST)', 151, finalY + 4, { align: 'center' });
+    }
   }
 
   // Rodapé Propaganda TerraGest
-  doc.setDrawColor(226, 232, 240);
-  doc.line(14, 285, 196, 285);
-  doc.setFontSize(7.5);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(16, 185, 129);
-  doc.text('TerraGest ERP Linha Amarela', 14, 290);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(100, 116, 139);
-  doc.text(` • ${SITE_TERRAGEST}`, 56, 290);
+  desenharRodapeTerraGest(doc, 1, 1);
 
   const sanitizado = (colaborador.nome || 'colaborador').toLowerCase().replace(/[^a-z0-9]/g, '_');
   doc.save(`ficha_epi_${sanitizado}.pdf`);

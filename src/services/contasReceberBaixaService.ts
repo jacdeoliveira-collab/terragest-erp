@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 import type { FormaPagamentoTitulo } from '../types/faturamento.types';
 import type { AdiantamentoItem } from '../types/servicoHorimetro.types';
 import { parseParcelaRef, liquidarParcelaReceber } from './contasReceberParcelaBaixa';
+import { registrarQuitacaoIntegralServico } from './servicoQuitacaoHelper';
 
 function extrairRefServico(idOuObs: string): string {
   if (idOuObs.startsWith('serv_')) return idOuObs.replace('serv_', '');
@@ -25,11 +26,7 @@ export async function liquidarTituloReceber(
     const realId = isServicoId ? id.replace('serv_', '') : id;
 
     if (isServicoId) {
-      await supabase.from('servicos_horimetro').update({
-        status_pagamento_cliente: 'QUITADO',
-        saldo_restante: 0,
-        updated_at: new Date().toISOString()
-      }).eq('id', realId);
+      await registrarQuitacaoIntegralServico(realId, dataPagamento, formaPagamento);
 
       await supabase.from('medicoes').update({
         status_pagamento: 'PAGO',
@@ -54,11 +51,7 @@ export async function liquidarTituloReceber(
       if (med?.observacoes) {
         const servId = extrairRefServico(med.observacoes);
         if (servId && servId !== med.observacoes) {
-          await supabase.from('servicos_horimetro').update({
-            status_pagamento_cliente: 'QUITADO',
-            saldo_restante: 0,
-            updated_at: new Date().toISOString()
-          }).eq('id', servId);
+          await registrarQuitacaoIntegralServico(servId, dataPagamento, formaPagamento);
         }
       }
     }

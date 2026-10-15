@@ -38,7 +38,7 @@ export function useCupomFormState({ equipments, onSuccess, onClose }: Props) {
   const [erro, setErro] = useState<string | null>(null);
 
   const aplicarDadosExtraidos = (dados: DadosCupomExtraidos) => {
-    setData(dados.data || '2026-10-05');
+    if (dados.data) setData(dados.data);
     if (dados.postoFornecedor) setPostoFornecedor(dados.postoFornecedor);
     if (dados.formaPagamento) setFormaPagamento(dados.formaPagamento);
     if (dados.numeroDocumento) setNumeroDoc(dados.numeroDocumento);
@@ -47,27 +47,22 @@ export function useCupomFormState({ equipments, onSuccess, onClose }: Props) {
       const itMaq = dados.itens.find((it) => it.tipo === 'DIESEL_S500') || dados.itens[0];
       const itApoio = dados.itens.find((it) => it.tipo === 'DIESEL_S10') || dados.itens[1];
       setTipoCombMaq(itMaq.tipo);
-      setLitrosMaq(itMaq.litros > 0 ? itMaq.litros : 350.32);
-      setValorMaq(itMaq.valorTotal > 0 ? itMaq.valorTotal : 2480.27);
+      setLitrosMaq(itMaq.litros || 0);
+      setValorMaq(itMaq.valorTotal || 0);
 
       setIncluirApoio(true);
       setTipoCombApoio(itApoio.tipo);
-      setLitrosApoio(itApoio.litros > 0 ? itApoio.litros : 50.08);
-      setValorApoio(itApoio.valorTotal > 0 ? itApoio.valorTotal : 364.58);
+      setLitrosApoio(itApoio.litros || 0);
+      setValorApoio(itApoio.valorTotal || 0);
     } else if (dados.itens && dados.itens.length === 1) {
       const it = dados.itens[0];
       setTipoCombMaq(it.tipo);
-      setLitrosMaq(it.litros);
-      setValorMaq(it.valorTotal);
+      setLitrosMaq(it.litros || 0);
+      setValorMaq(it.valorTotal || 0);
     } else {
       if (dados.tipoCombustivel) setTipoCombMaq(dados.tipoCombustivel);
       if (dados.litros) setLitrosMaq(dados.litros);
-      if (dados.valorTotal) {
-        setValorMaq(dados.valorTotal);
-        if (!dados.litros || dados.litros <= 0) {
-          setLitrosMaq(parseFloat((dados.valorTotal / 7.15).toFixed(2)));
-        }
-      }
+      if (dados.valorTotal) setValorMaq(dados.valorTotal);
     }
   };
 

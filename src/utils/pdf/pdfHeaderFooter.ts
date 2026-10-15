@@ -80,6 +80,8 @@ export function desenharBoxIdentificacao(doc: jsPDF, servico: ServicoHorimetro):
   }
 }
 
+import { TERRAGEST_LOGO_ICON_BASE64 } from './terragestLogoBase64';
+
 export function adicionarRodape(doc: jsPDF, pageNumber: number): void {
   const pageHeight = 297;
   const lineY = pageHeight - 12;
@@ -87,17 +89,21 @@ export function adicionarRodape(doc: jsPDF, pageNumber: number): void {
   doc.setDrawColor(229, 231, 235);
   doc.line(14, lineY, 196, lineY);
 
+  try {
+    doc.addImage(TERRAGEST_LOGO_ICON_BASE64, 'PNG', 14, lineY + 1.2, 5, 5);
+  } catch {}
+
   doc.setFontSize(7.5);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(16, 185, 129);
-  doc.text('TerraGest ERP Linha Amarela', 14, lineY + 5);
+  doc.text('TerraGest ERP Linha Amarela', 20.5, lineY + 4.8);
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 116, 139);
-  doc.text(` • ${SITE_TERRAGEST}`, 56, lineY + 5);
+  doc.text(` • ${SITE_TERRAGEST}`, 62.5, lineY + 4.8);
 
   const paginacao = `Página ${pageNumber} de ${TOTAL_PAGES_EXP}`;
-  doc.text(paginacao, 196, lineY + 5, { align: 'right' });
+  doc.text(paginacao, 196, lineY + 4.8, { align: 'right' });
 }
 
 export function aplicarRodapeTodasPaginas(doc: jsPDF): void {

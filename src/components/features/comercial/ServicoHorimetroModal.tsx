@@ -9,6 +9,7 @@ import { ServicoModalBody } from './modal/ServicoModalBody';
 import { ServicoModalFooter } from './modal/ServicoModalFooter';
 import { ClienteModal } from './ClienteModal';
 import { NovoEquipamentoModal } from './modal/NovoEquipamentoModal';
+import { ConfirmarConclusaoSemHorimetroModal } from './modal/ConfirmarConclusaoSemHorimetroModal';
 import type { Cliente } from '../../../types/comercial.types';
 import type { ServicoHorimetro } from '../../../types/servicoHorimetro.types';
 
@@ -28,6 +29,7 @@ export const ServicoHorimetroModal: React.FC<ServicoHorimetroModalProps> = ({
   const [modalClienteAberto, setModalClienteAberto] = useState(false);
   const [clienteParaEditar, setClienteParaEditar] = useState<Cliente | null>(null);
   const [modalMaquinaAberto, setModalMaquinaAberto] = useState(false);
+  const [modalAvisoSemHorimetro, setModalAvisoSemHorimetro] = useState(false);
 
   const state = useServicoHorimetroModalState(servicoParaEditar, funcionarios, onSave, onClose);
   if (!isOpen) return null;
@@ -53,6 +55,20 @@ export const ServicoHorimetroModal: React.FC<ServicoHorimetroModalProps> = ({
       state.setClienteTelefone(res.data.telefone || '');
     }
     return res.success;
+  };
+
+  const handleTentarConcluir = () => {
+    const semHorimetroFinal = state.maquinasItens.length > 0
+      ? state.maquinasItens.some(
+          (m) => m.horimetro_final === undefined || m.horimetro_final === null || Number(m.horimetro_final) <= 0
+        )
+      : true;
+
+    if (semHorimetroFinal) {
+      setModalAvisoSemHorimetro(true);
+      return;
+    }
+    state.handleSalvar(true);
   };
 
   return (
@@ -81,10 +97,23 @@ export const ServicoHorimetroModal: React.FC<ServicoHorimetroModalProps> = ({
         <ServicoModalFooter
           onClose={onClose} salvando={state.salvando}
           onSalvarEmAndamento={() => state.handleSalvar(false)}
-          onConcluirServico={() => state.handleSalvar(true)}
+          onConcluirServico={handleTentarConcluir}
         />
       </div>
 
+      <ConfirmarConclusaoSemHorimetroModal
+        isOpen={modalAvisoSemHorimetro}
+        clienteNome={state.clienteNome}
+        maquinaNome={state.maquinaNome}
+        onVoltar={() => {
+          setModalAvisoSemHorimetro(false);
+          state.setAba('horimetros');
+        }}
+        onConfirmarConclusao={() => {
+          setModalAvisoSemHorimetro(false);
+          state.handleSalvar(true);
+        }}
+      />
       <ClienteModal
         isOpen={modalClienteAberto} onClose={() => setModalClienteAberto(false)}
         clienteParaEditar={clienteParaEditar} onSalvar={handleSalvarCliente}

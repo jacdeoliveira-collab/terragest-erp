@@ -3,7 +3,7 @@ import { User, HardHat, LogOut, ChevronDown, Building2 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useObraContext } from '../../contexts/ObraContext';
 import { useTenantContext } from '../../contexts/TenantContext';
-import { AlertasManutencaoBell } from './AlertasManutencaoBell';
+import { CentralAlertasBell } from './CentralAlertasBell';
 
 export const Header: React.FC = () => {
   const { user, logout } = useAuth();
@@ -103,7 +103,7 @@ export const Header: React.FC = () => {
 
       {/* PERFIL & LOGOUT */}
       <div className="flex items-center gap-4">
-        <AlertasManutencaoBell />
+        <CentralAlertasBell />
         <div className="flex items-center gap-2 pl-3 border-l border-gray-200">
           <div className="w-8 h-8 rounded-full bg-slate-100 border border-gray-200 flex items-center justify-center text-slate-700">
             <User className="w-4 h-4" />

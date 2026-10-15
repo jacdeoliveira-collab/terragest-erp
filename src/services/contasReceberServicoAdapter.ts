@@ -11,7 +11,7 @@ export function converterServicoParaTitulos(
   const saldo = s.saldo_restante !== undefined ? Number(s.saldo_restante) : Math.max(0, bruto - adiantamento);
   if (bruto <= 0 && saldo <= 0) return [];
 
-  const isQuitado = s.status_pagamento_cliente === 'QUITADO' || saldo <= 0;
+  const isQuitado = s.status_pagamento_cliente === 'QUITADO' || saldo <= 0.05;
   const nomeObra = obraNome || (s.maquina_nome ? `Serviço - ${s.maquina_nome}` : 'Serviço Comercial');
   const baseEmissao = s.data_inicio || new Date().toISOString().slice(0, 10);
   const parcelas = Array.isArray(s.parcelas) ? s.parcelas : [];

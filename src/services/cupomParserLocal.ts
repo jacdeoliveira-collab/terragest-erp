@@ -25,45 +25,60 @@ export interface DadosCupomExtraidos {
 
 function extrairData(texto: string): string | undefined {
   const t = texto.replace(/(\d)[Oo](\d)/g, '$10$2');
-  const matchData = t.match(/\b(\d{2})[\/\-\.](\d{2}|f0r)[\/\-\.](202\d|\d{2})\b/i);
+  const matchEm = t.match(/Em\s*(\d{1,2})\s*[\/\-\.\s]\s*(\d{1,2})\s*[\/\-\.\s]\s*(\d{2,4})/i);
+  if (matchEm) {
+    let a = matchEm[3];
+    if (a.length === 2) a = `20${a}`;
+    return `${a}-${matchEm[2].padStart(2, '0')}-${matchEm[1].padStart(2, '0')}`;
+  }
+  const matchData = t.match(/\b(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](202\d|\d{2})\b/i);
   if (matchData) {
     let a = matchData[3];
     if (a.length === 2) a = `20${a}`;
-    const m = matchData[2].toLowerCase().includes('f0r') ? '10' : matchData[2];
-    return `${a}-${m.padStart(2, '0')}-${matchData[1].padStart(2, '0')}`;
-  }
-  if (texto.includes('2026') && (texto.includes('10/') || texto.includes('/10/'))) {
-    return '2026-10-05';
+    return `${a}-${matchData[2].padStart(2, '0')}-${matchData[1].padStart(2, '0')}`;
   }
   return undefined;
 }
 
-function extrairItens(linhas: string[], totalGeral?: number): ItemCupomExtraido[] {
+function parseNum(val: string): number {
+  return parseFloat(val.replace(/\s/g, '').replace(/\./g, '').replace(',', '.'));
+}
+
+function extrairItens(linhas: string[]): ItemCupomExtraido[] {
   const itens: ItemCupomExtraido[] = [];
-  for (let i = 0; i < linhas.length; i++) {
-    const l = linhas[i];
-    const isS500 = /(?:DIESEL|OLEO|OELO|EO)[\s\S]{0,10}[\$S5][560][0oO]|S-?500|COMUM/i.test(l);
-    const isS10 = /(?:DIESEL|OLEO|OELO|EO)[\s\S]{0,10}[\$S5][1iIlLoO0][0oO]|S-?10\b/i.test(l);
-    if (!isS500 && !isS10) continue;
+  for (const l of linhas) {
+    const isS10 = /(?:DIESEL[\s\-]*S[\s\-]*10|S[\s\-]*10\b)/i.test(l);
+    const isComum = /(?:DIESEL[\s\-]*COMUM|DIESEL[\s\-]*S[\s\-]*500|S[\s\-]*500\b|COMUM\b)/i.test(l);
+    if (!isS10 && !isComum) continue;
 
-    const ctx = [l, linhas[i + 1] || '', linhas[i + 2] || ''].join(' ');
-    const valMatches = ctx.match(/\b(\d{2,4}[\.,]\d{1,2})\b/g) || [];
-    let val = 0;
-    for (const vm of valMatches) {
-      const v = parseFloat(vm.replace(',', '.'));
-      if (v > 20 && (!totalGeral || v < totalGeral)) val = Math.max(val, v);
+    const tipo: TipoCombustivel = isS10 ? 'DIESEL_S10' : 'DIESEL_S500';
+    const numMatches = l.match(/\b\d{1,4}(?:[\.,]\d{1,3})*\b/g) || [];
+    const nums = numMatches.map((n) => parseFloat(n.replace(',', '.'))).filter((n) => !isNaN(n) && n > 0);
+
+    let litros = 0;
+    let valorTotal = 0;
+    let valorUnitario: number | undefined;
+
+    const litrosMatch = l.match(/(\d+[\.,]\d{1,2})\s*(?:litros|l\b)/i) || l.match(/(?:litros|l\b)[^\d]*(\d+[\.,]\d{1,2})/i);
+    if (litrosMatch) litros = parseFloat(litrosMatch[1].replace(',', '.'));
+
+    const precoMatch = l.match(/(?:r\$\s*)?([678][\.,]\d{2})\b/i);
+    if (precoMatch) valorUnitario = parseFloat(precoMatch[1].replace(',', '.'));
+
+    const totalMatch = l.match(/(?:r\$\s*)(\d{1,4}(?:[\.,]\d{3})*[\.,]\d{2})\b/i);
+    if (totalMatch) valorTotal = parseNum(totalMatch[1]);
+
+    if (!valorTotal && nums.length >= 2) {
+      const sorted = [...nums].sort((a, b) => b - a);
+      valorTotal = sorted[0];
+      if (!litros && sorted[1]) litros = sorted[1];
+    } else if (!litros && valorTotal && valorUnitario && valorUnitario > 0) {
+      litros = parseFloat((valorTotal / valorUnitario).toFixed(2));
     }
-    if (val > 2400 && val < 2500) val = 2480.27;
-    if (val > 200 && val < 400) val = 364.58;
 
-    const preco = isS500 ? 7.08 : 7.28;
-    const litros = val > 0 ? parseFloat((val / preco).toFixed(2)) : (isS500 ? 350.32 : 50.08);
-
-    itens.push({
-      tipo: isS500 ? 'DIESEL_S500' : 'DIESEL_S10',
-      valorTotal: val,
-      litros
-    });
+    if (litros > 0 || valorTotal > 0) {
+      itens.push({ tipo, litros: litros || 0, valorTotal: valorTotal || 0, valorUnitario });
+    }
   }
   return itens;
 }
@@ -75,16 +90,16 @@ export function analisarTextoCupom(texto: string): DadosCupomExtraidos {
   const linhas = texto.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
 
   // 1. Posto Fornecedor
-  const lPosto = linhas.find((l) => /(posto|auto\s*posto|combust|lider|vasconcelos)/i.test(l));
+  const lPosto = linhas.find((l) => /(posto|auto\s*posto|combust|l[1ií]der|vasconcelos)/i.test(l));
   if (lPosto) {
-    dados.postoFornecedor = lPosto.replace(/[^a-zA-Z0-9\s\.\-]/g, '').trim().slice(0, 50);
-    if (/lider\s*(?:ii|11|2)\b/i.test(dados.postoFornecedor)) {
-      dados.postoFornecedor = dados.postoFornecedor.replace(/lider\s*(?:ii|11|2)\b/i, 'LIDER III');
-    }
+    let nome = lPosto.replace(/[^a-zA-Z0-9\s\.\-]/g, '').trim().slice(0, 50);
+    if (/l[1ií]der\s*0?3\b/i.test(texto)) nome = 'POSTO LIDER 03';
+    else if (/l[1ií]der\s*(?:ii|11|2)\b/i.test(texto)) nome = 'POSTO LIDER II';
+    dados.postoFornecedor = nome;
   }
 
   // 2. Chave de acesso / Número NFC-e
-  const chv = texto.match(/(\d{2,4}[\s\n]+\d{4}[\s\n]+\d{4}[\s\n]+\d{4}[\s\n]+\d{4}[\s\n]+\d{4}[\s\n]+\d{4}[\s\n]+\d{4}[\s\n]+\d{4}[\s\n]+\d{4}[\s\n]+\d{4})/);
+  const chv = texto.match(/(\d{4}[\s\n]*\d{4}[\s\n]*\d{4}[\s\n]*\d{4}[\s\n]*\d{4}[\s\n]*\d{4}[\s\n]*\d{4}[\s\n]*\d{4}[\s\n]*\d{4}[\s\n]*\d{4}[\s\n]*\d{4})/);
   if (chv) dados.chaveAcesso = chv[0].replace(/\D/g, '');
   const nf = texto.match(/NFC-?[ea]?\s*n?[ºo]?\s*(\d{1,3}\.?\d{3}\.?\d{3}|\d{3,9})/i);
   if (nf) dados.numeroDocumento = `NFC-e ${nf[1].replace(/\./g, '')}`;
@@ -96,21 +111,25 @@ export function analisarTextoCupom(texto: string): DadosCupomExtraidos {
   else if (/BOLETO/i.test(texto)) dados.formaPagamento = 'BOLETO';
   else if (/DINHEIRO|ESPECIE/i.test(texto)) dados.formaPagamento = 'OUTRO';
 
-  // 4. Valor Total (Filtra tributos)
-  const lSemTrib = linhas.filter((l) => !/TRIB|IBPT|IMPOSTO|APROX|ICMS\s+MONO|BASE\s+C[AÁ]LC|EST\b|FED\b|MUN\b/i.test(l));
-  const cands: Array<{ num: number; l: string }> = [];
-  for (const l of lSemTrib) {
-    const ms = l.match(/\b\d{1,4}(?:[\.,]\d{3})*[\.,]\d{2}\b/g) || [];
-    for (const m of ms) {
-      const num = parseFloat(m.replace(/\./g, '').replace(',', '.'));
-      if (!isNaN(num) && num > 50 && num < 100000) cands.push({ num, l });
+  // 4. Valor Total
+  const matchTotal = texto.match(/TOTAL\s*(?:R\$\s*)?(\d{1,4}(?:[\.,]\d{3})*[\.,]\d{2})/i);
+  if (matchTotal) {
+    dados.valorTotal = parseNum(matchTotal[1]);
+  } else {
+    const lSemTrib = linhas.filter((l) => !/TRIB|IBPT|IMPOSTO|APROX|ICMS|BASE/i.test(l));
+    const cands: number[] = [];
+    for (const l of lSemTrib) {
+      const ms = l.match(/\b\d{1,4}(?:[\.,]\d{3})*[\.,]\d{2}\b/g) || [];
+      for (const m of ms) {
+        const num = parseNum(m);
+        if (!isNaN(num) && num > 10 && num < 100000) cands.push(num);
+      }
     }
+    if (cands.length > 0) dados.valorTotal = Math.max(...cands);
   }
-  const pix = cands.find((c) => /PIX|TOTAL|PAGAR|PAGO|KENS/i.test(c.l));
-  dados.valorTotal = pix ? pix.num : (cands.length > 0 ? Math.max(...cands.map((c) => c.num)) : undefined);
 
   // 5. Itens de Combustível
-  dados.itens = extrairItens(linhas, dados.valorTotal);
+  dados.itens = extrairItens(linhas);
   if (dados.itens.length > 0) {
     dados.tipoCombustivel = dados.itens[0].tipo;
     dados.litros = dados.itens[0].litros;

@@ -1,12 +1,14 @@
 import React from 'react';
-import { Truck } from 'lucide-react';
+import { Truck, CheckCircle2 } from 'lucide-react';
 import type { ServicoHorimetro } from '../../../../types/servicoHorimetro.types';
+import type { FuncionarioRemuneracaoItem } from '../../../../types/funcionarioHistorico.types';
 
 interface Props {
   servicos: ServicoHorimetro[];
+  onQuitarItem?: (item: FuncionarioRemuneracaoItem) => void;
 }
 
-export const OperadorHistoricoServicosTable: React.FC<Props> = ({ servicos }) => {
+export const OperadorHistoricoServicosTable: React.FC<Props> = ({ servicos, onQuitarItem }) => {
   if (servicos.length === 0) {
     return (
       <div className="p-8 text-center text-xs text-gray-400 bg-gray-50/50 rounded-xl border border-gray-100">
@@ -28,6 +30,7 @@ export const OperadorHistoricoServicosTable: React.FC<Props> = ({ servicos }) =>
             <th className="py-2.5 px-3 text-right">Vales/Adiant.</th>
             <th className="py-2.5 px-3 text-right">Saldo Restante</th>
             <th className="py-2.5 px-3 text-center">Status</th>
+            <th className="py-2.5 px-3 text-center">Ações</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
@@ -68,6 +71,35 @@ export const OperadorHistoricoServicosTable: React.FC<Props> = ({ servicos }) =>
                   }`}>
                     {statusPago ? 'PAGO' : 'PENDENTE'}
                   </span>
+                </td>
+                <td className="py-2.5 px-3 text-center">
+                  {onQuitarItem && (
+                    <button
+                      type="button"
+                      onClick={() => onQuitarItem({
+                        servicoId: s.id,
+                        data: s.data_inicio,
+                        clienteNome: s.cliente_nome,
+                        maquinaNome: s.maquina_nome,
+                        horasTrabalhadas: h,
+                        valorHora: vHoraOp,
+                        totalGanho: remun,
+                        valorAdiantado: vale,
+                        saldoRestante: saldo,
+                        status: statusPago ? 'PAGO' : 'PENDENTE',
+                        dataPagamento: s.data_pagamento_operador
+                      })}
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold cursor-pointer border ${
+                        statusPago
+                          ? 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-gray-200'
+                          : 'bg-emerald-600 text-white hover:bg-emerald-700 border-emerald-600 shadow-2xs'
+                      }`}
+                      title={statusPago ? 'Ver/Alterar Pagamento' : 'Dar Vale / Quitar'}
+                    >
+                      <CheckCircle2 className="w-3 h-3" />
+                      <span>{statusPago ? 'Ver/Editar' : 'Dar Vale'}</span>
+                    </button>
+                  )}
                 </td>
               </tr>
             );

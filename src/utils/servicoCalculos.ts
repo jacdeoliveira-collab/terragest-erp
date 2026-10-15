@@ -43,7 +43,7 @@ export function calcularMetricasServico(input: ServicoCalculosInput) {
   const saldoRestanteCliente = Number(Math.max(0, faturamentoBruto - adiantamentoCli).toFixed(2));
   const statusPagamentoCliente: 'PENDENTE' | 'PARCIAL' | 'QUITADO' = faturamentoBruto === 0
     ? 'PENDENTE'
-    : (adiantamentoCli >= faturamentoBruto ? 'QUITADO' : (adiantamentoCli > 0 ? 'PARCIAL' : 'PENDENTE'));
+    : (adiantamentoCli >= faturamentoBruto || saldoRestanteCliente <= 0.05 ? 'QUITADO' : (adiantamentoCli > 0 ? 'PARCIAL' : 'PENDENTE'));
 
   return {
     horasTrabalhadas,
@@ -71,7 +71,14 @@ export function calcularTotaisListaServicos(lista: any[]) {
       ? s.adiantamentos_historico.reduce((sum: number, h: any) => sum + (Number(h.valor) || 0), 0) : 0;
     return acc + Math.max(Number(s.valor_adiantamento || 0), hist);
   }, 0);
-  const saldoAReceberTotal = Math.max(0, Number((faturamentoTotal - totalRecebido).toFixed(2)));
+  const saldoAReceberTotal = lista.reduce((acc, s) => {
+    const fat = Number(s.faturamento_bruto) || 0;
+    const hist = Array.isArray(s.adiantamentos_historico) && s.adiantamentos_historico.length > 0
+      ? s.adiantamentos_historico.reduce((sum: number, h: any) => sum + (Number(h.valor) || 0), 0) : 0;
+    const adiant = Math.max(Number(s.valor_adiantamento || 0), hist);
+    const isQuit = s.status_pagamento_cliente === 'QUITADO' || (fat > 0 && (fat - adiant) <= 0.05);
+    return acc + (isQuit ? 0 : Math.max(0, Number((fat - adiant).toFixed(2))));
+  }, 0);
 
   return { totalHoras, faturamentoTotal, combustivelTotal, despesasTotal, lucroLiquidoTotal, totalRecebido, saldoAReceberTotal };
 }

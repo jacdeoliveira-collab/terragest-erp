@@ -23,9 +23,8 @@ export const ContasPagar: React.FC = () => {
     dataPagamento: string,
     formaPagamento: FormaPagamentoDespesa,
     contaBancariaId?: string
-  ): Promise<boolean> => {
-    const res = await darBaixa(id, dataPagamento, formaPagamento, contaBancariaId);
-    return res.success;
+  ): Promise<{ success: boolean; error?: string }> => {
+    return await darBaixa(id, dataPagamento, formaPagamento, contaBancariaId);
   };
 
   return (

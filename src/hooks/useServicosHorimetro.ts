@@ -9,21 +9,7 @@ import { gerarUuidV4 } from '../utils/uuid';
 import { calcularTotaisListaServicos } from '../utils/servicoCalculos';
 import type { ServicoHorimetro } from '../types/servicoHorimetro.types';
 
-function obterKeyStorage(tId: string | null): string {
-  return `terragest_servicos_horimetro_${tId || DEFAULT_LEGACY_TENANT}`;
-}
-
-function obterServicosCache(tId: string | null): ServicoHorimetro[] {
-  try {
-    const r = localStorage.getItem(obterKeyStorage(tId)) || localStorage.getItem('terragest_servicos_horimetro');
-    const parsed = r ? JSON.parse(r) : [];
-    if (Array.isArray(parsed)) {
-      sincronizarAdiantamentosServicos(parsed);
-      return deduplicarServicos(parsed).lista;
-    }
-  } catch {}
-  return [];
-}
+import { salvarServicosCache, obterServicosCache } from './servicosStorageCache';
 
 export function useServicosHorimetro() {
   const { tenantAtivoId } = useTenantContext();
@@ -31,9 +17,9 @@ export function useServicosHorimetro() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const carregarServicos = useCallback(async () => {
+  const carregarServicos = useCallback(async (silencioso = false) => {
     try {
-      setIsLoading(true);
+      if (!silencioso) setIsLoading(true);
       setError(null);
       const { data: userData } = await supabase.auth.getUser();
       const tId = tenantAtivoId || (userData?.user?.user_metadata?.tenant_id as string | undefined) || DEFAULT_LEGACY_TENANT;
@@ -47,7 +33,7 @@ export function useServicosHorimetro() {
         const { lista } = deduplicarServicos(mesclados);
         sincronizarAdiantamentosServicos(lista);
         setServicos(lista);
-        localStorage.setItem(obterKeyStorage(tId), JSON.stringify(lista));
+        salvarServicosCache(tId, lista);
 
         const idsRemotos = new Set(data.map((r) => r.id));
         locais.filter((l) => !idsRemotos.has(l.id)).forEach((p) => persistirServicoSupabase({ ...p, tenant_id: p.tenant_id || tId }).catch(() => {}));
@@ -56,7 +42,7 @@ export function useServicosHorimetro() {
     } catch (err: unknown) {
       console.warn('Aviso ao carregar serviços por horímetro:', err);
     } finally {
-      setIsLoading(false);
+      if (!silencioso) setIsLoading(false);
     }
   }, [tenantAtivoId]);
 
@@ -92,7 +78,7 @@ export function useServicosHorimetro() {
       if (finalIdx >= 0) currentList[finalIdx] = finalUpdated;
       const { lista } = deduplicarServicos(currentList);
       setServicos(lista);
-      localStorage.setItem(obterKeyStorage(tId), JSON.stringify(lista));
+      salvarServicosCache(tId, lista);
       return { success: true, data: finalUpdated };
     } catch (err: unknown) {
       return { success: false, error: err instanceof Error ? err.message : 'Erro ao salvar serviço' };
@@ -104,7 +90,7 @@ export function useServicosHorimetro() {
       const tId = tenantAtivoId || DEFAULT_LEGACY_TENANT;
       const filtered = servicos.filter((s) => s.id !== id);
       setServicos(filtered);
-      localStorage.setItem(obterKeyStorage(tId), JSON.stringify(filtered));
+      salvarServicosCache(tId, filtered);
 
       await supabase.from('servicos_horimetro').delete().eq('id', id);
       await supabase.from('medicoes').delete().ilike('observacoes', `%[REF:${id}]%`);
@@ -118,23 +104,34 @@ export function useServicosHorimetro() {
 
   useEffect(() => {
     setServicos(obterServicosCache(tenantAtivoId));
-    carregarServicos();
+    carregarServicos(false);
 
-    const handleFocus = () => carregarServicos();
-    window.addEventListener('focus', handleFocus);
-    window.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') carregarServicos();
-    });
+    let ultimoCarregamento = Date.now();
+    const handleRevalidar = () => {
+      if (Date.now() - ultimoCarregamento < 15000) return;
+      ultimoCarregamento = Date.now();
+      carregarServicos(true);
+    };
 
-    const ch = supabase.channel(`rt_servicos_${tenantAtivoId || 'global'}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'servicos_horimetro' }, () => {
-        carregarServicos();
-      })
-      .subscribe();
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') handleRevalidar();
+    };
+
+    window.addEventListener('focus', handleRevalidar);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    const channelName = `rt_serv_${tenantAtivoId || 'glb'}_${Math.random().toString(36).slice(2, 8)}`;
+    const ch = supabase.channel(channelName);
+    try {
+      ch.on('postgres_changes', { event: '*', schema: 'public', table: 'servicos_horimetro' }, () => {
+        carregarServicos(true);
+      }).subscribe();
+    } catch {}
 
     return () => {
-      window.removeEventListener('focus', handleFocus);
-      supabase.removeChannel(ch);
+      window.removeEventListener('focus', handleRevalidar);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      try { supabase.removeChannel(ch); } catch {}
     };
   }, [tenantAtivoId, carregarServicos]);
 

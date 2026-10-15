@@ -1,5 +1,6 @@
 import React from 'react';
 import { Camera, Upload, Building, Wrench, Calendar, Store, CreditCard } from 'lucide-react';
+import { abrirVisualizacaoImagem } from '../../../../utils/visualizadorImagem';
 import type { FormaPagamentoDespesa } from '../../../../types/contasPagar.types';
 import type { ServicoHorimetro } from '../../../../types/servicoHorimetro.types';
 import type { Obra } from '../../../../types/obra.types';
@@ -40,9 +41,13 @@ export const CupomDadosGeraisSection: React.FC<CupomDadosGeraisSectionProps> = (
             <Upload className="w-4 h-4 text-emerald-600 shrink-0" />
             <span className="font-medium truncate">Comprovante fiscal anexado com sucesso</span>
           </div>
-          <a href={fotoCupomUrl} target="_blank" rel="noreferrer" className="text-emerald-700 font-bold hover:underline shrink-0 ml-2">
+          <button
+            type="button"
+            onClick={() => abrirVisualizacaoImagem(fotoCupomUrl, 'Comprovante / Cupom Fiscal')}
+            className="text-emerald-700 font-bold hover:underline shrink-0 ml-2 cursor-pointer"
+          >
             Ver Arquivo
-          </a>
+          </button>
         </div>
       )}
 
@@ -53,11 +58,8 @@ export const CupomDadosGeraisSection: React.FC<CupomDadosGeraisSectionProps> = (
             <Calendar className="w-3.5 h-3.5 text-gray-400" /> Data do Abastecimento *
           </label>
           <input
-            type="date"
-            required
-            value={data}
-            onChange={(e) => setData(e.target.value)}
-            className="w-full h-9 px-3 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            type="date" required value={data} onChange={(e) => setData(e.target.value)}
+            className="w-full h-9 px-3 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:ring-2 focus:ring-emerald-500"
           />
         </div>
         <div>
@@ -65,11 +67,8 @@ export const CupomDadosGeraisSection: React.FC<CupomDadosGeraisSectionProps> = (
             <Store className="w-3.5 h-3.5 text-gray-400" /> Posto de Combustível *
           </label>
           <input
-            required
-            placeholder="Ex: Auto Posto Alvorada"
-            value={postoFornecedor}
-            onChange={(e) => setPostoFornecedor(e.target.value)}
-            className="w-full h-9 px-3 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            required placeholder="Ex: Auto Posto Alvorada" value={postoFornecedor} onChange={(e) => setPostoFornecedor(e.target.value)}
+            className="w-full h-9 px-3 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:ring-2 focus:ring-emerald-500"
           />
         </div>
         <div>
@@ -77,11 +76,8 @@ export const CupomDadosGeraisSection: React.FC<CupomDadosGeraisSectionProps> = (
             <CreditCard className="w-3.5 h-3.5 text-gray-400" /> Conta de Saída (Origem) *
           </label>
           <input
-            required
-            placeholder="Ex: Caixa da Obra / Cartão / Cora"
-            value={contaSaida}
-            onChange={(e) => setContaSaida(e.target.value)}
-            className="w-full h-9 px-3 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            required placeholder="Ex: Caixa da Obra / Cartão / Cora" value={contaSaida} onChange={(e) => setContaSaida(e.target.value)}
+            className="w-full h-9 px-3 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:ring-2 focus:ring-emerald-500"
           />
         </div>
       </div>
@@ -121,8 +117,7 @@ export const CupomDadosGeraisSection: React.FC<CupomDadosGeraisSectionProps> = (
             <Building className="w-3.5 h-3.5 text-emerald-600" /> Centro de Custo / Obra
           </label>
           <select
-            value={obraId}
-            onChange={(e) => setObraId(e.target.value)}
+            value={obraId} onChange={(e) => setObraId(e.target.value)}
             className="w-full h-9 px-3 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
           >
             <option value="">Geral / Empresa (Sem obra específica)</option>
@@ -135,11 +130,15 @@ export const CupomDadosGeraisSection: React.FC<CupomDadosGeraisSectionProps> = (
           </label>
           <select
             value={servicoId}
-            onChange={(e) => setServicoId(e.target.value)}
-            className="w-full h-9 px-3 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+            onChange={(e) => {
+              setServicoId(e.target.value);
+              const s = servicos.find((srv) => srv.id === e.target.value);
+              if (s?.obra_id && !obraId) setObraId(s.obra_id);
+            }}
+            className="w-full h-9 px-3 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-medium"
           >
             <option value="">Nenhum (Apenas Frota / Custo Operacional)</option>
-            {servicos.map((s) => (<option key={s.id} value={s.id}>{s.cliente_nome} - {s.maquina_nome}</option>))}
+            {servicos.map((s) => (<option key={s.id} value={s.id}>{s.cliente_nome} — {s.maquina_nome}</option>))}
           </select>
         </div>
       </div>

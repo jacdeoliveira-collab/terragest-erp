@@ -1,6 +1,8 @@
-import React from 'react';
-import { Camera, Trash2, Image as ImageIcon } from 'lucide-react';
+import React, { useState } from 'react';
+import { Camera, Trash2, Image as ImageIcon, Loader2 } from 'lucide-react';
 import type { FotoTrabalhoItem } from '../../../../types/servicoHorimetro.types';
+import { comprimirImagem } from '../../../../services/comprovanteStorageService';
+import { uploadParaGoogleDrive } from '../../../../services/driveService';
 
 interface FotosTrabalhoSectionProps {
   fotos: FotoTrabalhoItem[];
@@ -11,18 +13,19 @@ export const FotosTrabalhoSection: React.FC<FotosTrabalhoSectionProps> = ({
   fotos = [],
   onChangeFotos,
 }) => {
-  // Garantir array com 4 slots
+  const [slotCarregando, setSlotCarregando] = useState<number | null>(null);
+
   const slots: FotoTrabalhoItem[] = [0, 1, 2, 3].map((i) => {
     return fotos[i] || { url: '', legenda: '' };
   });
 
-  const handleUploadSlot = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUploadSlot = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const base64 = ev.target?.result as string;
+    setSlotCarregando(index);
+    try {
+      const base64 = await comprimirImagem(file, 960, 0.65);
       const novas = [...slots];
       novas[index] = {
         ...novas[index],
@@ -31,8 +34,21 @@ export const FotosTrabalhoSection: React.FC<FotosTrabalhoSectionProps> = ({
         timestamp: new Date().toLocaleTimeString('pt-BR'),
       };
       onChangeFotos(novas.filter((f) => f.url));
-    };
-    reader.readAsDataURL(file);
+
+      uploadParaGoogleDrive(file, 'frota').then((res) => {
+        if (res.sucesso && res.driveUrl) {
+          const comDrive = [...novas];
+          if (comDrive[index]) {
+            comDrive[index] = { ...comDrive[index], url: res.driveUrl };
+            onChangeFotos(comDrive.filter((f) => f.url));
+          }
+        }
+      }).catch(() => {});
+    } catch (err) {
+      console.warn('Erro ao processar imagem:', err);
+    } finally {
+      setSlotCarregando(null);
+    }
   };
 
   const handleLegendaChange = (index: number, legenda: string) => {
@@ -67,6 +83,8 @@ export const FotosTrabalhoSection: React.FC<FotosTrabalhoSectionProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {slots.map((slot, idx) => {
           const temFoto = !!slot.url;
+          const estaCarregando = slotCarregando === idx;
+
           return (
             <div
               key={idx}
@@ -77,7 +95,7 @@ export const FotosTrabalhoSection: React.FC<FotosTrabalhoSectionProps> = ({
                   <ImageIcon className="w-3 h-3 text-emerald-600" />
                   Foto {idx + 1}
                 </span>
-                {temFoto && (
+                {temFoto && !estaCarregando && (
                   <button
                     type="button"
                     onClick={() => handleRemover(idx)}
@@ -89,18 +107,19 @@ export const FotosTrabalhoSection: React.FC<FotosTrabalhoSectionProps> = ({
                 )}
               </div>
 
-              {temFoto ? (
+              {estaCarregando ? (
+                <div className="flex flex-col items-center justify-center h-28 border border-gray-200 rounded-lg bg-white">
+                  <Loader2 className="w-6 h-6 text-emerald-600 animate-spin mb-1" />
+                  <span className="text-[11px] text-gray-500 font-medium">Otimizando foto...</span>
+                </div>
+              ) : temFoto ? (
                 <div className="space-y-2">
                   <div className="relative h-28 w-full rounded-lg overflow-hidden border border-gray-200 bg-black/5">
-                    <img
-                      src={slot.url}
-                      alt={`Foto ${idx + 1}`}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={slot.url} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
                   </div>
                   <input
                     type="text"
-                    placeholder="Digite a legenda da foto (ex: Abertura de vala no trecho A)..."
+                    placeholder="Digite a legenda da foto..."
                     value={slot.legenda}
                     onChange={(e) => handleLegendaChange(idx, e.target.value)}
                     className="w-full p-1.5 border border-gray-300 rounded-lg text-xs bg-white focus:ring-1 focus:ring-emerald-500 focus:outline-none"
@@ -111,12 +130,7 @@ export const FotosTrabalhoSection: React.FC<FotosTrabalhoSectionProps> = ({
                   <Camera className="w-6 h-6 text-gray-400 mb-1" />
                   <span className="text-[11px] font-semibold text-gray-600">Clique para anexar foto</span>
                   <span className="text-[9px] text-gray-400">JPG, PNG ou foto da câmera</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => handleUploadSlot(idx, e)}
-                  />
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadSlot(idx, e)} />
                 </label>
               )}
             </div>

@@ -3,15 +3,19 @@ import { comprimirImagem } from '../../../../services/comprovanteStorageService'
 import { extrairTextoDeImagem } from '../../../../services/imageOcrExtractor';
 import { uploadParaGoogleDrive } from '../../../../services/driveService';
 import { analisarPainelHorimetro } from '../../../../services/painelHorimetroParser';
+import { escanearQrCodeArquivo } from '../../../../services/qrCodeScanner';
+import { analisarTextoCupom, type DadosCupomExtraidos } from '../../../../services/cupomParserLocal';
 
 interface UsePainelUploadReaderProps {
   onHorimetroDetectado: (valor: number, campo: 'inicial' | 'final', maquinaId?: string) => void;
   onAlertaDetectado: (alerta: string) => void;
+  onCupomDetectado?: (dados: DadosCupomExtraidos) => void;
 }
 
 export function usePainelUploadReader({
   onHorimetroDetectado,
-  onAlertaDetectado
+  onAlertaDetectado,
+  onCupomDetectado
 }: UsePainelUploadReaderProps) {
   const [uploadingImage, setUploadingImage] = useState<string | null>(null);
   const [mensagemOcr, setMensagemOcr] = useState<string | null>(null);
@@ -27,7 +31,6 @@ export function usePainelUploadReader({
     setUploadingImage(fieldName);
     setMensagemOcr(null);
 
-    // 1. Comprime a imagem imediatamente para exibição e salvamento local leve
     let imagemBase64 = '';
     try {
       imagemBase64 = await comprimirImagem(file);
@@ -43,57 +46,54 @@ export function usePainelUploadReader({
       reader.readAsDataURL(file);
     }
 
-    // 2. Reconhecimento OCR Inteligente do Painel da Máquina / Veículo
     const isIni = fieldName === 'inicial' || fieldName.startsWith('ini');
     const isFim = fieldName === 'final' || fieldName.startsWith('fim');
     if (isIni || isFim) {
       const campo: 'inicial' | 'final' = isIni ? 'inicial' : 'final';
       const maquinaId = fieldName.includes('_') ? fieldName.substring(fieldName.indexOf('_') + 1) : undefined;
       try {
-        const imagemParaOcr = imagemBase64 || file;
-        const textoExtraido = await extrairTextoDeImagem(imagemParaOcr);
+        const textoExtraido = await extrairTextoDeImagem(imagemBase64 || file);
         if (textoExtraido && textoExtraido.trim().length > 0) {
           const dados = analisarPainelHorimetro(textoExtraido);
-
           if (dados.horimetro !== undefined) {
             onHorimetroDetectado(dados.horimetro, campo, maquinaId);
-            setMensagemOcr(
-              `Leitura do painel realizada! Horímetro ${campo} identificado: ${dados.horimetro}`
-            );
+            setMensagemOcr(`Leitura realizada! Horímetro ${campo}: ${dados.horimetro}`);
           } else {
-            setMensagemOcr('Foto anexada. Digite o horímetro se o reflexo impediu a leitura automática.');
+            setMensagemOcr('Foto anexada. Digite o horímetro se o reflexo impediu a leitura.');
           }
-
-          if (dados.alertaPainel) {
-            onAlertaDetectado(dados.alertaPainel);
-          }
-        } else {
-          setMensagemOcr('Foto anexada. Digite o horímetro se o reflexo impediu a leitura automática.');
+          if (dados.alertaPainel) onAlertaDetectado(dados.alertaPainel);
         }
-      } catch (ocrErr) {
-        console.warn('OCR do painel completou sem leitura automática:', ocrErr);
-        setMensagemOcr('Foto anexada. Digite o valor do horímetro caso não tenha sido preenchido.');
+      } catch {
+        setMensagemOcr('Foto anexada. Digite o valor do horímetro se necessário.');
+      }
+    } else if (fieldName === 'cupom' || fieldName.startsWith('cupom')) {
+      try {
+        let qrDados = null;
+        if (file.type.startsWith('image/')) qrDados = await escanearQrCodeArquivo(file);
+        const textoExtraido = await extrairTextoDeImagem(imagemBase64 || file);
+        const dados = analisarTextoCupom(textoExtraido || '');
+        if (qrDados) {
+          if (qrDados.valorTotal && !dados.valorTotal) dados.valorTotal = qrDados.valorTotal;
+          if (qrDados.numeroDocumento) dados.numeroDocumento = qrDados.numeroDocumento;
+          if (!dados.data && qrDados.data) dados.data = qrDados.data;
+        }
+        if (dados.valorTotal || dados.litros || (dados.itens && dados.itens.length > 0)) {
+          onCupomDetectado?.(dados);
+          setMensagemOcr(`Cupom fiscal lido com sucesso!`);
+        }
+      } catch (err) {
+        console.warn('OCR do cupom:', err);
       }
     }
 
-    // 3. Tenta salvar no Google Drive caso a API esteja ativa no projeto
     try {
       const res = await uploadParaGoogleDrive(file, 'frota');
-      if (res.sucesso && res.driveUrl) {
-        setter(res.driveUrl);
-      }
-      // Se falhar no Drive (ex: API não ativada na GCP), a imagem já está salva em alta qualidade no estado/serviço
+      if (res.sucesso && res.driveUrl) setter(res.driveUrl);
     } catch {
-      // Ignora silenciosamente para não emitir alerta de console técnico ao operador
     } finally {
       setUploadingImage(null);
     }
   };
 
-  return {
-    uploadingImage,
-    mensagemOcr,
-    setMensagemOcr,
-    handleImageUpload
-  };
+  return { uploadingImage, mensagemOcr, setMensagemOcr, handleImageUpload };
 }

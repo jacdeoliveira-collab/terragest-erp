@@ -14,7 +14,7 @@ async function preProcessarImagemParaOcr(arquivo: File | Blob | string | HTMLCan
     if (!ctx) return arquivo;
 
     // Resolução calibrada para OCR rápido sem estourar memória em celulares
-    const maxDim = 1600;
+    const maxDim = 1100;
     let width = bitmap.width;
     let height = bitmap.height;
 
@@ -48,7 +48,7 @@ async function preProcessarImagemParaOcr(arquivo: File | Blob | string | HTMLCan
     }
 
     ctx.putImageData(imgData, 0, 0);
-    return canvas;
+    return canvas.toDataURL('image/jpeg', 0.85);
   } catch (err: unknown) {
     console.warn('Fallback para imagem original sem pré-processamento:', err);
     return arquivo;
@@ -67,15 +67,15 @@ export async function extrairTextoDeImagem(
     if (onProgress) onProgress(100);
     return ret.data.text || '';
   } catch (err: unknown) {
-    console.warn('Tentando OCR com fallback eng:', err);
+    console.warn('Tentando OCR com fallback eng ou seguro:', err);
     try {
-      if (worker) await worker.terminate();
+      if (worker) await worker.terminate().catch(() => {});
       worker = await createWorker('eng');
       const ret = await worker.recognize(arquivo);
       return ret.data.text || '';
     } catch (fallbackErr: unknown) {
-      const msg = fallbackErr instanceof Error ? fallbackErr.message : 'Falha ao executar OCR';
-      throw new Error(`Erro no reconhecimento ótico da imagem: ${msg}`);
+      console.warn('Falha suave no reconhecimento ótico (não bloqueia upload):', fallbackErr);
+      return '';
     }
   } finally {
     if (worker) {

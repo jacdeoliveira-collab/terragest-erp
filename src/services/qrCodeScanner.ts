@@ -51,14 +51,26 @@ export async function escanearQrCodeArquivo(arquivo: File): Promise<DadosNfceQrC
 
   try {
     const bitmap = await createImageBitmap(arquivo);
+    const maxDim = 1000;
+    let w = bitmap.width;
+    let h = bitmap.height;
+    if (w > maxDim || h > maxDim) {
+      if (w > h) {
+        h = Math.round((h * maxDim) / w);
+        w = maxDim;
+      } else {
+        w = Math.round((w * maxDim) / h);
+        h = maxDim;
+      }
+    }
     const canvas = document.createElement('canvas');
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
+    canvas.width = w;
+    canvas.height = h;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
 
-    ctx.drawImage(bitmap, 0, 0);
+    ctx.drawImage(bitmap, 0, 0, w, h);
 
     // 1. Tentar com BarcodeDetector nativo do navegador (se suportado)
     if ('BarcodeDetector' in window) {

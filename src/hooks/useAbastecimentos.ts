@@ -7,17 +7,7 @@ import { removerDespesaAbastecimento, ressincronizarDespesaAbastecimento } from 
 import type { AbastecimentoItem } from '../types/abastecimento.types';
 import { aplicarFiltroTenant, DEFAULT_LEGACY_TENANT } from '../utils/tenantFilter';
 
-const getStorageKey = (tId: string) => `terragest_abastecimentos_cache_${tId}`;
-
-function getCached(tId: string): AbastecimentoItem[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const raw = localStorage.getItem(getStorageKey(tId));
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
+import { getStorageKey, getCached } from './abastecimentoStorageCache';
 
 export function useAbastecimentos() {
   const { tenantAtivoId } = useTenantContext();
@@ -107,6 +97,13 @@ export function useAbastecimentos() {
       const { error: err } = await supabase.from('abastecimentos').update(payload).eq('id', id);
       if (err) throw err;
       await ressincronizarDespesaAbastecimento(id);
+      if (updates.servico_id) {
+        const { data: srv } = await supabase.from('servicos_horimetro').select('abastecimentos_ids').eq('id', updates.servico_id).maybeSingle();
+        if (srv) {
+          const ids = Array.from(new Set([...(srv.abastecimentos_ids || []), id]));
+          await supabase.from('servicos_horimetro').update({ abastecimentos_ids: ids, updated_at: new Date().toISOString() }).eq('id', updates.servico_id);
+        }
+      }
       setData((prev) => {
         const novo = prev.map((item) => (item.id === id ? { ...item, ...updates } : item));
         if (typeof window !== 'undefined') localStorage.setItem(getStorageKey(activeTenant), JSON.stringify(novo));

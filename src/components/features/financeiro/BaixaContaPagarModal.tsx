@@ -8,7 +8,12 @@ interface BaixaContaPagarModalProps {
   isOpen: boolean;
   onClose: () => void;
   conta: ContaPagarItem | null;
-  onConfirmar: (id: string, dataPagamento: string, formaPagamento: FormaPagamentoDespesa, contaBancariaId?: string) => Promise<boolean>;
+  onConfirmar: (
+    id: string,
+    dataPagamento: string,
+    formaPagamento: FormaPagamentoDespesa,
+    contaBancariaId?: string
+  ) => Promise<{ success: boolean; error?: string } | boolean>;
 }
 
 const formatBRL = (val: number) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -33,12 +38,15 @@ export const BaixaContaPagarModal: React.FC<BaixaContaPagarModalProps> = ({
     setError(null);
     setIsSubmitting(true);
 
-    const success = await onConfirmar(conta.id, dataPagamento, formaPagamento, contaBancariaId || undefined);
+    const res = await onConfirmar(conta.id, dataPagamento, formaPagamento, contaBancariaId || undefined);
     setIsSubmitting(false);
-    if (success) {
+
+    const isOk = typeof res === 'boolean' ? res : res.success;
+    if (isOk) {
       onClose();
     } else {
-      setError('Falha ao confirmar liquidação do pagamento.');
+      const errMsg = typeof res === 'object' && res.error ? res.error : 'Falha ao confirmar liquidação do pagamento.';
+      setError(errMsg);
     }
   };
 

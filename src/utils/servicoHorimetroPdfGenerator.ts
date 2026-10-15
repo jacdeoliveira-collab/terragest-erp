@@ -11,7 +11,7 @@ import {
   desenharResumoFinanceiro,
   desenharAssinaturas
 } from './pdf/pdfTabelasServico';
-import { prepararImagemParaPdf } from './pdf/pdfImageHelper';
+import { prepararImagemParaPdf, desenharImagemProporcional } from './pdf/pdfImageHelper';
 import { desenharBlocoPagamentoPix } from './pdf/pdfOrcamentoPagamentoBlock';
 import { supabase } from '../lib/supabase';
 
@@ -54,13 +54,13 @@ function desenharSecaoFotos(
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(55, 65, 81);
     doc.text(`1. Horímetro Inicial (${hIni.toFixed(1)} h)`, 14, yFoto + 3);
-    doc.addImage(fotoIni, 'JPEG', 14, yFoto + 4.5, w, fotoHeight);
+    desenharImagemProporcional(doc, fotoIni, 14, yFoto + 4.5, w, fotoHeight);
 
     doc.text(`2. Horímetro Final (${hFim.toFixed(1)} h)`, 76, yFoto + 3);
-    doc.addImage(fotoFim, 'JPEG', 76, yFoto + 4.5, w, fotoHeight);
+    desenharImagemProporcional(doc, fotoFim, 76, yFoto + 4.5, w, fotoHeight);
 
     doc.text(`3. Cupom Combustível`, 138, yFoto + 3);
-    doc.addImage(fotoCupom, 'JPEG', 138, yFoto + 4.5, w, fotoHeight);
+    desenharImagemProporcional(doc, fotoCupom, 138, yFoto + 4.5, w, fotoHeight);
     return yFoto + 4.5 + fotoHeight + 4;
   }
 
@@ -70,14 +70,14 @@ function desenharSecaoFotos(
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(55, 65, 81);
     doc.text(`1. Horímetro Inicial: ${hIni.toFixed(1)} h`, 14, yFoto + 3.5);
-    doc.addImage(fotoIni, 'JPEG', 14, yFoto + 5, w, fotoHeight);
+    desenharImagemProporcional(doc, fotoIni, 14, yFoto + 5, w, fotoHeight);
   }
   if (fotoFim) {
     doc.setFontSize(7.5);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(55, 65, 81);
     doc.text(`2. Horímetro Final: ${hFim.toFixed(1)} h`, 108, yFoto + 3.5);
-    doc.addImage(fotoFim, 'JPEG', 108, yFoto + 5, w, fotoHeight);
+    desenharImagemProporcional(doc, fotoFim, 108, yFoto + 5, w, fotoHeight);
   }
   return yFoto + 5 + fotoHeight + 4;
 }

@@ -1,7 +1,7 @@
 import type jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { ServicoHorimetro } from '../../types/servicoHorimetro.types';
-import { getEmpresaAtivaCache } from '../../services/empresaAtivaService';
+import { obterDadosAssinaturaEmpresa, desenharAssinaturaDigital } from './pdfAssinaturaEmpresaHelper';
 
 export function desenharTabelaMedicao(doc: jsPDF, servico: ServicoHorimetro): number {
   const pMaq = servico.maquinas_itens?.[0];
@@ -89,14 +89,9 @@ export function desenharResumoFinanceiro(doc: jsPDF, servico: ServicoHorimetro, 
 }
 
 export function desenharAssinaturas(doc: jsPDF, yAssinatura: number): void {
-  const empresa = getEmpresaAtivaCache() || {};
-  const razaoSocial = empresa.razao_social || empresa.nome || 'J A C DE OLIVEIRA';
+  const dadosEmp = obterDadosAssinaturaEmpresa();
 
-  if (empresa.assinatura_digital_url) {
-    try {
-      doc.addImage(empresa.assinatura_digital_url, 'PNG', 35, yAssinatura - 14, 38, 12);
-    } catch {}
-  }
+  desenharAssinaturaDigital(doc, 36, yAssinatura - 14, 38, 12);
 
   doc.setDrawColor(156, 163, 175);
   doc.line(20, yAssinatura, 90, yAssinatura);
@@ -105,6 +100,12 @@ export function desenharAssinaturas(doc: jsPDF, yAssinatura: number): void {
   doc.setFontSize(7.5);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(107, 114, 128);
-  doc.text(`${razaoSocial.toUpperCase()} / Emitente`, 25, yAssinatura + 4);
-  doc.text('Assinatura do Cliente Contratante', 125, yAssinatura + 4);
+  doc.text(`${dadosEmp.razaoSocial.toUpperCase()}`, 55, yAssinatura + 4, { align: 'center' });
+  if (dadosEmp.textoResponsavel) {
+    doc.text(dadosEmp.textoResponsavel, 55, yAssinatura + 7.5, { align: 'center' });
+    doc.text('Emitente / Locador', 55, yAssinatura + 11, { align: 'center' });
+  } else {
+    doc.text('Emitente / Locador', 55, yAssinatura + 7.5, { align: 'center' });
+  }
+  doc.text('Assinatura do Cliente Contratante', 155, yAssinatura + 4, { align: 'center' });
 }

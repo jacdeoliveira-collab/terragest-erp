@@ -105,6 +105,7 @@ export const LancarHaverModal: React.FC<Props> = ({ isOpen, onClose, titulo, onS
               <option value="CARTAO">Cartão</option>
               <option value="BOLETO">Boleto</option>
               <option value="CHEQUE">Cheque</option>
+              <option value="DESCONTO">🏷️ Desconto / Abatimento Comercial</option>
             </select>
           </div>
 

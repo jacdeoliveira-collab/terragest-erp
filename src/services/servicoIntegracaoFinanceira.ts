@@ -30,7 +30,8 @@ export async function sincronizarServicoFinanceiro(servico: ServicoHorimetro): P
 
   // 1. Integração com CONTAS A RECEBER (tabela medicoes)
   if (servico.faturamento_bruto > 0) {
-    const comp = servico.data_inicio.slice(0, 7);
+    const comp = servico.data_inicio ? servico.data_inicio.slice(0, 7) : new Date().toISOString().slice(0, 7);
+    const isPago = servico.status_pagamento_cliente === 'QUITADO' || (Number(servico.saldo_restante) <= 0.05 && Number(servico.faturamento_bruto) > 0);
     const medicaoPayload = {
       tenant_id: tenantId,
       obra_id: obraId,
@@ -41,9 +42,10 @@ export async function sincronizarServicoFinanceiro(servico: ServicoHorimetro): P
       data_vencimento: servico.data_fim || servico.data_inicio,
       total_horas_produtivas: Number(servico.horas_trabalhadas || 0),
       valor_total: Number(servico.faturamento_bruto || 0),
-      status_pagamento: servico.status_pagamento_cliente === 'QUITADO'
+      status_pagamento: isPago
         ? 'PAGO'
         : (servico.valor_adiantamento && servico.valor_adiantamento > 0 ? 'PAGO_PARCIAL' : (servico.status === 'FINALIZADO' ? 'AGUARDANDO_PAGAMENTO' : 'EM_ANALISE')),
+      data_pagamento: isPago ? (servico.data_adiantamento || new Date().toISOString().slice(0, 10)) : null,
       observacoes: `Serviço Horímetro: ${servico.cliente_nome} - ${servico.maquina_nome} [Sinal: R$ ${servico.valor_adiantamento || 0} em ${servico.data_adiantamento || '-'}] [REF:${servico.id}]`
     };
 

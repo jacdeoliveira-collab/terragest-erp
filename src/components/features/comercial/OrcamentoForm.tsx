@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { FileText, Phone, MapPin } from 'lucide-react';
+import { Tag } from 'lucide-react';
 import { useClientes } from '../../../hooks/useClientes';
 import { useEquipments } from '../../../hooks/useEquipments';
 import { OrcamentoCondicoesPagamentoSection } from './OrcamentoCondicoesPagamentoSection';
+import { OrcamentoClienteCard } from './OrcamentoClienteCard';
 import type { Orcamento, CreateOrcamentoDTO } from '../../../types/comercial.types';
 
 interface OrcamentoFormProps {
@@ -24,6 +25,7 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = ({
   const [descricaoServico, setDescricaoServico] = useState(orcamentoParaEditar?.descricao_servico || '');
   const [valorHora, setValorHora] = useState<number>(orcamentoParaEditar?.valor_hora ?? 250);
   const [horasEstimadas, setHorasEstimadas] = useState<number>(orcamentoParaEditar?.horas_estimadas ?? 40);
+  const [valorDesconto, setValorDesconto] = useState<number>(0);
   const [validadeDias, setValidadeDias] = useState<number>(orcamentoParaEditar?.validade_dias ?? 15);
   const [formaPagamento, setFormaPagamento] = useState<string>(orcamentoParaEditar?.forma_pagamento || 'PIX');
   const [condicaoPagamento, setCondicaoPagamento] = useState<string>(orcamentoParaEditar?.condicao_pagamento || 'A_VISTA');
@@ -33,7 +35,8 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = ({
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
-  const valorTotal = valorHora * horasEstimadas;
+  const subtotal = Number((valorHora * horasEstimadas).toFixed(2));
+  const valorTotal = Number(Math.max(0, subtotal - valorDesconto).toFixed(2));
   const clienteSelecionado = clientes.find((c) => c.id === clienteId);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -42,6 +45,7 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = ({
     setSalvando(true);
     setErro(null);
 
+    const descNota = valorDesconto > 0 ? ` [Desconto: R$ ${valorDesconto.toFixed(2)}]` : '';
     const payload: CreateOrcamentoDTO = {
       cliente_id: clienteId,
       maquina_id: maquinaId || undefined,
@@ -54,13 +58,11 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = ({
       forma_pagamento: formaPagamento,
       condicao_pagamento: condicaoPagamento,
       conta_bancaria_id: contaBancariaId || undefined,
-      prazo_descricao: prazoDescricao.trim() || undefined,
+      prazo_descricao: (prazoDescricao.trim() + descNota).trim() || undefined,
       data_vencimento: dataVencimento || undefined
     };
 
-    const res = (orcamentoParaEditar && onUpdate)
-      ? await onUpdate(orcamentoParaEditar.id, payload)
-      : await onSubmit(payload);
+    const res = (orcamentoParaEditar && onUpdate) ? await onUpdate(orcamentoParaEditar.id, payload) : await onSubmit(payload);
     setSalvando(false);
     if (res.success) onSuccess();
     else setErro(res.error || 'Erro ao salvar proposta');
@@ -87,37 +89,29 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = ({
         </div>
       </div>
 
-      {clienteSelecionado && (
-        <div className="p-2 bg-emerald-50/50 border border-emerald-200/70 rounded-xl flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-gray-700">
-          {clienteSelecionado.documento && (
-            <span className="flex items-center gap-1 font-mono"><FileText className="w-3 h-3 text-emerald-600" />{clienteSelecionado.documento}</span>
-          )}
-          {clienteSelecionado.telefone && (
-            <span className="flex items-center gap-1 font-mono"><Phone className="w-3 h-3 text-emerald-600" />{clienteSelecionado.telefone}</span>
-          )}
-          {clienteSelecionado.endereco && (
-            <span className="flex items-center gap-1 text-gray-600 truncate max-w-sm"><MapPin className="w-3 h-3 text-emerald-600 shrink-0" />{clienteSelecionado.endereco}</span>
-          )}
-        </div>
-      )}
+      <OrcamentoClienteCard cliente={clienteSelecionado} />
 
       <div>
         <label className="block font-semibold text-gray-700 mb-1">Escopo do Serviço / Locação *</label>
         <textarea required rows={2} placeholder="Ex: Terraplanagem para galpão logístico e drenagem pluvial" value={descricaoServico} onChange={(e) => setDescricaoServico(e.target.value)} className="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-300 rounded-xl" />
       </div>
 
-      <div className="grid grid-cols-3 gap-2.5">
+      <div className="grid grid-cols-4 gap-2">
         <div>
-          <label className="block font-semibold text-gray-700 mb-1">Valor da Hora (R$) *</label>
-          <input type="number" step="0.01" min="0" required value={valorHora} onChange={(e) => setValorHora(parseFloat(e.target.value) || 0)} className="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-300 rounded-xl font-mono" />
+          <label className="block font-semibold text-gray-700 mb-1">Valor da Hora *</label>
+          <input type="number" step="0.01" min="0" required value={valorHora} onChange={(e) => setValorHora(parseFloat(e.target.value) || 0)} className="w-full px-2 py-1.5 bg-gray-50 border border-gray-300 rounded-xl font-mono" />
         </div>
         <div>
           <label className="block font-semibold text-gray-700 mb-1">Horas Estimadas *</label>
-          <input type="number" step="0.5" min="1" required value={horasEstimadas} onChange={(e) => setHorasEstimadas(parseFloat(e.target.value) || 0)} className="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-300 rounded-xl font-mono" />
+          <input type="number" step="0.5" min="1" required value={horasEstimadas} onChange={(e) => setHorasEstimadas(parseFloat(e.target.value) || 0)} className="w-full px-2 py-1.5 bg-gray-50 border border-gray-300 rounded-xl font-mono" />
+        </div>
+        <div>
+          <label className="block font-semibold text-amber-700 mb-1 flex items-center gap-1"><Tag className="w-3 h-3" /> Desconto (R$)</label>
+          <input type="number" step="0.01" min="0" value={valorDesconto || ''} placeholder="0.00" onChange={(e) => setValorDesconto(parseFloat(e.target.value) || 0)} className="w-full px-2 py-1.5 bg-amber-50/50 border border-amber-300 rounded-xl font-mono text-amber-800" />
         </div>
         <div>
           <label className="block font-semibold text-gray-700 mb-1">Validade (Dias)</label>
-          <input type="number" min="1" value={validadeDias} onChange={(e) => setValidadeDias(parseInt(e.target.value) || 15)} className="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-300 rounded-xl font-mono" />
+          <input type="number" min="1" value={validadeDias} onChange={(e) => setValidadeDias(parseInt(e.target.value) || 15)} className="w-full px-2 py-1.5 bg-gray-50 border border-gray-300 rounded-xl font-mono" />
         </div>
       </div>
 
@@ -129,10 +123,13 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = ({
         dataVencimento={dataVencimento} setDataVencimento={setDataVencimento}
       />
 
-      <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
-        <span className="font-semibold text-emerald-900">Total Previsto da Proposta:</span>
+      <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
+        <div className="space-x-2 text-[11px] text-gray-600">
+          <span>Subtotal: <b>R$ {subtotal.toFixed(2)}</b></span>
+          {valorDesconto > 0 && <span className="text-amber-700">| Desconto: <b>(-) R$ {valorDesconto.toFixed(2)}</b></span>}
+        </div>
         <span className="font-mono font-bold text-emerald-800 text-sm">
-          R$ {valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          Total Proposta: R$ {valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
         </span>
       </div>
 

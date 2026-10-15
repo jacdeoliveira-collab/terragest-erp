@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { calcularMetricasServico } from '../../../../utils/servicoCalculos';
 import { montarPayloadServico } from './servicoSalvarPayload';
 import { usePainelUploadReader } from './usePainelUploadReader';
+import { aplicarDadosCupomEmDespesas } from './servicoCupomHelper';
 import { useServicoDespesasState } from './useServicoDespesasState';
 import { useMaquinasItensState } from './useMaquinasItensState';
 import { useServicoDadosGeraisState } from './useServicoDadosGeraisState';
@@ -60,11 +61,10 @@ export function useServicoHorimetroModalState(
   const { uploadingImage, mensagemOcr, setMensagemOcr, handleImageUpload } = usePainelUploadReader({
     onHorimetroDetectado: (valor, campo, maquinaId) => {
       const targetId = maquinaId || maquinas.maquinasItens[0]?.id;
-      if (targetId) {
-        atualizarMaquinaSincronizada(targetId, campo === 'inicial' ? { horimetro_inicial: valor } : { horimetro_final: valor });
-      }
+      if (targetId) atualizarMaquinaSincronizada(targetId, campo === 'inicial' ? { horimetro_inicial: valor } : { horimetro_final: valor });
     },
-    onAlertaDetectado: (alerta) => gerais.setAlertaPainel((prev) => (prev ? `${prev} | ${alerta}` : alerta))
+    onAlertaDetectado: (alerta) => gerais.setAlertaPainel((prev) => (prev ? `${prev} | ${alerta}` : alerta)),
+    onCupomDetectado: (dados) => aplicarDadosCupomEmDespesas(dados, despesas)
   });
 
   useEffect(() => {

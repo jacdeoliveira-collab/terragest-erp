@@ -9,7 +9,6 @@ import {
   CheckSquare,
   Fuel,
   Wrench,
-  Tractor,
   Shield,
   BadgePercent,
   Building2,
@@ -67,13 +66,15 @@ export const Sidebar: React.FC = () => {
 
   return (
     <aside className="w-72 bg-slate-900 border-r border-slate-800 flex flex-col shrink-0 h-full">
-      <div className="p-6 border-b border-slate-800 flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-950">
-          <Tractor className="w-5 h-5 text-slate-950 font-bold" />
+      <div className="p-4 border-b border-slate-800 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shadow-md shadow-slate-950 shrink-0">
+          <img src="/logo-icon.png" alt="TerraGest" className="w-full h-full object-contain" />
         </div>
         <div>
-          <h1 className="font-bold text-base tracking-tight text-white">TerraGest</h1>
-          <p className="text-[11px] text-emerald-400 font-medium tracking-wider uppercase">ERP Linha Amarela</p>
+          <h1 className="font-bold text-base tracking-tight text-white flex items-center gap-1">
+            <span>TERRA</span><span className="text-amber-400">GEST</span>
+          </h1>
+          <p className="text-[10px] text-amber-400 font-bold tracking-wider uppercase">ERP Linha Amarela</p>
         </div>
       </div>
 

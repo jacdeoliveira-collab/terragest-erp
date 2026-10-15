@@ -1,4 +1,7 @@
 import * as XLSX from 'xlsx';
+export { exportarAbastecimentosExcel } from './exportExcelAbastecimentos';
+export { exportarServicosHorimetroExcel } from './exportExcelServicos';
+export { exportarProducaoViagensExcel, exportarFuncionariosExcel, exportarFrotaExcel } from './exportExcelModulos';
 
 export function exportToExcel<T = any>(data: T[], filename: string, sheetName = 'Dados'): void {
   const worksheet = XLSX.utils.json_to_sheet(data as any[]);

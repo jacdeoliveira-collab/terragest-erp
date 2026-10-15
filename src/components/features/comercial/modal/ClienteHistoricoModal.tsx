@@ -77,7 +77,7 @@ export const ClienteHistoricoModal: React.FC<Props> = ({ isOpen, onClose, client
         )}
 
         <ClienteHistoricoCards data={data} filtroAtivo={filtroAtivo} onSelectFiltro={setFiltroAtivo} />
-        <ClienteHistoricoServicosTable servicos={servicosFiltrados} />
+        <ClienteHistoricoServicosTable servicos={servicosFiltrados} clienteNome={cliente.nome} />
       </div>
     </Modal>
   );

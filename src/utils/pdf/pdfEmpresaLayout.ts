@@ -17,8 +17,9 @@ export function desenharCabecalhoPdf(
   const contato = [empresa.contato_telefone, empresa.contato_email].filter(Boolean).join(' • ');
 
   // Faixa decorativa topo
+  const pageWidth = doc.internal.pageSize.getWidth();
   doc.setFillColor(16, 185, 129);
-  doc.rect(0, 0, 210, 5, 'F');
+  doc.rect(0, 0, pageWidth, 5, 'F');
 
   let textStartX = 14;
   let startContentY = 32;
@@ -40,7 +41,7 @@ export function desenharCabecalhoPdf(
   if (empresa.endereco) doc.text(empresa.endereco, textStartX, 23);
 
   doc.setDrawColor(229, 231, 235);
-  doc.line(14, 27, 196, 27);
+  doc.line(14, 27, pageWidth - 14, 27);
 
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
@@ -60,22 +61,29 @@ export function desenharCabecalhoPdf(
   return startContentY;
 }
 
+import { TERRAGEST_LOGO_ICON_BASE64 } from './terragestLogoBase64';
+
 export function desenharRodapeTerraGest(doc: jsPDF, pageNumber: number = 1, totalPages?: number | string): void {
-  const pageHeight = 297;
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const pageWidth = doc.internal.pageSize.getWidth();
   const lineY = pageHeight - 12;
 
   doc.setDrawColor(226, 232, 240);
-  doc.line(14, lineY, 196, lineY);
+  doc.line(14, lineY, pageWidth - 14, lineY);
+
+  try {
+    doc.addImage(TERRAGEST_LOGO_ICON_BASE64, 'PNG', 14, lineY + 1.2, 5, 5);
+  } catch {}
 
   doc.setFontSize(7.5);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(16, 185, 129);
-  doc.text('TerraGest ERP Linha Amarela', 14, lineY + 5);
+  doc.text('TerraGest ERP Linha Amarela', 20.5, lineY + 4.8);
 
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(100, 116, 139);
-  doc.text(` • ${SITE_TERRAGEST}`, 56, lineY + 5);
+  doc.text(` • ${SITE_TERRAGEST}`, 62.5, lineY + 4.8);
 
   const paginacao = totalPages ? `Página ${pageNumber} de ${totalPages}` : `Página ${pageNumber}`;
-  doc.text(paginacao, 196, lineY + 5, { align: 'right' });
+  doc.text(paginacao, pageWidth - 14, lineY + 4.8, { align: 'right' });
 }

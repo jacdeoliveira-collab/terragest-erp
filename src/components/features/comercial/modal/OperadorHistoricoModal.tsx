@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Modal } from '../../../ui/Modal';
 import { UserCheck, RefreshCw, AlertCircle } from 'lucide-react';
 import { useOperadorHistorico } from '../../../../hooks/useOperadorHistorico';
 import { OperadorHistoricoCards } from './OperadorHistoricoCards';
 import { OperadorHistoricoServicosTable } from './OperadorHistoricoServicosTable';
+import { QuitarOperadorModal } from '../../rh/historico/QuitarOperadorModal';
+import type { FuncionarioRemuneracaoItem } from '../../../../types/funcionarioHistorico.types';
 
 interface Props {
   isOpen: boolean;
@@ -16,6 +18,7 @@ export const OperadorHistoricoModal: React.FC<Props> = ({
   isOpen, onClose, operadorNome, operadorId
 }) => {
   const { data, isLoading, error, refetch } = useOperadorHistorico(operadorNome, operadorId);
+  const [itemParaQuitar, setItemParaQuitar] = useState<FuncionarioRemuneracaoItem | null>(null);
 
   if (!operadorNome && !operadorId) return null;
 
@@ -51,7 +54,15 @@ export const OperadorHistoricoModal: React.FC<Props> = ({
         )}
 
         <OperadorHistoricoCards data={data} />
-        <OperadorHistoricoServicosTable servicos={data.servicos} />
+        <OperadorHistoricoServicosTable servicos={data.servicos} onQuitarItem={(it) => setItemParaQuitar(it)} />
+
+        <QuitarOperadorModal
+          isOpen={Boolean(itemParaQuitar)}
+          onClose={() => setItemParaQuitar(null)}
+          item={itemParaQuitar}
+          operadorNome={operadorNome}
+          onSuccess={() => refetch()}
+        />
       </div>
     </Modal>
   );

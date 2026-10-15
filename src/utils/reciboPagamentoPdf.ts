@@ -2,8 +2,9 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { ItemComissaoOperador } from '../types/rh.types';
 import { getEmpresaAtivaCache } from '../services/empresaAtivaService';
-import { SITE_TERRAGEST } from './pdf/pdfEmpresaLayout';
+import { desenharRodapeTerraGest } from './pdf/pdfEmpresaLayout';
 import { desenharLogoNoPdf } from './pdf/pdfLogoHelper';
+import { obterDadosAssinaturaEmpresa, desenharAssinaturaDigital } from './pdf/pdfAssinaturaEmpresaHelper';
 
 export function gerarReciboPagamentoPDF(
   item: ItemComissaoOperador,
@@ -11,8 +12,9 @@ export function gerarReciboPagamentoPDF(
 ): void {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const empresa = getEmpresaAtivaCache() || {};
-  const razaoSocial = empresa.razao_social || empresa.nome || 'TERRAGEST OPERAÇÕES';
-  const cnpj = empresa.cnpj ? `CNPJ: ${empresa.cnpj}` : '';
+  const dadosEmp = obterDadosAssinaturaEmpresa(empresa);
+  const razaoSocial = dadosEmp.razaoSocial;
+  const cnpj = dadosEmp.cnpj;
 
   // Faixa topo decorativa
   doc.setFillColor(217, 119, 6);
@@ -117,28 +119,23 @@ export function gerarReciboPagamentoPDF(
   );
 
   doc.setDrawColor(156, 163, 175);
+  desenharAssinaturaDigital(doc, 135, posYAssinatura + 4, 34, 12);
   doc.line(18, posYAssinatura + 18, 95, posYAssinatura + 18);
   doc.line(115, posYAssinatura + 18, 192, posYAssinatura + 18);
 
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(55, 65, 81);
+  doc.setFontSize(8); doc.setFont('helvetica', 'bold'); doc.setTextColor(55, 65, 81);
   doc.text(item.operadorNome, 18, posYAssinatura + 22);
   doc.text(razaoSocial, 115, posYAssinatura + 22);
   doc.setFont('helvetica', 'normal');
   doc.text('Assinatura do Operador', 18, posYAssinatura + 26);
-  doc.text('Responsável Financeiro / RH', 115, posYAssinatura + 26);
+  if (dadosEmp.textoResponsavel) {
+    doc.text(dadosEmp.textoResponsavel, 115, posYAssinatura + 25.5);
+    doc.text('Responsável Financeiro / RH', 115, posYAssinatura + 29);
+  } else {
+    doc.text('Responsável Financeiro / RH', 115, posYAssinatura + 26);
+  }
 
-  // Rodapé Propaganda TerraGest
-  doc.setDrawColor(226, 232, 240);
-  doc.line(14, 285, 196, 285);
-  doc.setFontSize(7.5);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(16, 185, 129);
-  doc.text('TerraGest ERP Linha Amarela', 14, 290);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(100, 116, 139);
-  doc.text(` • ${SITE_TERRAGEST}`, 56, 290);
+  desenharRodapeTerraGest(doc, 1, 1);
 
   const cleanNome = item.operadorNome.replace(/\s+/g, '_');
   doc.save(`Recibo_Comissao_${cleanNome}_${periodo.dataInicio}_a_${periodo.dataFim}.pdf`);

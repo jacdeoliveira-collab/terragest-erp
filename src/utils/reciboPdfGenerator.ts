@@ -3,6 +3,7 @@ import { getEmpresaAtivaCache } from '../services/empresaAtivaService';
 import { numeroParaExtenso } from './numeroParaExtenso';
 import { desenharRodapeTerraGest } from './pdf/pdfEmpresaLayout';
 import { desenharLogoNoPdf } from './pdf/pdfLogoHelper';
+import { obterDadosAssinaturaEmpresa, desenharAssinaturaDigital } from './pdf/pdfAssinaturaEmpresaHelper';
 
 export interface ReciboPayload {
   numeroRecibo: string; valor: number; clienteNome: string;
@@ -115,11 +116,8 @@ export function gerarReciboPDF(recibo: ReciboPayload): void {
   );
 
   // Assinatura Digital da Empresa (se cadastrada)
-  if (empresa.assinatura_digital_url) {
-    try {
-      doc.addImage(empresa.assinatura_digital_url, 'PNG', 130, posYInfo + 18, 36, 12);
-    } catch {}
-  }
+  const dadosEmp = obterDadosAssinaturaEmpresa(empresa);
+  desenharAssinaturaDigital(doc, 130, posYInfo + 18, 36, 12, empresa);
 
   // Campo de Assinatura
   doc.setDrawColor(156, 163, 175);
@@ -128,12 +126,17 @@ export function gerarReciboPDF(recibo: ReciboPayload): void {
   doc.setFontSize(8.5);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(31, 41, 55);
-  doc.text(razaoSocial.toUpperCase(), 148, posYInfo + 36, { align: 'center' });
+  doc.text(dadosEmp.razaoSocial.toUpperCase(), 148, posYInfo + 36, { align: 'center' });
 
   doc.setFontSize(7.5);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(107, 114, 128);
-  doc.text(cnpj || 'EMITENTE RESPONSÁVEL', 148, posYInfo + 40, { align: 'center' });
+  if (dadosEmp.textoResponsavel) {
+    doc.text(dadosEmp.textoResponsavel, 148, posYInfo + 39.5, { align: 'center' });
+    doc.text(cnpj || 'EMITENTE RESPONSÁVEL', 148, posYInfo + 43, { align: 'center' });
+  } else {
+    doc.text(cnpj || 'EMITENTE RESPONSÁVEL', 148, posYInfo + 40, { align: 'center' });
+  }
 
   // Rodapé com propaganda e marca oficial TerraGest
   desenharRodapeTerraGest(doc, 1, 1);

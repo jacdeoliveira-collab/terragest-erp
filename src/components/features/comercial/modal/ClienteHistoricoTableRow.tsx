@@ -1,13 +1,16 @@
 import React from 'react';
 import { FileText, CheckCircle2, Clock, AlertCircle, Camera } from 'lucide-react';
+import { abrirVisualizacaoImagem } from '../../../../utils/visualizadorImagem';
 import type { AdiantamentoItem, ServicoHorimetro } from '../../../../types/servicoHorimetro.types';
 import { gerarReciboPDF } from '../../../../utils/reciboPdfGenerator';
 
 interface Props {
   servico: ServicoHorimetro;
+  selecionado: boolean;
+  onToggleSelecionar: () => void;
 }
 
-export const ClienteHistoricoTableRow: React.FC<Props> = ({ servico }) => {
+export const ClienteHistoricoTableRow: React.FC<Props> = ({ servico, selecionado, onToggleSelecionar }) => {
   const fat = Number(servico.faturamento_bruto || 0);
   const adiant = Number(servico.valor_adiantamento || 0);
   const saldo = Number(servico.saldo_restante !== undefined ? servico.saldo_restante : Math.max(0, fat - adiant));
@@ -16,9 +19,7 @@ export const ClienteHistoricoTableRow: React.FC<Props> = ({ servico }) => {
     fat > 0 && adiant >= fat ? 'QUITADO' : (adiant > 0 ? 'PARCIAL' : 'PENDENTE')
   );
 
-  const dataAdiantFormatada = servico.data_adiantamento
-    ? servico.data_adiantamento.split('-').reverse().slice(0, 2).join('/')
-    : '';
+  const dataAdiant = servico.data_adiantamento ? servico.data_adiantamento.split('-').reverse().slice(0, 2).join('/') : '';
 
   const emitirReciboIndividual = (item: AdiantamentoItem, idx: number) => {
     gerarReciboPDF({
@@ -29,7 +30,7 @@ export const ClienteHistoricoTableRow: React.FC<Props> = ({ servico }) => {
       clienteTelefone: servico.cliente_telefone,
       dataPagamento: item.data,
       formaPagamento: item.forma_pagamento,
-      referente: `${item.observacao || `Parcela ${idx + 1} (A Haver)`} referente ao serviço na máquina ${servico.maquina_nome}`,
+      referente: `${item.observacao || `Parcela ${idx + 1} (A Haver)`} ref. à máquina ${servico.maquina_nome}`,
       observacoes: servico.observacoes
     });
   };
@@ -43,19 +44,21 @@ export const ClienteHistoricoTableRow: React.FC<Props> = ({ servico }) => {
       clienteTelefone: servico.cliente_telefone,
       dataPagamento: servico.data_adiantamento || servico.data_inicio,
       formaPagamento: servico.forma_pagamento_adiantamento || 'PIX',
-      referente: servico.status === 'FINALIZADO'
-        ? (adiant >= fat
-            ? `Quitação total referente ao serviço na máquina ${servico.maquina_nome}`
-            : `Parcela / Pagamento (A Haver) referente ao serviço na máquina ${servico.maquina_nome}`)
-        : (adiant > 0 && adiant < fat
-            ? `Adiantamento / Entrada referente ao serviço na máquina ${servico.maquina_nome}`
-            : `Pagamento de locação / serviços da máquina ${servico.maquina_nome} (${servico.horas_trabalhadas}h)`),
+      referente: `Serviço na máquina ${servico.maquina_nome} (${servico.horas_trabalhadas}h)`,
       observacoes: servico.observacoes
     });
   };
 
   return (
-    <tr className="hover:bg-gray-50/60 transition-colors">
+    <tr className={`hover:bg-gray-50/80 transition-colors ${selecionado ? 'bg-emerald-50/40' : ''}`}>
+      <td className="p-2.5 text-center">
+        <input
+          type="checkbox"
+          checked={selecionado}
+          onChange={onToggleSelecionar}
+          className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer accent-emerald-600"
+        />
+      </td>
       <td className="p-2.5">
         <div className="font-mono text-[11px] text-gray-500">{servico.data_inicio}</div>
         <div className="font-semibold text-gray-900">{servico.maquina_nome || '-'}</div>
@@ -79,30 +82,18 @@ export const ClienteHistoricoTableRow: React.FC<Props> = ({ servico }) => {
                       {item.data.split('-').reverse().slice(0, 2).join('/')}: R$ {Number(item.valor).toFixed(0)} ({item.forma_pagamento})
                     </span>
                     {item.comprovante_url && (
-                      <button
-                        type="button"
-                        onClick={() => window.open(item.comprovante_url, '_blank')}
-                        title="Ver Comprovante Anexado"
-                        className="text-blue-600 hover:text-blue-800 cursor-pointer"
-                      >
+                      <button type="button" onClick={() => abrirVisualizacaoImagem(item.comprovante_url, 'Comprovante do Adiantamento')} title="Ver Comprovante" className="text-blue-600 hover:text-blue-800 cursor-pointer">
                         <Camera className="w-3 h-3" />
                       </button>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => emitirReciboIndividual(item, idx)}
-                      title="Emitir Recibo desta Parcela (PDF)"
-                      className="text-emerald-700 hover:text-emerald-900 cursor-pointer"
-                    >
+                    <button type="button" onClick={() => emitirReciboIndividual(item, idx)} title="Recibo da Parcela" className="text-emerald-700 hover:text-emerald-900 cursor-pointer">
                       <FileText className="w-3 h-3" />
                     </button>
                   </div>
                 ))}
               </div>
             ) : (
-              dataAdiantFormatada && (
-                <span className="block text-[10px] text-emerald-700 font-medium">Pago em {dataAdiantFormatada}</span>
-              )
+              dataAdiant && <span className="block text-[10px] text-emerald-700 font-medium">Pago em {dataAdiant}</span>
             )}
           </div>
         ) : (
@@ -122,7 +113,7 @@ export const ClienteHistoricoTableRow: React.FC<Props> = ({ servico }) => {
         )}
         {statusFinanceiro === 'PARCIAL' && (
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">
-            <Clock className="w-3 h-3" /> Parcial / A Haver
+            <Clock className="w-3 h-3" /> Parcial
           </span>
         )}
         {statusFinanceiro === 'PENDENTE' && (

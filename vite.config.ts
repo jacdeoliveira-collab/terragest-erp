@@ -22,6 +22,21 @@ export default defineConfig({
       }
     }
   ],
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-router-dom',
+      '@supabase/supabase-js',
+      'lucide-react',
+      'jspdf',
+      'jspdf-autotable',
+      'jsqr',
+      'jsrsasign',
+      'tesseract.js',
+      'recharts'
+    ]
+  },
   server: {
     host: true,
     port: 5173,

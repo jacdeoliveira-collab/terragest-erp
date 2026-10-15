@@ -30,15 +30,24 @@ export function useBancoHoras() {
         return !fim || fim >= primeiroDiaMes;
       });
 
-      // Somar horas apontadas no mês de BDE e Serviços por Horímetro
-      const horasPorId: Record<string, number> = {};
-      const horasPorNome: Record<string, number> = {};
+      // Somar horas apontadas no mês por funcionário unificado (ID ou Nome)
+      const horasPorFuncionarioId: Record<string, number> = {};
+      const nomeParaId: Record<string, string> = {};
+      funcionarios.forEach((fn) => {
+        if (fn.id) {
+          horasPorFuncionarioId[fn.id] = 0;
+          if (fn.nome) nomeParaId[fn.nome.trim().toLowerCase()] = fn.id;
+        }
+      });
 
       const addHoras = (opId?: string, opNome?: string, h: number = 0) => {
-        if (opId) horasPorId[opId] = (horasPorId[opId] || 0) + h;
-        if (opNome) {
-          const k = opNome.trim().toLowerCase();
-          horasPorNome[k] = (horasPorNome[k] || 0) + h;
+        if (h <= 0) return;
+        const targetId = (opId && horasPorFuncionarioId[opId] !== undefined)
+          ? opId
+          : (opNome ? nomeParaId[opNome.trim().toLowerCase()] : undefined);
+
+        if (targetId) {
+          horasPorFuncionarioId[targetId] = (horasPorFuncionarioId[targetId] || 0) + h;
         }
       };
 
@@ -69,9 +78,7 @@ export function useBancoHoras() {
       const resultado: ExtratoBancoHoras[] = funcionarios.map((fn) => {
         const limiteDiario = Number(fn.limite_horas_diario) || 8;
         const limiteMensal = Number((limiteDiario * 22).toFixed(1));
-        const porId = horasPorId[fn.id] || 0;
-        const porNome = horasPorNome[fn.nome.trim().toLowerCase()] || 0;
-        const totalTrabalhado = Number(Math.max(porId, porNome, porId + (fn.id ? 0 : porNome)).toFixed(1));
+        const totalTrabalhado = Number((horasPorFuncionarioId[fn.id] || 0).toFixed(1));
         const saldoHoras = Number((totalTrabalhado - limiteMensal).toFixed(1));
         const recebeHE = Number(fn.valor_hora_extra) > 0;
         const valorHoraExtra = recebeHE ? Number(fn.valor_hora_extra) : 0;

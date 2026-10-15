@@ -81,7 +81,7 @@ export function useContasPagar() {
 
   const atualizarContaPagar = async (id: string, dto: Partial<CreateContaPagarDTO>): Promise<{ success: boolean; error?: string }> => {
     try {
-      const payload: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      const payload: Record<string, unknown> = {};
       if (dto.descricao !== undefined) payload.descricao = dto.descricao.trim();
       if (dto.fornecedor !== undefined) payload.fornecedor = dto.fornecedor.trim();
       if (dto.categoria !== undefined) payload.categoria = dto.categoria;
@@ -114,8 +114,7 @@ export function useContasPagar() {
           status: 'PAGO',
           data_pagamento,
           forma_pagamento,
-          conta_bancaria_id: conta_bancaria_id || null,
-          updated_at: new Date().toISOString()
+          conta_bancaria_id: conta_bancaria_id || null
         })
         .eq('id', id);
 

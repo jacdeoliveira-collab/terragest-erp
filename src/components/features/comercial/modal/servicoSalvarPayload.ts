@@ -85,7 +85,7 @@ export function montarPayloadServico(
     operador_nome: dados.operadorNome.trim(),
     descricao_servico: dados.descricaoServico.trim(),
     data_inicio: dados.dataInicio,
-    data_fim: dados.dataFim ? dados.dataFim : (finalizar ? new Date().toISOString().split('T')[0] : undefined),
+    data_fim: finalizar ? (dados.dataFim || new Date().toISOString().split('T')[0]) : undefined,
     horimetro_inicial: Number(dados.horimetroInicial),
     horimetro_final: dados.horimetroFinal !== undefined ? Number(dados.horimetroFinal) : undefined,
     foto_horimetro_inicial: dados.fotoHorimetroInicial,
@@ -128,7 +128,7 @@ export function montarPayloadServico(
     fotos_trabalho: dados.fotosTrabalho || [],
     maquinas_itens: dados.maquinasItens || [],
     abastecimentos_ids: dados.abastecimentosIds || [],
-    status: (finalizar || !!dados.dataFim) ? 'FINALIZADO' : 'EM_ANDAMENTO',
+    status: finalizar ? 'FINALIZADO' : 'EM_ANDAMENTO',
     observacoes: dados.observacoes?.trim() || undefined
   };
 }

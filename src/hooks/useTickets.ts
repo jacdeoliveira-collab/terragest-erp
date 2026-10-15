@@ -7,6 +7,8 @@ import type { ApontamentoViagemItem } from '../types/producao.types';
 interface UseTicketsOptions {
   obraId?: string;
   dataFiltro?: string;
+  dataInicio?: string;
+  dataFim?: string;
 }
 
 export function useTickets(options?: UseTicketsOptions) {
@@ -35,6 +37,9 @@ export function useTickets(options?: UseTicketsOptions) {
       if (targetObraId) qTickets = qTickets.eq('obra_id', targetObraId);
       if (options?.dataFiltro) {
         qTickets = qTickets.gte('data_hora', `${options.dataFiltro}T00:00:00`).lte('data_hora', `${options.dataFiltro}T23:59:59`);
+      } else {
+        if (options?.dataInicio) qTickets = qTickets.gte('data_hora', `${options.dataInicio}T00:00:00`);
+        if (options?.dataFim) qTickets = qTickets.lte('data_hora', `${options.dataFim}T23:59:59`);
       }
 
       const [ticketsRes, equipsRes, funcsRes, obrasRes] = await Promise.all([
@@ -75,7 +80,7 @@ export function useTickets(options?: UseTicketsOptions) {
     } finally {
       setIsLoading(false);
     }
-  }, [tenantAtivoId, targetObraId, options?.dataFiltro]);
+  }, [tenantAtivoId, targetObraId, options?.dataFiltro, options?.dataInicio, options?.dataFim]);
 
   useEffect(() => {
     fetchTickets();

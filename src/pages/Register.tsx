@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Tractor, Shield, CheckCircle2 } from 'lucide-react';
+import { Shield, CheckCircle2 } from 'lucide-react';
 import { RegisterForm } from '../components/auth/RegisterForm';
 
 export const Register: React.FC = () => {
@@ -22,11 +22,13 @@ export const Register: React.FC = () => {
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-lg">
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 shadow-xl shadow-emerald-950 mb-3">
-            <Tractor className="w-7 h-7 text-slate-950" />
+          <div className="inline-flex items-center justify-center p-2.5 rounded-2xl bg-white shadow-xl shadow-black/50 mb-3 border border-amber-300/40">
+            <img src="/logo-terragest.png" alt="TerraGest" className="h-14 w-auto object-contain" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">TerraGest SaaS</h1>
-          <p className="text-xs text-emerald-400 font-medium tracking-wider uppercase mt-1">
+          <h1 className="text-2xl font-bold tracking-tight text-white flex items-center justify-center gap-1">
+            <span>TERRA</span><span className="text-amber-400">GEST</span> ERP
+          </h1>
+          <p className="text-xs text-amber-300 font-bold tracking-wider uppercase mt-1">
             CREDENCIAMENTO DE NOVA EMPRESA & 15 DIAS GRÁTIS
           </p>
         </div>

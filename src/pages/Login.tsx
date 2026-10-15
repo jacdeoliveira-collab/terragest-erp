@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Tractor, Shield, UserPlus } from 'lucide-react';
+import { Shield, UserPlus } from 'lucide-react';
 import { LoginForm } from '../components/auth/LoginForm';
 import { useAuth } from '../hooks/useAuth';
 import { getDefaultRouteForPerfil } from '../utils/rbac';
@@ -26,20 +26,33 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 sm:p-6 lg:p-8">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-400 shadow-xl shadow-emerald-950 mb-3">
-            <Tractor className="w-7 h-7 text-slate-950" />
+    <div className="relative min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8 overflow-hidden bg-slate-950">
+      {/* Imagem de Fundo de Maquinários e Terraplanagem */}
+      <img
+        src="/login-bg.jpg"
+        alt="Terraplanagem e Maquinários TerraGest"
+        className="absolute inset-0 w-full h-full object-cover object-center"
+      />
+
+      {/* Overlay gradiente escuro profissional com desfoque suave */}
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/65 to-slate-900/60 backdrop-blur-[2px]" />
+
+      {/* Conteúdo Central */}
+      <div className="relative z-10 w-full max-w-md">
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center p-3 rounded-3xl bg-white shadow-2xl shadow-black/60 mb-3 border border-amber-300/40">
+            <img src="/logo-terragest.png" alt="TerraGest ERP" className="h-16 w-auto object-contain" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">TerraGest SaaS</h1>
-          <p className="text-xs text-emerald-400 font-medium tracking-wider uppercase mt-1">
-            GESTÃO INTEGRADA DE MAQUINARIA PESADA E LINHA AMARELA
+          <h1 className="text-3xl font-black tracking-tight text-white drop-shadow-md flex items-center justify-center gap-1">
+            <span>TERRA</span><span className="text-amber-400">GEST</span> ERP
+          </h1>
+          <p className="text-[11px] text-amber-300 font-bold tracking-widest uppercase mt-1 drop-shadow-sm">
+            Gestão Integrada de Maquinaria Pesada & Linha Amarela
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 border border-gray-100">
-          <div className="mb-6 pb-4 border-b border-gray-100">
+        <div className="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-6 sm:p-8 border border-white/40">
+          <div className="mb-5 pb-3 border-b border-gray-100">
             <h2 className="text-lg font-bold text-gray-900">Autenticação Corporativa</h2>
             <p className="text-xs text-gray-500 mt-0.5">Informe suas credenciais para entrar no sistema</p>
           </div>
@@ -50,7 +63,7 @@ export const Login: React.FC = () => {
             <p className="text-xs text-gray-500 mb-2">Sua construtora ainda não tem conta?</p>
             <Link
               to="/register"
-              className="inline-flex items-center justify-center gap-1.5 w-full py-2 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold rounded-xl text-xs border border-emerald-200 transition-colors"
+              className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 px-3 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold rounded-xl text-xs border border-emerald-200 transition-all shadow-2xs hover:shadow-xs"
             >
               <UserPlus className="w-3.5 h-3.5 text-emerald-700" />
               <span>Nova Empresa? Cadastre-se grátis</span>

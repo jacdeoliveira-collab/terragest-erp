@@ -21,7 +21,7 @@ function abrirDB(): Promise<IDBDatabase> {
   });
 }
 
-export async function comprimirImagem(file: File, maxDim = 1200, qualidade = 0.75): Promise<string> {
+export async function comprimirImagem(file: File, maxDim = 1200, qualidade = 0.72): Promise<string> {
   if (file.type === 'application/pdf') {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -32,41 +32,43 @@ export async function comprimirImagem(file: File, maxDim = 1200, qualidade = 0.7
   }
 
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        let { width, height } = img;
-        if (width > maxDim || height > maxDim) {
-          if (width > height) {
-            height = Math.round((height * maxDim) / width);
-            width = maxDim;
-          } else {
-            width = Math.round((width * maxDim) / height);
-            height = maxDim;
-          }
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim) {
+        if (width > height) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
         }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return resolve(img.src);
-        ctx.drawImage(img, 0, 0, width, height);
-        resolve(canvas.toDataURL('image/jpeg', qualidade));
-      };
-      img.onerror = reject;
-      img.src = reader.result as string;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return resolve(img.src);
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', qualidade));
     };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+    img.onerror = (err) => {
+      URL.revokeObjectURL(objectUrl);
+      reject(err);
+    };
+    img.src = objectUrl;
   });
 }
 
 export async function salvarComprovante(chave: string, valor: string): Promise<void> {
   memCache.set(chave, valor);
-  try {
-    localStorage.setItem(`terragest_cupom_foto_${chave}`, valor);
-  } catch {}
+  if (valor && valor.length < 500) {
+    try {
+      localStorage.setItem(`terragest_cupom_foto_${chave}`, valor);
+    } catch {}
+  }
 
   try {
     const db = await abrirDB();

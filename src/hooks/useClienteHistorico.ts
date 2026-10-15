@@ -59,18 +59,32 @@ export function useClienteHistorico(cliente?: Cliente | null) {
       const servicos: ServicoHorimetro[] = res.data || [];
 
       const totalFaturado = servicos.reduce((acc, s) => acc + (Number(s.faturamento_bruto) || 0), 0);
-      const totalAdiantamentos = servicos.reduce((acc, s) => acc + (Number(s.valor_adiantamento) || 0), 0);
+      const totalAdiantamentos = servicos.reduce((acc, s) => {
+        const hist = Array.isArray(s.adiantamentos_historico)
+          ? s.adiantamentos_historico.reduce((sum, h) => sum + (Number(h.valor) || 0), 0)
+          : 0;
+        return acc + Math.max(Number(s.valor_adiantamento) || 0, hist);
+      }, 0);
+
       const totalSaldoAberto = servicos.reduce((acc, s) => {
         const fat = Number(s.faturamento_bruto) || 0;
-        const adiant = Number(s.valor_adiantamento) || 0;
-        return acc + Math.max(0, fat - adiant);
+        const hist = Array.isArray(s.adiantamentos_historico)
+          ? s.adiantamentos_historico.reduce((sum, h) => sum + (Number(h.valor) || 0), 0)
+          : 0;
+        const adiant = Math.max(Number(s.valor_adiantamento) || 0, hist);
+        const isQuit = s.status_pagamento_cliente === 'QUITADO' || (fat > 0 && (fat - adiant) <= 0.05);
+        return acc + (isQuit ? 0 : Math.max(0, fat - adiant));
       }, 0);
+
       const totalHoras = servicos.reduce((acc, s) => acc + (Number(s.horas_trabalhadas) || 0), 0);
       const totalLucro = servicos.reduce((acc, s) => acc + (Number(s.lucro_liquido) || 0), 0);
       const qtdQuitados = servicos.filter(s => {
         const fat = Number(s.faturamento_bruto) || 0;
-        const adiant = Number(s.valor_adiantamento) || 0;
-        return fat > 0 && (adiant >= fat || s.status_pagamento_cliente === 'QUITADO');
+        const hist = Array.isArray(s.adiantamentos_historico)
+          ? s.adiantamentos_historico.reduce((sum, h) => sum + (Number(h.valor) || 0), 0)
+          : 0;
+        const adiant = Math.max(Number(s.valor_adiantamento) || 0, hist);
+        return fat > 0 && (s.status_pagamento_cliente === 'QUITADO' || (fat - adiant) <= 0.05);
       }).length;
 
       setData({

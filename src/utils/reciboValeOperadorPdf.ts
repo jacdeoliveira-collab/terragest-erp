@@ -3,6 +3,7 @@ import { getEmpresaAtivaCache } from '../services/empresaAtivaService';
 import { numeroParaExtenso } from './numeroParaExtenso';
 import { desenharRodapeTerraGest } from './pdf/pdfEmpresaLayout';
 import { desenharLogoNoPdf } from './pdf/pdfLogoHelper';
+import { obterDadosAssinaturaEmpresa, desenharAssinaturaDigital } from './pdf/pdfAssinaturaEmpresaHelper';
 
 export interface ReciboValeOperadorPayload {
   operadorNome: string;
@@ -109,18 +110,20 @@ export function gerarReciboValeOperadorPDF(payload: ReciboValeOperadorPayload): 
   doc.text('Assinatura do Operador', 22, posYAss + 8);
 
   // Linha 2: Responsável / Empresa
-  if (empresa.assinatura_digital_url) {
-    try {
-      doc.addImage(empresa.assinatura_digital_url, 'PNG', 135, posYAss - 14, 34, 12);
-    } catch {}
-  }
+  const dadosEmp = obterDadosAssinaturaEmpresa(empresa);
+  desenharAssinaturaDigital(doc, 135, posYAss - 14, 34, 12, empresa);
   doc.line(115, posYAss, 188, posYAss);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(31, 41, 55);
-  doc.text(razaoSocial.toUpperCase(), 115, posYAss + 4);
+  doc.text(dadosEmp.razaoSocial.toUpperCase(), 115, posYAss + 4);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(107, 114, 128);
-  doc.text('Responsável pela Liberação', 115, posYAss + 8);
+  if (dadosEmp.textoResponsavel) {
+    doc.text(dadosEmp.textoResponsavel, 115, posYAss + 7.5);
+    doc.text('Responsável pela Liberação', 115, posYAss + 11);
+  } else {
+    doc.text('Responsável pela Liberação', 115, posYAss + 8);
+  }
 
   desenharRodapeTerraGest(doc, 1, 1);
 

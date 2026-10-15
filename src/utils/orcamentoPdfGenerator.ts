@@ -2,25 +2,21 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { Orcamento } from '../types/comercial.types';
 import { getEmpresaAtivaCache } from '../services/empresaAtivaService';
-import { SITE_TERRAGEST } from './pdf/pdfEmpresaLayout';
+import { desenharRodapeTerraGest } from './pdf/pdfEmpresaLayout';
 import { desenharBlocoPagamentoPixOrcamento } from './pdf/pdfOrcamentoPagamentoBlock';
 import { desenharLogoNoPdf } from './pdf/pdfLogoHelper';
+import { obterDadosAssinaturaEmpresa, desenharAssinaturaDigital } from './pdf/pdfAssinaturaEmpresaHelper';
 
 export function gerarOrcamentoPDF(orc: Orcamento): void {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const empresa = getEmpresaAtivaCache() || {};
-  const razaoSocial = empresa.razao_social || empresa.nome || 'TERRAGEST LOCAÇÃO DE MÁQUINAS';
-  const cnpj = empresa.cnpj ? `CNPJ: ${empresa.cnpj}` : '';
+  const dadosEmp = obterDadosAssinaturaEmpresa(empresa);
+  const razaoSocial = dadosEmp.razaoSocial, cnpj = dadosEmp.cnpj;
   const contato = [empresa.contato_telefone, empresa.contato_email].filter(Boolean).join(' • ');
 
   // Faixa topo decorativa
-  doc.setFillColor(16, 185, 129);
-  doc.rect(0, 0, 210, 6, 'F');
-
-  let textX = 14;
-  if (desenharLogoNoPdf(doc, 14, 9, 36, 16, empresa)) {
-    textX = 54;
-  }
+  doc.setFillColor(16, 185, 129); doc.rect(0, 0, 210, 6, 'F');
+  const textX = desenharLogoNoPdf(doc, 14, 9, 36, 16, empresa) ? 54 : 14;
 
   doc.setFontSize(13);
   doc.setFont('helvetica', 'bold');
@@ -123,21 +119,18 @@ export function gerarOrcamentoPDF(orc: Orcamento): void {
   doc.text('1. Medição via horímetro do equipamento apontado em Boletim Diário (BDE).', 14, termosY + 4.5);
   doc.text('2. Abastecimento e operador conforme acordado entre as partes no contrato formal.', 14, termosY + 8.5);
   const assY = termosY + 18;
-  doc.setFontSize(8);
-  doc.text('___________________________________________', 20, assY);
-  doc.text('Contratante: De Acordo / Aceite da Proposta', 20, assY + 4);
-  doc.text('___________________________________________', 120, assY);
-  doc.text(`${razaoSocial} / Locador`, 120, assY + 4);
-  // Rodapé Propaganda TerraGest
-  doc.setDrawColor(226, 232, 240);
-  doc.line(14, 285, 196, 285);
+  desenharAssinaturaDigital(doc, 135, assY - 14, 38, 12, empresa);
+  doc.setDrawColor(156, 163, 175);
+  doc.line(20, assY, 90, assY);
+  doc.line(120, assY, 190, assY);
   doc.setFontSize(7.5);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(16, 185, 129);
-  doc.text('TerraGest ERP Linha Amarela', 14, 290);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(100, 116, 139);
-  doc.text(` • ${SITE_TERRAGEST}`, 56, 290);
+  doc.setTextColor(55, 65, 81);
+  const clienteNome = orc.cliente_nome ? orc.cliente_nome.toUpperCase() : 'CONTRATANTE';
+  doc.text(clienteNome, 55, assY + 4, { align: 'center' });
+  doc.text('De Acordo / Aceite da Proposta', 55, assY + 7.5, { align: 'center' });
+  doc.text(`${razaoSocial} / Locador`, 155, assY + 4, { align: 'center' });
+  if (dadosEmp.textoResponsavel) doc.text(dadosEmp.textoResponsavel, 155, assY + 7.5, { align: 'center' });
+  desenharRodapeTerraGest(doc, 1, 1);
 
   const cleanName = (orc.cliente_nome || 'cliente').toLowerCase().replace(/[^a-z0-9]/g, '_');
   doc.save(`proposta_comercial_${cleanName}.pdf`);

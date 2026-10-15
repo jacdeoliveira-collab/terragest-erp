@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from '../../../ui/Modal';
 import { Calendar, FileText, ExternalLink, Pencil, Trash2, Building, Tag } from 'lucide-react';
 import { obterComprovante } from '../../../../services/comprovanteStorageService';
+import { abrirVisualizacaoImagem } from '../../../../utils/visualizadorImagem';
 import type { AbastecimentoItem } from '../../../../types/abastecimento.types';
 import { getMeasurementLabel, formatMeasurementValue } from '../../../../utils/equipmentMeasurement';
 
@@ -93,18 +94,26 @@ export const AbastecimentoDetalhesModal: React.FC<Props> = ({
           <div className="font-bold text-gray-800 text-xs mb-2 flex items-center justify-between">
             <span className="flex items-center gap-1.5"><FileText className="w-3.5 h-3.5 text-emerald-600" /><span>Comprovante Fiscal Anexado</span></span>
             {fotoUrl && (
-              <a href={fotoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[11px] text-emerald-700 hover:underline font-semibold">
+              <button
+                type="button"
+                onClick={() => abrirVisualizacaoImagem(fotoUrl, 'Comprovante Fiscal de Abastecimento')}
+                className="inline-flex items-center gap-1 text-[11px] text-emerald-700 hover:underline font-semibold cursor-pointer"
+              >
                 <span>Ver em Nova Aba</span><ExternalLink className="w-3 h-3" />
-              </a>
+              </button>
             )}
           </div>
           {fotoUrl ? (
             isPdf ? (
               <div className="flex flex-col items-center justify-center bg-gray-50 rounded-lg p-3 border border-gray-200 space-y-2">
                 <iframe src={fotoUrl} title="Comprovante PDF" className="w-full h-56 rounded border border-gray-200 bg-white" />
-                <a href={fotoUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => abrirVisualizacaoImagem(fotoUrl, 'Comprovante Fiscal PDF')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold cursor-pointer"
+                >
                   <ExternalLink className="w-3.5 h-3.5" /><span>Visualizar PDF Completo</span>
-                </a>
+                </button>
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center bg-gray-900/5 rounded-lg p-2 border border-gray-200">

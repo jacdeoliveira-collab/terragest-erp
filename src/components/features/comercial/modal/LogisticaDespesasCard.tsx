@@ -1,5 +1,6 @@
 import React from 'react';
 import { Truck, Camera, X, FileText, ExternalLink } from 'lucide-react';
+import { abrirVisualizacaoImagem } from '../../../../utils/visualizadorImagem';
 
 interface Props {
   valor: number;
@@ -114,10 +115,14 @@ export const LogisticaDespesasCard: React.FC<Props> = ({
               <span className="font-semibold text-gray-800 truncate">Comprovante de Logística Anexado</span>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <a href={comprovanteUrl} target="_blank" rel="noreferrer" className="text-slate-700 font-bold hover:underline flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => abrirVisualizacaoImagem(comprovanteUrl, 'Comprovante de Logística / Frete')}
+                className="text-slate-700 font-bold hover:underline flex items-center gap-1 cursor-pointer"
+              >
                 <span>Ver Comprovante</span>
                 <ExternalLink className="w-3 h-3" />
-              </a>
+              </button>
               <button type="button" onClick={onRemoverComprovante} className="p-1 text-rose-500 hover:bg-rose-50 rounded-lg cursor-pointer">
                 <X className="w-3.5 h-3.5" />
               </button>

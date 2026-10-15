@@ -49,6 +49,12 @@ export function unificarTitulosReceber(
       servicoObraMap.set(servico.id, item.obra_id);
     }
 
+    const isOrigemServico = item.numero_medicao?.startsWith('HOR-') || (item.observacoes && item.observacoes.includes('[REF:'));
+    if (isOrigemServico && !servico) {
+      // Medição órfã de serviço que não existe mais em servicos_horimetro: ignorar
+      return;
+    }
+
     // Se o serviço tiver parcelas detalhadas, não usamos a medição bruta; geraremos as parcelas a partir do serviço
     if (servico?.parcelas && Array.isArray(servico.parcelas) && servico.parcelas.length > 0) {
       return;
@@ -64,7 +70,7 @@ export function unificarTitulosReceber(
       ? Number(servico.saldo_restante)
       : Math.max(0, bruto - adiantamento);
 
-    const isQuitado = item.status_pagamento === 'PAGO' || (servico && servico.status_pagamento_cliente === 'QUITADO') || (bruto > 0 && saldoRestante <= 0);
+    const isQuitado = item.status_pagamento === 'PAGO' || (servico && servico.status_pagamento_cliente === 'QUITADO') || (bruto > 0 && saldoRestante <= 0.05);
 
     formatadosMedicoes.push({
       ...item,

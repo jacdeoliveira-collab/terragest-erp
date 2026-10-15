@@ -62,6 +62,10 @@ export const OperadorRemuneracaoCard: React.FC<Props> = ({
           </span>
         </div>
       </div>
+
+      <div className="pt-1.5 border-t border-sky-200/80 flex items-center justify-between text-[10px] text-sky-800">
+        <span>💡 <strong>Vales e Adiantamentos do Operador:</strong> Gerenciados no extrato (clique no nome dele na tabela de serviços ou em RH), com baixa automática no Contas a Pagar e emissão de Recibo.</span>
+      </div>
     </div>
   );
 };

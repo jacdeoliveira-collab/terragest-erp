@@ -1,5 +1,6 @@
 import React from 'react';
 import { Camera, X, ExternalLink } from 'lucide-react';
+import { abrirVisualizacaoImagem } from '../../../../utils/visualizadorImagem';
 
 interface FotoHorimetroUploadFieldProps {
   label: string;
@@ -50,12 +51,11 @@ export const FotoHorimetroUploadField: React.FC<FotoHorimetroUploadFieldProps> =
 
       {valorFoto && (
         <div className="flex items-center gap-2 p-1.5 bg-gray-50 rounded-lg border border-gray-200">
-          <a
-            href={valorFoto}
-            target="_blank"
-            rel="noreferrer"
+          <button
+            type="button"
+            onClick={() => abrirVisualizacaoImagem(valorFoto, `Foto do Painel - ${badge}`)}
             title="Clique para ver a foto em tamanho real"
-            className="block shrink-0 relative group"
+            className="block shrink-0 relative group cursor-pointer"
           >
             <img
               src={valorFoto}
@@ -65,20 +65,19 @@ export const FotoHorimetroUploadField: React.FC<FotoHorimetroUploadFieldProps> =
             <span className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-md opacity-0 group-hover:opacity-100 transition-opacity text-white">
               <ExternalLink className="w-3.5 h-3.5" />
             </span>
-          </a>
+          </button>
           <div className="flex-1 min-w-0 text-[10px]">
             <span className={`inline-block font-semibold px-1.5 py-0.5 rounded text-[9px] ${badgeClass}`}>
               {badge}
             </span>
             <p className="text-gray-500 mt-0.5 truncate">Foto do painel anexada</p>
-            <a
-              href={valorFoto}
-              target="_blank"
-              rel="noreferrer"
-              className="text-emerald-700 hover:underline font-medium inline-flex items-center gap-0.5"
+            <button
+              type="button"
+              onClick={() => abrirVisualizacaoImagem(valorFoto, `Foto do Painel - ${badge}`)}
+              className="text-emerald-700 hover:underline font-medium inline-flex items-center gap-0.5 cursor-pointer"
             >
               <span>Ver painel ampliado</span>
-            </a>
+            </button>
           </div>
         </div>
       )}

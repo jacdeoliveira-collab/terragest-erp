@@ -62,3 +62,52 @@ async function tentarCarregarViaBlob(url: string): Promise<string | null> {
     return null;
   }
 }
+
+/**
+ * Renderiza uma imagem no PDF preservando estritamente a proporção original (aspect ratio),
+ * centralizando horizontal e verticalmente dentro da área delimitada (maxW, maxH).
+ */
+export function desenharImagemProporcional(
+  doc: any,
+  imgBase64: string,
+  x: number,
+  y: number,
+  maxW: number,
+  maxH: number
+): { x: number; y: number; w: number; h: number } {
+  let renderW = maxW;
+  let renderH = maxH;
+  let renderX = x;
+  let renderY = y;
+
+  try {
+    const props = doc.getImageProperties ? doc.getImageProperties(imgBase64) : null;
+    if (props?.width && props?.height && props.width > 0 && props.height > 0) {
+      const aspect = props.width / props.height;
+      if (aspect >= maxW / maxH) {
+        renderW = maxW;
+        renderH = maxW / aspect;
+        renderX = x;
+        renderY = y + (maxH - renderH) / 2;
+      } else {
+        renderH = maxH;
+        renderW = maxH * aspect;
+        renderX = x + (maxW - renderW) / 2;
+        renderY = y;
+      }
+    }
+  } catch {}
+
+  const formato = imgBase64.includes('image/png') || imgBase64.endsWith('.png') ? 'PNG' : 'JPEG';
+  try {
+    doc.addImage(imgBase64, formato, renderX, renderY, renderW, renderH);
+  } catch (err) {
+    try {
+      doc.addImage(imgBase64, 'JPEG', renderX, renderY, renderW, renderH);
+    } catch (e2) {
+      console.warn('Erro ao renderizar imagem proporcional:', e2);
+    }
+  }
+
+  return { x: renderX, y: renderY, w: renderW, h: renderH };
+}
