@@ -47,7 +47,8 @@ export function useMovimentacaoFormState(onSuccess: () => void) {
     e.preventDefault();
     limparErro();
 
-    const obsFinal = comprovanteUrl
+    const linkValido = comprovanteUrl && !comprovanteUrl.startsWith('data:image/') && comprovanteUrl.length < 500;
+    const obsFinal = linkValido
       ? `${observacoes ? observacoes + ' ' : ''}[FOTO:${comprovanteUrl}]`
       : observacoes;
 

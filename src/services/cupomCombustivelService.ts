@@ -26,7 +26,8 @@ export async function processarLancamentoCupom(dto: LancarCupomCombustivelDTO): 
 
     // 2. Inserir despesa consolidada em CONTAS A PAGAR
     const descPagar = `Diesel Posto: ${dto.postoFornecedor || 'Posto'} (${dto.maquinaPrincipal.maquinaNome || 'Máq'}${dto.veiculoApoio?.maquinaNome ? ' + ' + dto.veiculoApoio.maquinaNome : ''})`.slice(0, 150);
-    const tagFoto = dto.fotoCupomUrl ? `[FOTO:${dto.fotoCupomUrl}] ` : '';
+    const linkValido = dto.fotoCupomUrl && !dto.fotoCupomUrl.startsWith('data:image/') && dto.fotoCupomUrl.length < 500;
+    const tagFoto = linkValido ? `[FOTO:${dto.fotoCupomUrl}] ` : '';
     const obsDespesa = `[REF:${cupomId}] ${tagFoto}Conta: ${dto.contaSaida} | Litros: ${totalLitros}L | Doc: ${dto.numeroNfCupom || 'Cupom'}${srv ? ` | Cliente: ${srv.cliente_nome}` : ''}`;
 
     let existCupId: string | null = null;

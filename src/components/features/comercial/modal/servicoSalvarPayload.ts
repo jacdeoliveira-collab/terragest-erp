@@ -71,6 +71,11 @@ export function montarPayloadServico(
     ? metricas.saldoRestanteCliente
     : Math.max(0, metricas.faturamentoBruto - adiantamento);
 
+  const limparUrl = (url?: string) => {
+    if (!url || url.startsWith('data:image/') || url.length > 500) return undefined;
+    return url;
+  };
+
   return {
     ...(servicoId ? { id: servicoId } : {}),
     cliente_id: dados.clienteId || undefined,
@@ -88,8 +93,8 @@ export function montarPayloadServico(
     data_fim: finalizar ? (dados.dataFim || new Date().toISOString().split('T')[0]) : undefined,
     horimetro_inicial: Number(dados.horimetroInicial),
     horimetro_final: dados.horimetroFinal !== undefined ? Number(dados.horimetroFinal) : undefined,
-    foto_horimetro_inicial: dados.fotoHorimetroInicial,
-    foto_horimetro_final: dados.fotoHorimetroFinal,
+    foto_horimetro_inicial: limparUrl(dados.fotoHorimetroInicial),
+    foto_horimetro_final: limparUrl(dados.fotoHorimetroFinal),
     alerta_painel: dados.alertaPainel?.trim() || undefined,
     valor_hora: Number(dados.valorHora),
     horas_trabalhadas: metricas.horasTrabalhadas,
@@ -99,7 +104,7 @@ export function montarPayloadServico(
     combustivel_apoio_litros: Number(dados.combustivelApoioLitros),
     combustivel_apoio_valor: Number(dados.combustivelApoioValor),
     combustivel_total_valor: metricas.combustivelTotalValor,
-    foto_cupom_combustivel: dados.fotoCupom,
+    foto_cupom_combustivel: limparUrl(dados.fotoCupom),
     despesa_operador: metricas.despesaOperadorCalculada !== undefined ? metricas.despesaOperadorCalculada : Number(dados.despesaOperador),
     despesa_apoio: Number(dados.despesaApoio),
     despesa_manutencao: Number(dados.despesaManutencao),
@@ -125,8 +130,12 @@ export function montarPayloadServico(
     prazo_descricao: dados.prazoDescricao?.trim() || undefined,
     data_vencimento: dados.dataVencimento || undefined,
     parcelas: dados.parcelas || [],
-    fotos_trabalho: dados.fotosTrabalho || [],
-    maquinas_itens: dados.maquinasItens || [],
+    fotos_trabalho: (dados.fotosTrabalho || []).filter((f) => !f.url?.startsWith('data:image/')),
+    maquinas_itens: (dados.maquinasItens || []).map((m) => ({
+      ...m,
+      foto_horimetro_inicial: limparUrl(m.foto_horimetro_inicial),
+      foto_horimetro_final: limparUrl(m.foto_horimetro_final)
+    })),
     abastecimentos_ids: dados.abastecimentosIds || [],
     status: finalizar ? 'FINALIZADO' : 'EM_ANDAMENTO',
     observacoes: dados.observacoes?.trim() || undefined
