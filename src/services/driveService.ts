@@ -38,6 +38,10 @@ async function getServiceAccountToken(): Promise<string> {
 }
 
 async function getAccessTokenForUpload(): Promise<string> {
+  if (typeof window !== 'undefined') {
+    const local = localStorage.getItem('terragest_google_drive_token');
+    if (local) return local;
+  }
   try {
     const { data: userData } = await supabase.auth.getUser();
     const activeTenant = typeof window !== 'undefined' ? localStorage.getItem('terragest_tenant_ativo_id') : null;
@@ -62,7 +66,7 @@ export async function uploadParaGoogleDrive(
     const folderId = getDriveFolderId(pastaTipo);
     const token = await getAccessTokenForUpload();
 
-    const metadata = { name: `${Date.now()}_${arquivo.name}`, parents: [folderId] };
+    const metadata: Record<string, any> = { name: `${Date.now()}_${arquivo.name}`, parents: [folderId] };
     const boundary = '-------314159265358979323846';
     const delimiter = `\r\n--${boundary}\r\n`;
     const closeDelimiter = `\r\n--${boundary}--`;
@@ -74,16 +78,32 @@ export async function uploadParaGoogleDrive(
       reader.readAsArrayBuffer(arquivo);
     });
 
-    const metadataHeader = `${delimiter}Content-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(metadata)}\r\n`;
-    const mediaHeader = `${delimiter}Content-Type: ${arquivo.type || 'application/octet-stream'}\r\n\r\n`;
-    const blob = new Blob([metadataHeader, mediaHeader, new Uint8Array(fileBytes), closeDelimiter], {
-      type: `multipart/related; boundary=${boundary}`
-    });
+    const criarBlob = (meta: Record<string, any>) => new Blob([
+      `${delimiter}Content-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify(meta)}\r\n`,
+      `${delimiter}Content-Type: ${arquivo.type || 'application/octet-stream'}\r\n\r\n`,
+      new Uint8Array(fileBytes),
+      closeDelimiter
+    ], { type: `multipart/related; boundary=${boundary}` });
 
-    const uploadRes = await fetch(
-      'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink,webContentLink',
-      { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: blob }
-    );
+    const apiUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink';
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 4000);
+
+    let uploadRes = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: criarBlob(metadata),
+      signal: controller.signal
+    });
+    clearTimeout(timer);
+
+    if (!uploadRes.ok && uploadRes.status !== 403) {
+      uploadRes = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: criarBlob({ name: metadata.name })
+      });
+    }
 
     if (!uploadRes.ok) {
       const errTxt = await uploadRes.text();
@@ -93,16 +113,17 @@ export async function uploadParaGoogleDrive(
         friendly = json?.error?.message || friendly;
       } catch {}
       if (friendly.includes('storage quota')) {
-        friendly = 'Cota do Drive pessoal: Conecte sua conta do Google em "Minha Empresa > Integrações" para autorizar o upload direto na sua cota de armazenamento.';
+        friendly = 'Cota do Drive pessoal: Conecte sua conta do Google em Minha Empresa > Integrações para sincronização em nuvem.';
       }
-      throw new Error(`Google Drive: ${friendly}`);
+      throw new Error(friendly);
     }
 
     const fileResult = await uploadRes.json();
     const driveUrl = fileResult.webViewLink || `https://drive.google.com/file/d/${fileResult.id}/view`;
     return { sucesso: true, driveUrl, fileId: fileResult.id };
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Falha desconhecida no upload para o Drive';
+    const msg = err instanceof Error ? err.message : 'Falha no upload para o Drive';
     return { sucesso: false, erro: msg };
   }
 }
+

@@ -95,7 +95,9 @@ export const ServicoHorimetroModal: React.FC<ServicoHorimetroModalProps> = ({
         />
 
         <ServicoModalFooter
-          onClose={onClose} salvando={state.salvando}
+          onClose={onClose}
+          salvando={state.salvando}
+          enviandoFoto={Boolean(state.uploadingImage)}
           onSalvarEmAndamento={() => state.handleSalvar(false)}
           onConcluirServico={handleTentarConcluir}
         />

@@ -25,6 +25,12 @@ export const Login: React.FC = () => {
     }
   };
 
+  React.useEffect(() => {
+    if (user) {
+      handleSuccess();
+    }
+  }, [user]);
+
   return (
     <div className="relative min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8 overflow-hidden bg-slate-950">
       {/* Imagem de Fundo de Maquinários e Terraplanagem */}

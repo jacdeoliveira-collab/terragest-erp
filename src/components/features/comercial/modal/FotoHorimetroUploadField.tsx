@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Camera, X, ExternalLink } from 'lucide-react';
 import { abrirVisualizacaoImagem } from '../../../../utils/visualizadorImagem';
+import { obterComprovante } from '../../../../services/comprovanteStorageService';
 
 interface FotoHorimetroUploadFieldProps {
   label: string;
@@ -12,6 +13,14 @@ interface FotoHorimetroUploadFieldProps {
   onRemover: () => void;
 }
 
+function resolverDriveThumbnail(url: string): string {
+  if (url.includes('drive.google.com')) {
+    const match = url.match(/[-\w]{25,}/);
+    if (match) return `https://drive.google.com/thumbnail?id=${match[0]}&sz=w300`;
+  }
+  return url;
+}
+
 export const FotoHorimetroUploadField: React.FC<FotoHorimetroUploadFieldProps> = ({
   badge,
   badgeClass,
@@ -20,6 +29,24 @@ export const FotoHorimetroUploadField: React.FC<FotoHorimetroUploadFieldProps> =
   onUpload,
   onRemover
 }) => {
+  const [thumbSrc, setThumbSrc] = useState<string>('');
+
+  useEffect(() => {
+    let ativo = true;
+    if (!valorFoto) {
+      setThumbSrc('');
+      return;
+    }
+    if (valorFoto.startsWith('idb://') || valorFoto.startsWith('ref_')) {
+      obterComprovante(valorFoto).then((dados) => {
+        if (ativo && dados) setThumbSrc(dados);
+      });
+      return;
+    }
+    setThumbSrc(resolverDriveThumbnail(valorFoto));
+    return () => { ativo = false; };
+  }, [valorFoto]);
+
   return (
     <div className="space-y-1.5 pt-1">
       <div className="flex items-center gap-1.5">
@@ -30,13 +57,7 @@ export const FotoHorimetroUploadField: React.FC<FotoHorimetroUploadFieldProps> =
           <Camera className="w-3 h-3 text-emerald-600" />
           <span>{valorFoto ? 'Trocar Foto' : 'Anexar Foto'}</span>
         </label>
-        <input
-          id={inputId}
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={onUpload}
-        />
+        <input id={inputId} type="file" accept="image/*" className="hidden" onChange={onUpload} />
         {valorFoto && (
           <button
             type="button"
@@ -58,7 +79,7 @@ export const FotoHorimetroUploadField: React.FC<FotoHorimetroUploadFieldProps> =
             className="block shrink-0 relative group cursor-pointer"
           >
             <img
-              src={valorFoto}
+              src={thumbSrc || valorFoto}
               alt={badge}
               className="w-12 h-12 object-cover rounded-md border border-gray-300 shadow-xs group-hover:opacity-85 transition-opacity"
             />
@@ -84,3 +105,4 @@ export const FotoHorimetroUploadField: React.FC<FotoHorimetroUploadFieldProps> =
     </div>
   );
 };
+

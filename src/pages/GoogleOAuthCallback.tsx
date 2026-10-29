@@ -26,6 +26,11 @@ export const GoogleOAuthCallback: React.FC = () => {
       return;
     }
 
+    try {
+      localStorage.setItem('terragest_google_drive_token', accessToken);
+      localStorage.setItem('terragest_google_drive_token_time', String(Date.now()));
+    } catch {}
+
     if (!tenantAtivoId && !tenantLoading) {
       // Pequeno debounce para dar tempo do TenantContext sincronizar
       const timer = setTimeout(() => {

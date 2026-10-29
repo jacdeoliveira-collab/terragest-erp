@@ -33,6 +33,12 @@ export function sanitizarServicosParaCache(servicos: ServicoHorimetro[]): Servic
           url: limparFotoParaCache(f.url) || '',
         }))
       : s.fotos_trabalho,
+    adiantamentos_historico: Array.isArray(s.adiantamentos_historico)
+      ? s.adiantamentos_historico.map((a) => ({
+          ...a,
+          comprovante_url: limparFotoParaCache(a.comprovante_url),
+        }))
+      : s.adiantamentos_historico,
   }));
 }
 
@@ -40,7 +46,8 @@ export function salvarServicosCache(tId: string | null, lista: ServicoHorimetro[
   try {
     const key = obterKeyStorage(tId);
     const sanitizada = sanitizarServicosParaCache(lista);
-    localStorage.setItem(key, JSON.stringify(sanitizada));
+    const limitada = sanitizada.slice(0, 40);
+    localStorage.setItem(key, JSON.stringify(limitada));
   } catch (err) {
     console.warn('Aviso: Falha ao gravar cache local no localStorage:', err);
     try {

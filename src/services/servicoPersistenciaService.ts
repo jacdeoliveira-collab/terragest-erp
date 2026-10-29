@@ -37,8 +37,20 @@ export function mesclarServicosLocaisERemotos(
     const base = localMaisRecente ? { ...remoto, ...local } : { ...local, ...remoto };
     const obra_id = remoto.obra_id || local.obra_id;
     const obra_nome = remoto.obra_nome || local.obra_nome || extrairObraDeObservacoes(base.observacoes);
+    const foto_horimetro_inicial = remoto.foto_horimetro_inicial || local.foto_horimetro_inicial;
+    const foto_horimetro_final = remoto.foto_horimetro_final || local.foto_horimetro_final;
+    const foto_cupom_combustivel = remoto.foto_cupom_combustivel || local.foto_cupom_combustivel;
 
-    return { ...base, obra_id, obra_nome, parcelas, adiantamentos_historico: adiantamentos };
+    return {
+      ...base,
+      obra_id,
+      obra_nome,
+      foto_horimetro_inicial,
+      foto_horimetro_final,
+      foto_cupom_combustivel,
+      parcelas,
+      adiantamentos_historico: adiantamentos
+    };
   });
 
   const novosLocais = locais.filter((l) => !idsRemotos.has(l.id));

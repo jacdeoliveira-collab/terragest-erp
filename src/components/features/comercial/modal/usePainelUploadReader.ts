@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { comprimirImagem } from '../../../../services/comprovanteStorageService';
+import { comprimirImagem, salvarComprovante } from '../../../../services/comprovanteStorageService';
 import { extrairTextoDeImagem } from '../../../../services/imageOcrExtractor';
 import { uploadParaGoogleDrive } from '../../../../services/driveService';
 import { analisarPainelHorimetro } from '../../../../services/painelHorimetroParser';
@@ -34,16 +34,18 @@ export function usePainelUploadReader({
     let imagemBase64 = '';
     try {
       imagemBase64 = await comprimirImagem(file);
-      setter(imagemBase64);
     } catch {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === 'string') {
-          imagemBase64 = reader.result;
-          setter(reader.result);
-        }
-      };
-      reader.readAsDataURL(file);
+      imagemBase64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+        reader.readAsDataURL(file);
+      });
+    }
+
+    const chaveIdb = `idb://hor_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    if (imagemBase64) {
+      await salvarComprovante(chaveIdb, imagemBase64);
+      setter(chaveIdb);
     }
 
     const isIni = fieldName === 'inicial' || fieldName.startsWith('ini');
@@ -64,7 +66,7 @@ export function usePainelUploadReader({
           if (dados.alertaPainel) onAlertaDetectado(dados.alertaPainel);
         }
       } catch {
-        setMensagemOcr('Foto anexada. Digite o valor do horímetro se necessário.');
+        setMensagemOcr('Foto anexada com sucesso!');
       }
     } else if (fieldName === 'cupom' || fieldName.startsWith('cupom')) {
       try {
@@ -87,13 +89,24 @@ export function usePainelUploadReader({
     }
 
     try {
-      const res = await uploadParaGoogleDrive(file, 'frota');
-      if (res.sucesso && res.driveUrl) setter(res.driveUrl);
+      setMensagemOcr('Foto salva! Tentando sincronizar com Google Drive...');
+      const timeoutPromise = new Promise<{ sucesso: boolean; erro: string }>((resolve) => {
+        setTimeout(() => resolve({ sucesso: false, erro: 'Tempo limite ao conectar ao Drive' }), 4000);
+      });
+      const res = await Promise.race([uploadParaGoogleDrive(file, 'frota'), timeoutPromise]);
+      if (res.sucesso && (res as any).driveUrl) {
+        setter((res as any).driveUrl);
+        setMensagemOcr('Foto sincronizada no Google Drive com sucesso!');
+      } else {
+        setMensagemOcr('Foto salva e vinculada com sucesso.');
+      }
     } catch {
+      setMensagemOcr('Foto salva e vinculada com sucesso.');
     } finally {
       setUploadingImage(null);
     }
   };
+
 
   return { uploadingImage, mensagemOcr, setMensagemOcr, handleImageUpload };
 }
