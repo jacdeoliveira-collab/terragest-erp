@@ -25,7 +25,21 @@ export const OrcamentoRowItem: React.FC<OrcamentoRowItemProps> = ({
     <tr className="hover:bg-gray-50/60 transition-colors">
       <td className="p-3.5">
         <span className="font-semibold text-gray-900 block">{orc.cliente_nome}</span>
-        <span className="text-[10px] text-gray-400 font-mono">{orc.maquina_codigo || 'Linha Amarela'}</span>
+        <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+          <span className="text-[10px] text-gray-700 font-mono font-bold bg-gray-100 px-1.5 py-0.5 rounded">
+            {orc.maquina_codigo || 'Frota Geral'}
+          </span>
+          {orc.maquina_modelo && (
+            <span className="text-[10px] text-slate-500 font-medium truncate max-w-[130px]">
+              {orc.maquina_modelo}
+            </span>
+          )}
+          {Boolean(orc.maquina_potencia) && (
+            <span className="text-[9px] text-amber-700 bg-amber-50 border border-amber-200 px-1 rounded font-semibold">
+              {orc.maquina_potencia} HP
+            </span>
+          )}
+        </div>
       </td>
       <td className="p-3.5 max-w-xs truncate text-gray-600">{orc.descricao_servico}</td>
       <td className="p-3.5 text-right font-mono font-medium">R$ {Number(orc.valor_hora || 0).toFixed(2)}</td>
@@ -54,7 +68,6 @@ export const OrcamentoRowItem: React.FC<OrcamentoRowItemProps> = ({
       </td>
       <td className="p-3.5 text-center">
         <div className="flex items-center justify-center gap-1">
-          {/* Botão de Adiantamento e Recibo */}
           <button
             onClick={() => onAbrirRecibo(orc)}
             className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg font-semibold cursor-pointer"

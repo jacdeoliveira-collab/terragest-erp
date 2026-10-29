@@ -2,20 +2,23 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { Orcamento } from '../types/comercial.types';
 import { getEmpresaAtivaCache } from '../services/empresaAtivaService';
-import { desenharRodapeTerraGest } from './pdf/pdfEmpresaLayout';
 import { desenharBlocoPagamentoPixOrcamento } from './pdf/pdfOrcamentoPagamentoBlock';
 import { desenharLogoNoPdf } from './pdf/pdfLogoHelper';
-import { obterDadosAssinaturaEmpresa, desenharAssinaturaDigital } from './pdf/pdfAssinaturaEmpresaHelper';
+import { obterDadosAssinaturaEmpresa } from './pdf/pdfAssinaturaEmpresaHelper';
+import { desenharFichaTecnicaMaquinaNoPdf } from './pdf/pdfOrcamentoFichaTecnica';
+import { desenharTermosEAssinaturasOrcamento } from './pdf/pdfOrcamentoTermos';
 
 export function gerarOrcamentoPDF(orc: Orcamento): void {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const empresa = getEmpresaAtivaCache() || {};
   const dadosEmp = obterDadosAssinaturaEmpresa(empresa);
-  const razaoSocial = dadosEmp.razaoSocial, cnpj = dadosEmp.cnpj;
+  const razaoSocial = dadosEmp.razaoSocial;
+  const cnpj = dadosEmp.cnpj;
   const contato = [empresa.contato_telefone, empresa.contato_email].filter(Boolean).join(' • ');
 
   // Faixa topo decorativa
-  doc.setFillColor(16, 185, 129); doc.rect(0, 0, 210, 6, 'F');
+  doc.setFillColor(16, 185, 129);
+  doc.rect(0, 0, 210, 6, 'F');
   const textX = desenharLogoNoPdf(doc, 14, 9, 36, 16, empresa) ? 54 : 14;
 
   doc.setFontSize(13);
@@ -35,12 +38,12 @@ export function gerarOrcamentoPDF(orc: Orcamento): void {
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(15, 23, 42);
-  doc.text('PROPOSTA COMERCIAL & ORÇAMENTO DE LOCAÇÃO', 14, 35);
+  doc.text('PROPOSTA COMERCIAL & LOCAÇÃO DE MÁQUINAS PESADAS', 14, 35);
 
   // Box Cliente & Proposta
   doc.setDrawColor(229, 231, 235);
   doc.setFillColor(249, 250, 251);
-  doc.roundedRect(14, 39, 182, 24, 2, 2, 'FD');
+  doc.roundedRect(14, 39, 182, 21, 2, 2, 'FD');
 
   doc.setFontSize(8.5);
   doc.setFont('helvetica', 'bold');
@@ -50,9 +53,9 @@ export function gerarOrcamentoPDF(orc: Orcamento): void {
   doc.text(orc.cliente_nome || 'Cliente', 54, 45);
 
   doc.setFont('helvetica', 'bold');
-  doc.text('Contato / Tel:', 18, 51);
+  doc.text('Contato / Tel:', 18, 52);
   doc.setFont('helvetica', 'normal');
-  doc.text(orc.cliente_telefone || 'Não informado', 42, 51);
+  doc.text(orc.cliente_telefone || 'Não informado', 42, 52);
 
   doc.setFont('helvetica', 'bold');
   doc.text('Proposta Nº:', 120, 45);
@@ -60,77 +63,64 @@ export function gerarOrcamentoPDF(orc: Orcamento): void {
   doc.text(orc.id ? `#ORC-${orc.id.slice(0, 6).toUpperCase()}` : '#ORC-001', 142, 45);
 
   doc.setFont('helvetica', 'bold');
-  doc.text('Data Emissão:', 120, 51);
+  doc.text('Data Emissão:', 120, 52);
   doc.setFont('helvetica', 'normal');
-  doc.text(orc.data_proposta || new Date().toISOString().slice(0, 10), 144, 51);
+  doc.text(orc.data_proposta || new Date().toISOString().slice(0, 10), 144, 52);
 
   doc.setFont('helvetica', 'bold');
-  doc.text('Validade:', 120, 57);
+  doc.text('Validade:', 168, 52);
   doc.setFont('helvetica', 'normal');
-  doc.text(orc.validade_dias ? `${orc.validade_dias} dias` : '15 dias', 136, 57);
+  doc.text(orc.validade_dias ? `${orc.validade_dias}d` : '15d', 183, 52);
+
+  // Ficha técnica da máquina (se vinculada)
+  const yAposFicha = desenharFichaTecnicaMaquinaNoPdf(doc, orc, 64);
 
   // Tabela Itens
+  const descLinha = [
+    orc.maquina_nome || 'Locação de Equipamento Linha Amarela',
+    orc.maquina_modelo ? `Modelo: ${orc.maquina_modelo}` : null,
+    orc.descricao_servico ? `Escopo: ${orc.descricao_servico}` : null
+  ].filter(Boolean).join(' - ');
+
   const body = [
     [
-      orc.maquina_nome || orc.descricao_servico || 'Locação de Equipamento Linha Amarela',
+      descLinha,
       `${orc.horas_estimadas || 0} h`,
       `R$ ${Number(orc.valor_hora || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-      'Incluso',
+      'Horímetro',
       `R$ ${Number(orc.valor_total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
     ]
   ];
 
   autoTable(doc, {
-    startY: 68,
-    head: [['Equipamento / Máquina', 'Qtd Horas', 'Valor/Hora', 'Combustível', 'Subtotal']],
+    startY: yAposFicha,
+    head: [['Equipamento / Escopo dos Serviços', 'Horas Estimadas', 'Valor / Hora', 'Medição', 'Total Estimado']],
     body,
     theme: 'grid',
-    styles: { fontSize: 8.5, cellPadding: 3, textColor: [31, 41, 55] },
+    styles: { fontSize: 8, cellPadding: 2.8, textColor: [31, 41, 55] },
     headStyles: { fillColor: [16, 185, 129], textColor: [255, 255, 255], fontStyle: 'bold' }
   });
 
   const lastTable = doc as unknown as { lastAutoTable: { finalY: number } };
-  const finalY = lastTable.lastAutoTable.finalY || 120;
+  const finalY = lastTable.lastAutoTable.finalY || (yAposFicha + 25);
 
   // Box Totais
   doc.setDrawColor(229, 231, 235);
   doc.setFillColor(243, 244, 246);
-  doc.roundedRect(120, finalY + 4, 76, 14, 2, 2, 'FD');
-  doc.setFontSize(9);
+  doc.roundedRect(120, finalY + 3, 76, 12, 2, 2, 'FD');
+  doc.setFontSize(8.5);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(31, 41, 55);
-  doc.text('TOTAL DA PROPOSTA:', 124, finalY + 13);
-  doc.setFontSize(11);
+  doc.text('TOTAL DA PROPOSTA:', 124, finalY + 11);
+  doc.setFontSize(10.5);
   doc.setTextColor(5, 150, 105);
-  doc.text(`R$ ${Number(orc.valor_total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 160, finalY + 13);
+  doc.text(`R$ ${Number(orc.valor_total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, 160, finalY + 11);
 
   // Bloco de Pagamento, Prazo e Chave PIX
-  const posPagY = desenharBlocoPagamentoPixOrcamento(doc, orc, finalY + 20);
+  const posPagY = desenharBlocoPagamentoPixOrcamento(doc, orc, finalY + 17);
 
   // Termos e Assinaturas
-  const termosY = posPagY + 2;
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(31, 41, 55);
-  doc.text('CONDIÇÕES GERAIS DE FORNECIMENTO E LOCAÇÃO:', 14, termosY);
-  doc.setFontSize(7.5);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(75, 85, 99);
-  doc.text('1. Medição via horímetro do equipamento apontado em Boletim Diário (BDE).', 14, termosY + 4.5);
-  doc.text('2. Abastecimento e operador conforme acordado entre as partes no contrato formal.', 14, termosY + 8.5);
-  const assY = termosY + 18;
-  desenharAssinaturaDigital(doc, 135, assY - 14, 38, 12, empresa);
-  doc.setDrawColor(156, 163, 175);
-  doc.line(20, assY, 90, assY);
-  doc.line(120, assY, 190, assY);
-  doc.setFontSize(7.5);
-  doc.setTextColor(55, 65, 81);
-  const clienteNome = orc.cliente_nome ? orc.cliente_nome.toUpperCase() : 'CONTRATANTE';
-  doc.text(clienteNome, 55, assY + 4, { align: 'center' });
-  doc.text('De Acordo / Aceite da Proposta', 55, assY + 7.5, { align: 'center' });
-  doc.text(`${razaoSocial} / Locador`, 155, assY + 4, { align: 'center' });
-  if (dadosEmp.textoResponsavel) doc.text(dadosEmp.textoResponsavel, 155, assY + 7.5, { align: 'center' });
-  desenharRodapeTerraGest(doc, 1, 1);
+  desenharTermosEAssinaturasOrcamento(doc, orc, posPagY + 3, empresa, dadosEmp);
 
   const cleanName = (orc.cliente_nome || 'cliente').toLowerCase().replace(/[^a-z0-9]/g, '_');
   doc.save(`proposta_comercial_${cleanName}.pdf`);

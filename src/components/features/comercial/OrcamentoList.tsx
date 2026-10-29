@@ -108,6 +108,7 @@ export const OrcamentoList: React.FC = () => {
         isOpen={modalAberto}
         onClose={() => { setModalAberto(false); setOrcamentoParaEditar(null); }}
         title={orcamentoParaEditar ? 'Editar Proposta Comercial' : 'Nova Proposta Comercial de Locação'}
+        maxWidth="3xl"
       >
         <OrcamentoForm
           key={orcamentoParaEditar?.id || 'novo'}

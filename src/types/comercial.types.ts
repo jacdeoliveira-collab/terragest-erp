@@ -40,12 +40,21 @@ export interface Orcamento {
   chave_pix_manual?: string;
   created_at?: string;
   updated_at?: string;
-  // Campos cruzados (joins em memória)
+  // Campos cruzados (joins em memória com dados reais da máquina e cliente)
   cliente_nome?: string;
   cliente_documento?: string;
   cliente_telefone?: string;
   maquina_nome?: string;
   maquina_codigo?: string;
+  maquina_modelo?: string;
+  maquina_serie?: string;
+  maquina_placa?: string;
+  maquina_ano?: number;
+  maquina_potencia?: number;
+  maquina_horimetro_atual?: number;
+  maquina_combustivel?: string;
+  maquina_capacidade_tanque?: number;
+  maquina_foto_url?: string;
   conta_bancaria_nome?: string;
   conta_bancaria_pix?: string;
   conta_bancaria_banco?: string;
@@ -53,6 +62,24 @@ export interface Orcamento {
 
 export type CreateOrcamentoDTO = Omit<
   Orcamento,
-  'id' | 'created_at' | 'updated_at' | 'cliente_nome' | 'cliente_documento' | 'cliente_telefone' | 'maquina_nome' | 'maquina_codigo' | 'conta_bancaria_nome' | 'conta_bancaria_pix' | 'conta_bancaria_banco'
+  | 'id'
+  | 'created_at'
+  | 'updated_at'
+  | 'cliente_nome'
+  | 'cliente_documento'
+  | 'cliente_telefone'
+  | 'maquina_nome'
+  | 'maquina_codigo'
+  | 'maquina_modelo'
+  | 'maquina_serie'
+  | 'maquina_placa'
+  | 'maquina_ano'
+  | 'maquina_potencia'
+  | 'maquina_horimetro_atual'
+  | 'maquina_combustivel'
+  | 'maquina_capacidade_tanque'
+  | 'maquina_foto_url'
+  | 'conta_bancaria_nome'
+  | 'conta_bancaria_pix'
+  | 'conta_bancaria_banco'
 >;
-

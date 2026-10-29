@@ -37,7 +37,9 @@ export function useOrcamentos() {
 
       let qOrc = supabase.from('orcamentos').select('*').order('created_at', { ascending: false });
       let qCli = supabase.from('clientes').select('id, nome, documento, telefone');
-      let qEqp = supabase.from('equipment').select('id, code, name');
+      let qEqp = supabase.from('equipment').select(
+        'id, code, name, model, serial_number, chassi, placa, ano_fabricacao, potencia_hp, current_hourmeter, combustivel_padrao, capacidade_tanque, drive_url_foto'
+      );
       let qCta = supabase.from('contas_bancarias').select('id, nome_conta, banco, chave_pix');
 
       const filter = obterFiltroTenantString(currentTenant);
@@ -64,6 +66,15 @@ export function useOrcamentos() {
           cliente_telefone: c?.telefone,
           maquina_nome: e?.name,
           maquina_codigo: e?.code,
+          maquina_modelo: e?.model,
+          maquina_serie: e?.serial_number || e?.chassi,
+          maquina_placa: e?.placa,
+          maquina_ano: e?.ano_fabricacao,
+          maquina_potencia: e?.potencia_hp,
+          maquina_horimetro_atual: e?.current_hourmeter,
+          maquina_combustivel: e?.combustivel_padrao,
+          maquina_capacidade_tanque: e?.capacidade_tanque,
+          maquina_foto_url: e?.drive_url_foto,
           conta_bancaria_nome: cta?.nome_conta,
           conta_bancaria_pix: cta?.chave_pix,
           conta_bancaria_banco: cta?.banco
