@@ -31,13 +31,12 @@ export async function isUserSuperAdmin(uid?: string | null): Promise<boolean> {
 
 /**
  * Verifica se um e-mail é o e-mail master/criador da plataforma TerraGest.
- * Utiliza variável de ambiente VITE_MASTER_EMAIL com fallback para e-mails do criador.
+ * Obtém a credencial exclusivamente da variável de ambiente VITE_MASTER_EMAIL,
+ * sem expor dados pessoais no código-fonte.
  */
 export function isMasterEmail(email?: string | null): boolean {
   if (!email) return false;
   const clean = email.toLowerCase().trim();
   const masterEnv = (import.meta.env.VITE_MASTER_EMAIL || '').toLowerCase().trim();
-  if (masterEnv && clean === masterEnv) return true;
-  return clean === 'asteriobello@hotmail.com' || clean === 'master@terragest.com';
+  return Boolean(masterEnv && clean === masterEnv);
 }
-

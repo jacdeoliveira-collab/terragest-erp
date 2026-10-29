@@ -23,19 +23,7 @@ const INITIAL_FLAGS: SystemFlag[] = [
 export function useMasterGovernance() {
   const [modules, setModules] = useState<ModuleToggle[]>(INITIAL_MODULES);
   const [flags, setFlags] = useState<SystemFlag[]>(INITIAL_FLAGS);
-  const [onboardings, setOnboardings] = useState<OnboardingItem[]>([
-    {
-      id: 'onb-1',
-      empresa: 'Grupo Grãos & Terra MT',
-      localizacao: 'Sorriso / MT',
-      admin: 'Carlos Eduardo Silveira',
-      email: 'carlos@graosterra.com.br',
-      plano: 'Plano Operacional',
-      valor: 'R$ 1.250,00/mês',
-      status: 'AGUARDANDO',
-      data: new Date().toLocaleDateString('pt-BR'),
-    }
-  ]);
+  const [onboardings, setOnboardings] = useState<OnboardingItem[]>([]);
   const [webhookLogs, setWebhookLogs] = useState<WebhookLogItem[]>([]);
 
   const toggleModule = (id: string) => {
@@ -58,17 +46,17 @@ export function useMasterGovernance() {
       data: new Date().toLocaleTimeString('pt-BR'),
       ...log,
     };
-    setWebhookLogs((prev) => [novoLog, ...prev.slice(0, 9)]);
+    setWebhookLogs((prev) => [novoLog, ...prev.slice(0, 19)]);
   };
 
   return {
     modules,
-    toggleModule,
     flags,
-    toggleFlag,
     onboardings,
-    aprovarOnboarding,
     webhookLogs,
+    toggleModule,
+    toggleFlag,
+    aprovarOnboarding,
     registrarWebhookLog,
   };
 }

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Activity, Users, Layers, Webhook, Flag, Database } from 'lucide-react';
+import { useAuth } from '../../../../hooks/useAuth';
 import type { MasterTab } from '../types/master.types';
 
 interface MasterHeaderProps {
@@ -21,6 +22,9 @@ export const MasterHeader: React.FC<MasterHeaderProps> = ({
   tenantAtivoNome = 'TerraGest Matriz',
   tenantAtivoCnpj = '00.000.000/0001-00',
 }) => {
+  const { user } = useAuth();
+  const usuarioEmail = user?.email || 'Administrador Master';
+
   const tabs = [
     { id: 'banco', label: 'Banco & Health Check', icone: Database },
     { id: 'assinantes', label: `Assinantes (${totalTenants})`, icone: Users },
@@ -40,7 +44,7 @@ export const MasterHeader: React.FC<MasterHeaderProps> = ({
                 Super Admin Master Global
               </span>
               <span className="text-xs text-gray-400">
-                operador: <span className="text-gray-300 font-mono">agrodronesconsultoria@gmail.com</span>
+                operador: <span className="text-gray-300 font-mono">{usuarioEmail}</span>
               </span>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">

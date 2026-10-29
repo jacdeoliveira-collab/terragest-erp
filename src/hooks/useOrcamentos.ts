@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useTenantContext } from '../contexts/TenantContext';
 import type { Orcamento, CreateOrcamentoDTO, StatusOrcamento } from '../types/comercial.types';
 import { DEFAULT_LEGACY_TENANT, obterFiltroTenantString } from '../utils/tenantFilter';
+import { mapearOrcamentosCompletos } from './orcamentoMapeadorHelper';
 
 const getStorageKey = (tId: string) => `terragest_orcamentos_${tId}`;
 
@@ -55,31 +56,7 @@ export function useOrcamentos() {
       const eqpMap = new Map((resEqp.data || []).map((e) => [e.id, e]));
       const ctaMap = new Map((resCta.data || []).map((c) => [c.id, c]));
 
-      const listaCruzada: Orcamento[] = (resOrc.data || []).map((item) => {
-        const c = cliMap.get(item.cliente_id);
-        const e = eqpMap.get(item.maquina_id);
-        const cta = item.conta_bancaria_id ? ctaMap.get(item.conta_bancaria_id) : undefined;
-        return {
-          ...item,
-          cliente_nome: c?.nome || 'Cliente Geral',
-          cliente_documento: c?.documento,
-          cliente_telefone: c?.telefone,
-          maquina_nome: e?.name,
-          maquina_codigo: e?.code,
-          maquina_modelo: e?.model,
-          maquina_serie: e?.serial_number || e?.chassi,
-          maquina_placa: e?.placa,
-          maquina_ano: e?.ano_fabricacao,
-          maquina_potencia: e?.potencia_hp,
-          maquina_horimetro_atual: e?.current_hourmeter,
-          maquina_combustivel: e?.combustivel_padrao,
-          maquina_capacidade_tanque: e?.capacidade_tanque,
-          maquina_foto_url: e?.drive_url_foto,
-          conta_bancaria_nome: cta?.nome_conta,
-          conta_bancaria_pix: cta?.chave_pix,
-          conta_bancaria_banco: cta?.banco
-        };
-      });
+      const listaCruzada = mapearOrcamentosCompletos(resOrc.data || [], { cliMap, eqpMap, ctaMap });
 
       setOrcamentos(listaCruzada);
       if (typeof window !== 'undefined') {

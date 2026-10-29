@@ -24,10 +24,12 @@ export async function processarLancamentoCupom(dto: LancarCupomCombustivelDTO): 
       srv = s;
     }
 
-    // 2. Inserir despesa consolidada em CONTAS A PAGAR
-    const descPagar = `Diesel Posto: ${dto.postoFornecedor || 'Posto'} (${dto.maquinaPrincipal.maquinaNome || 'Máq'}${dto.veiculoApoio?.maquinaNome ? ' + ' + dto.veiculoApoio.maquinaNome : ''})`.slice(0, 150);
+    // 2. Inserir despesa consolidada em CONTAS A PAGAR (Sem Base64 no banco)
     const linkValido = dto.fotoCupomUrl && !dto.fotoCupomUrl.startsWith('data:image/') && dto.fotoCupomUrl.length < 500;
-    const tagFoto = linkValido ? `[FOTO:${dto.fotoCupomUrl}] ` : '';
+    const fotoLinkSeguro = linkValido ? dto.fotoCupomUrl : null;
+
+    const descPagar = `Diesel Posto: ${dto.postoFornecedor || 'Posto'} (${dto.maquinaPrincipal.maquinaNome || 'Máq'}${dto.veiculoApoio?.maquinaNome ? ' + ' + dto.veiculoApoio.maquinaNome : ''})`.slice(0, 150);
+    const tagFoto = fotoLinkSeguro ? `[FOTO:${fotoLinkSeguro}] ` : '';
     const obsDespesa = `[REF:${cupomId}] ${tagFoto}Conta: ${dto.contaSaida} | Litros: ${totalLitros}L | Doc: ${dto.numeroNfCupom || 'Cupom'}${srv ? ` | Cliente: ${srv.cliente_nome}` : ''}`;
 
     let existCupId: string | null = null;
@@ -61,7 +63,7 @@ export async function processarLancamentoCupom(dto: LancarCupomCombustivelDTO): 
         origem: 'POSTO', quantidade_litros: litrosMaq, valor_total: valorMaq,
         horimetro_momento: Number(dto.maquinaPrincipal.horimetro) || 0,
         posto_fornecedor: (dto.postoFornecedor || 'Posto').slice(0, 80),
-        numero_requisicao_nf: docMaq, foto_comprovante: dto.fotoCupomUrl || null
+        numero_requisicao_nf: docMaq, foto_comprovante: fotoLinkSeguro
       }]).select('id').maybeSingle();
 
       if (errMaq) throw new Error(`Falha no abastecimento da máquina: ${errMaq.message}`);
@@ -83,7 +85,7 @@ export async function processarLancamentoCupom(dto: LancarCupomCombustivelDTO): 
         origem: 'POSTO', quantidade_litros: litrosApoio, valor_total: valorApoio,
         horimetro_momento: Number(dto.veiculoApoio.horimetro) || 0,
         posto_fornecedor: (dto.postoFornecedor || 'Posto').slice(0, 80),
-        numero_requisicao_nf: docApoio, foto_comprovante: dto.fotoCupomUrl || null
+        numero_requisicao_nf: docApoio, foto_comprovante: fotoLinkSeguro
       }]).select('id').maybeSingle();
       if (errApoio) throw new Error(`Falha no abastecimento de apoio: ${errApoio.message}`);
       idApoio = insApoio?.id;
@@ -103,23 +105,11 @@ export async function processarLancamentoCupom(dto: LancarCupomCombustivelDTO): 
         combustivel_maquina_litros: nLitros, combustivel_maquina_valor: nValor,
         combustivel_total_litros: nTotLitros, combustivel_total_valor: nTotComb,
         despesas_total: nDesp, lucro_liquido: Number(srv.faturamento_bruto || 0) - nDesp,
-        abastecimentos_ids: novosIds, foto_cupom_combustivel: dto.fotoCupomUrl || srv.foto_cupom_combustivel,
+        abastecimentos_ids: novosIds, foto_cupom_combustivel: fotoLinkSeguro || srv.foto_cupom_combustivel,
         updated_at: agora
       };
 
       await supabase.from('servicos_horimetro').update(payloadServ).eq('id', dto.servicoId);
-
-      try {
-        const k = `terragest_servicos_horimetro_${tenantId}`;
-        const raw = localStorage.getItem(k);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) {
-            const idx = parsed.findIndex((item) => item.id === dto.servicoId);
-            if (idx >= 0) { parsed[idx] = { ...parsed[idx], ...payloadServ }; localStorage.setItem(k, JSON.stringify(parsed)); }
-          }
-        }
-      } catch {}
     }
 
     return { success: true, cupomId };

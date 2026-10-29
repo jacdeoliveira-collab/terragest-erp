@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Tag } from 'lucide-react';
 import { useClientes } from '../../../hooks/useClientes';
 import { useEquipments } from '../../../hooks/useEquipments';
 import { OrcamentoCondicoesPagamentoSection } from './OrcamentoCondicoesPagamentoSection';
 import { OrcamentoClienteCard } from './OrcamentoClienteCard';
 import { OrcamentoMaquinaCard } from './OrcamentoMaquinaCard';
 import { OrcamentoCondicoesOperacionaisSection } from './OrcamentoCondicoesOperacionaisSection';
+import { OrcamentoValoresSection } from './OrcamentoValoresSection';
+import { OrcamentoFormFooter } from './OrcamentoFormFooter';
 import type { Orcamento, CreateOrcamentoDTO } from '../../../types/comercial.types';
 
 interface OrcamentoFormProps {
@@ -113,24 +114,12 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = ({
         <textarea required rows={2} placeholder="Ex: Terraplanagem, drenagem pluvial ou escavação de valas" value={descricaoServico} onChange={(e) => setDescricaoServico(e.target.value)} className="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-300 rounded-xl" />
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <div>
-          <label className="block font-semibold text-gray-700 mb-1">Valor da Hora *</label>
-          <input type="number" step="0.01" min="0" required value={valorHora} onChange={(e) => setValorHora(parseFloat(e.target.value) || 0)} className="w-full px-2 py-1.5 bg-gray-50 border border-gray-300 rounded-xl font-mono" />
-        </div>
-        <div>
-          <label className="block font-semibold text-gray-700 mb-1">Horas Estimadas *</label>
-          <input type="number" step="0.5" min="1" required value={horasEstimadas} onChange={(e) => setHorasEstimadas(parseFloat(e.target.value) || 0)} className="w-full px-2 py-1.5 bg-gray-50 border border-gray-300 rounded-xl font-mono" />
-        </div>
-        <div>
-          <label className="block font-semibold text-amber-700 mb-1 flex items-center gap-1"><Tag className="w-3 h-3" /> Desconto (R$)</label>
-          <input type="number" step="0.01" min="0" value={valorDesconto || ''} placeholder="0.00" onChange={(e) => setValorDesconto(parseFloat(e.target.value) || 0)} className="w-full px-2 py-1.5 bg-amber-50/50 border border-amber-300 rounded-xl font-mono text-amber-800" />
-        </div>
-        <div>
-          <label className="block font-semibold text-gray-700 mb-1">Validade (Dias)</label>
-          <input type="number" min="1" value={validadeDias} onChange={(e) => setValidadeDias(parseInt(e.target.value) || 15)} className="w-full px-2 py-1.5 bg-gray-50 border border-gray-300 rounded-xl font-mono" />
-        </div>
-      </div>
+      <OrcamentoValoresSection
+        valorHora={valorHora} setValorHora={setValorHora}
+        horasEstimadas={horasEstimadas} setHorasEstimadas={setHorasEstimadas}
+        valorDesconto={valorDesconto} setValorDesconto={setValorDesconto}
+        validadeDias={validadeDias} setValidadeDias={setValidadeDias}
+      />
 
       <OrcamentoCondicoesOperacionaisSection
         operadorIncluso={operadorIncluso} setOperadorIncluso={setOperadorIncluso}
@@ -146,22 +135,15 @@ export const OrcamentoForm: React.FC<OrcamentoFormProps> = ({
         dataVencimento={dataVencimento} setDataVencimento={setDataVencimento}
       />
 
-      <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
-        <div className="space-x-2 text-[11px] text-gray-600">
-          <span>Subtotal: <b>R$ {subtotal.toFixed(2)}</b></span>
-          {valorDesconto > 0 && <span className="text-amber-700">| Desconto: <b>(-) R$ {valorDesconto.toFixed(2)}</b></span>}
-        </div>
-        <span className="font-mono font-bold text-emerald-800 text-sm">
-          Total Proposta: R$ {valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-        </span>
-      </div>
-
-      <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
-        <button type="button" onClick={onCancel} className="px-3.5 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold cursor-pointer">Cancelar</button>
-        <button type="submit" disabled={salvando || !clienteId} className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold shadow-sm cursor-pointer">
-          {salvando ? 'Salvando...' : orcamentoParaEditar ? 'Salvar Alterações' : 'Salvar Proposta'}
-        </button>
-      </div>
+      <OrcamentoFormFooter
+        subtotal={subtotal}
+        valorDesconto={valorDesconto}
+        valorTotal={valorTotal}
+        salvando={salvando}
+        clienteId={clienteId}
+        isEdicao={Boolean(orcamentoParaEditar)}
+        onCancel={onCancel}
+      />
     </form>
   );
 };
