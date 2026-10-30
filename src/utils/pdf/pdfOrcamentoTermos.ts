@@ -10,25 +10,36 @@ export function desenharTermosEAssinaturasOrcamento(
   empresa: any,
   dadosEmp: { razaoSocial: string; textoResponsavel?: string }
 ): void {
-  // Termos e Condições Gerais
+  const det = orc.detalhes_proposta;
+
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(31, 41, 55);
-  doc.text('CONDIÇÕES GERAIS DE FORNECIMENTO E LOCAÇÃO:', 14, startY);
+  doc.text('MATRIZ DE RESPONSABILIDADES E CONDIÇÕES GERAIS DE LOCAÇÃO:', 14, startY);
 
   doc.setFontSize(7);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(75, 85, 99);
+  doc.setTextColor(55, 65, 81);
 
-  const obs = orc.observacoes || '';
-  const termoTexto1 = obs.includes('Termos:') ? obs : '1. Medição via horímetro do equipamento apontado em Boletim Diário (BDE).';
-  doc.text(termoTexto1, 14, startY + 4.5);
-  doc.text('2. Manutenção preventiva e lubrificação periódica por conta exclusiva da Locadora.', 14, startY + 8.5);
-  doc.text('3. Operação e guarda do equipamento no canteiro sob responsabilidade conforme acordado.', 14, startY + 12.5);
+  const opResp = det?.operador_incluso !== false ? 'Incluso pela Locadora' : 'Por conta do Contratante';
+  const dieselResp = det?.combustivel_termo || 'Por conta do Contratante na obra';
+  const pranchaResp = det?.mobilizacao_termo || 'Por conta do Contratante';
+  const alimResp = det?.alimentacao_hospedagem_termo || 'Por conta do Contratante no local da obra';
+  const guardaResp = det?.guarda_vigilancia_termo || 'Responsabilidade integral do Contratante no canteiro';
+
+  doc.text(`1. Operador: ${opResp} | Abastecimento/Diesel: ${dieselResp} | Frete/Prancha: ${pranchaResp}.`, 14, startY + 4);
+  doc.text(`2. Apoio em Obra: Alimentação/Hospedagem: ${alimResp} | Guarda do Maquinário: ${guardaResp}.`, 14, startY + 7.5);
+  doc.text('3. Medição e Manutenção: Horas apuradas pelo horímetro da máquina em BDE. Manutenção preventiva por conta da Locadora.', 14, startY + 11);
+
+  const obsExtra = det?.observacoes_livres || (!det && orc.observacoes ? orc.observacoes : '');
+  if (obsExtra) {
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Obs. Especiais: ${obsExtra.slice(0, 125)}`, 14, startY + 14.5);
+  }
 
   // Assinaturas
-  const assY = startY + 23;
-  desenharAssinaturaDigital(doc, 135, assY - 13, 38, 12, empresa);
+  const assY = Math.min(276, startY + (obsExtra ? 24 : 21));
+  desenharAssinaturaDigital(doc, 135, assY - 12, 38, 11, empresa);
 
   doc.setDrawColor(156, 163, 175);
   doc.line(20, assY, 90, assY);
@@ -37,12 +48,12 @@ export function desenharTermosEAssinaturasOrcamento(
   doc.setFontSize(7.5);
   doc.setTextColor(55, 65, 81);
   const clienteNome = orc.cliente_nome ? orc.cliente_nome.toUpperCase() : 'CONTRATANTE';
-  doc.text(clienteNome, 55, assY + 4, { align: 'center' });
-  doc.text('De Acordo / Aceite da Proposta', 55, assY + 7.5, { align: 'center' });
+  doc.text(clienteNome, 55, assY + 3.8, { align: 'center' });
+  doc.text('De Acordo / Aceite da Proposta', 55, assY + 7, { align: 'center' });
 
-  doc.text(`${dadosEmp.razaoSocial} / Locador`, 155, assY + 4, { align: 'center' });
+  doc.text(`${dadosEmp.razaoSocial} / Locador`, 155, assY + 3.8, { align: 'center' });
   if (dadosEmp.textoResponsavel) {
-    doc.text(dadosEmp.textoResponsavel, 155, assY + 7.5, { align: 'center' });
+    doc.text(dadosEmp.textoResponsavel, 155, assY + 7, { align: 'center' });
   }
 
   desenharRodapeTerraGest(doc, 1, 1);

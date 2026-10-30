@@ -1,7 +1,9 @@
 import React from 'react';
 import { Plus } from 'lucide-react';
 import type { Cliente } from '../../../../types/comercial.types';
+import { useEquipments } from '../../../../hooks/useEquipments';
 import { ClienteCardResumo } from './ClienteCardResumo';
+import { OrcamentoMaquinaCard } from '../OrcamentoMaquinaCard';
 
 interface ClienteEquipamentoSectionProps {
   clienteNome: string;
@@ -26,8 +28,17 @@ export const ClienteEquipamentoSection: React.FC<ClienteEquipamentoSectionProps>
   clientes, maquinasDisponiveis,
   onAbrirNovoCliente, onAbrirNovaMaquina, onEditarCliente
 }) => {
+  const { data: equipments } = useEquipments();
+
   const clienteSelecionado = clientes.find(
     (c) => c.nome.toLowerCase() === clienteNome.trim().toLowerCase()
+  );
+
+  const maquinaSelecionadaFrota = (equipments || []).find(
+    (eq) =>
+      `${eq.name} (${eq.code})`.toLowerCase() === maquinaNome.trim().toLowerCase() ||
+      eq.name.toLowerCase() === maquinaNome.trim().toLowerCase() ||
+      (eq.code && maquinaNome.includes(eq.code))
   );
 
   const handleSelectCliente = (nomeEscolhido: string) => {
@@ -98,6 +109,9 @@ export const ClienteEquipamentoSection: React.FC<ClienteEquipamentoSectionProps>
 
       {clienteSelecionado && (
         <ClienteCardResumo cliente={clienteSelecionado} onEditar={onEditarCliente} />
+      )}
+      {maquinaSelecionadaFrota && (
+        <OrcamentoMaquinaCard equipment={maquinaSelecionadaFrota} />
       )}
     </div>
   );

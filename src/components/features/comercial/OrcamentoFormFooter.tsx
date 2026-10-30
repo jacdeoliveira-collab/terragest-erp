@@ -2,6 +2,7 @@ import React from 'react';
 
 interface OrcamentoFormFooterProps {
   subtotal: number;
+  valorMobilizacao: number;
   valorDesconto: number;
   valorTotal: number;
   salvando: boolean;
@@ -12,6 +13,7 @@ interface OrcamentoFormFooterProps {
 
 export const OrcamentoFormFooter: React.FC<OrcamentoFormFooterProps> = ({
   subtotal,
+  valorMobilizacao,
   valorDesconto,
   valorTotal,
   salvando,
@@ -21,10 +23,19 @@ export const OrcamentoFormFooter: React.FC<OrcamentoFormFooterProps> = ({
 }) => {
   return (
     <>
-      <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between">
-        <div className="space-x-2 text-[11px] text-gray-600">
-          <span>Subtotal: <b>R$ {subtotal.toFixed(2)}</b></span>
-          {valorDesconto > 0 && <span className="text-amber-700">| Desconto: <b>(-) R$ {valorDesconto.toFixed(2)}</b></span>}
+      <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2 text-[11px] text-gray-700">
+          <span>Horas de Máquinas: <b>R$ {subtotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</b></span>
+          {valorMobilizacao > 0 && (
+            <span className="text-blue-700">
+              | + Prancha/Mobilização: <b>R$ {valorMobilizacao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</b>
+            </span>
+          )}
+          {valorDesconto > 0 && (
+            <span className="text-amber-700">
+              | - Desconto: <b>R$ {valorDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</b>
+            </span>
+          )}
         </div>
         <span className="font-mono font-bold text-emerald-800 text-sm">
           Total Proposta: R$ {valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -44,7 +55,7 @@ export const OrcamentoFormFooter: React.FC<OrcamentoFormFooterProps> = ({
           disabled={salvando || !clienteId}
           className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold shadow-sm cursor-pointer disabled:opacity-50"
         >
-          {salvando ? 'Salvando...' : isEdicao ? 'Salvar Alterações' : 'Salvar Proposta'}
+          {salvando ? 'Salvando...' : isEdicao ? 'Salvar Alterações' : 'Salvar Proposta Comercial'}
         </button>
       </div>
     </>

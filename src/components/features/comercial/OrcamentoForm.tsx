@@ -1,12 +1,18 @@
 import React, { useState } from 'react';
+import { Plus } from 'lucide-react';
 import { useClientes } from '../../../hooks/useClientes';
 import { useEquipments } from '../../../hooks/useEquipments';
-import { OrcamentoCondicoesPagamentoSection } from './OrcamentoCondicoesPagamentoSection';
+import { useFuncionarios } from '../../../hooks/useFuncionarios';
+import { useOrcamentoFormState } from './useOrcamentoFormState';
 import { OrcamentoClienteCard } from './OrcamentoClienteCard';
-import { OrcamentoMaquinaCard } from './OrcamentoMaquinaCard';
-import { OrcamentoCondicoesOperacionaisSection } from './OrcamentoCondicoesOperacionaisSection';
+import { OrcamentoMaquinasListSection } from './OrcamentoMaquinasListSection';
+import { OrcamentoObraEscopoSection } from './OrcamentoObraEscopoSection';
 import { OrcamentoValoresSection } from './OrcamentoValoresSection';
+import { OrcamentoCondicoesOperacionaisSection } from './OrcamentoCondicoesOperacionaisSection';
+import { OrcamentoCondicoesPagamentoSection } from './OrcamentoCondicoesPagamentoSection';
 import { OrcamentoFormFooter } from './OrcamentoFormFooter';
+import { ClienteModal } from './ClienteModal';
+import { NovoEquipamentoModal } from './modal/NovoEquipamentoModal';
 import type { Orcamento, CreateOrcamentoDTO } from '../../../types/comercial.types';
 
 interface OrcamentoFormProps {
@@ -20,130 +26,110 @@ interface OrcamentoFormProps {
 export const OrcamentoForm: React.FC<OrcamentoFormProps> = ({
   onSuccess, onCancel, onSubmit, orcamentoParaEditar, onUpdate
 }) => {
-  const { clientes } = useClientes();
-  const { data: equipments } = useEquipments({ onlyActives: true });
+  const { clientes, criarCliente } = useClientes();
+  const { data: equipments, refetch: refetchEquipments } = useEquipments({ onlyActives: true });
+  const { data: funcionarios } = useFuncionarios();
+  const [modalClienteAberto, setModalClienteAberto] = useState(false);
+  const [modalMaquinaAberto, setModalMaquinaAberto] = useState(false);
 
-  const [clienteId, setClienteId] = useState(orcamentoParaEditar?.cliente_id || '');
-  const [maquinaId, setMaquinaId] = useState(orcamentoParaEditar?.maquina_id || '');
-  const [descricaoServico, setDescricaoServico] = useState(orcamentoParaEditar?.descricao_servico || '');
-  const [valorHora, setValorHora] = useState<number>(orcamentoParaEditar?.valor_hora ?? 250);
-  const [horasEstimadas, setHorasEstimadas] = useState<number>(orcamentoParaEditar?.horas_estimadas ?? 40);
-  const [valorDesconto, setValorDesconto] = useState<number>(0);
-  const [validadeDias, setValidadeDias] = useState<number>(orcamentoParaEditar?.validade_dias ?? 15);
-  const [operadorIncluso, setOperadorIncluso] = useState<boolean>(true);
-  const [combustivelTermo, setCombustivelTermo] = useState<string>('Por conta do Contratante');
-  const [mobilizacaoTermo, setMobilizacaoTermo] = useState<string>('Por conta do Contratante');
-  const [formaPagamento, setFormaPagamento] = useState<string>(orcamentoParaEditar?.forma_pagamento || 'PIX');
-  const [condicaoPagamento, setCondicaoPagamento] = useState<string>(orcamentoParaEditar?.condicao_pagamento || 'A_VISTA');
-  const [contaBancariaId, setContaBancariaId] = useState<string>(orcamentoParaEditar?.conta_bancaria_id || '');
-  const [prazoDescricao, setPrazoDescricao] = useState<string>(orcamentoParaEditar?.prazo_descricao || 'À vista na aprovação / liberação da máquina');
-  const [dataVencimento, setDataVencimento] = useState<string>(orcamentoParaEditar?.data_vencimento || new Date().toISOString().slice(0, 10));
-  const [salvando, setSalvando] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
+  const st = useOrcamentoFormState(orcamentoParaEditar, equipments || [], onSubmit, onUpdate, onSuccess);
+  const clienteSelecionado = (clientes || []).find((c) => c.id === st.clienteId);
+  const operadores = (funcionarios || []).map((f) => f.nome).filter(Boolean);
 
-  const subtotal = Number((valorHora * horasEstimadas).toFixed(2));
-  const valorTotal = Number(Math.max(0, subtotal - valorDesconto).toFixed(2));
-  const clienteSelecionado = (clientes || []).find((c) => c.id === clienteId);
-  const maquinaSelecionada = (equipments || []).find((eq) => eq.id === maquinaId);
-
-  const handleSelectMaquina = (id: string) => {
-    setMaquinaId(id);
-    const m = (equipments || []).find((eq) => eq.id === id);
-    if (m && (!descricaoServico || descricaoServico.startsWith('Locação de'))) {
-      setDescricaoServico(`Locação de ${m.name} (${m.model || m.code}) com medição por horímetro`);
-    }
+  const handleSelectCliente = (id: string) => {
+    st.setClienteId(id);
+    const cli = (clientes || []).find((c) => c.id === id);
+    if (cli?.endereco && !st.localObra) st.setLocalObra(cli.endereco);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!clienteId || !descricaoServico.trim()) return;
-    setSalvando(true);
-    setErro(null);
-
-    const descNota = valorDesconto > 0 ? ` [Desconto: R$ ${valorDesconto.toFixed(2)}]` : '';
-    const obsOperacional = `[Termos: Operador: ${operadorIncluso ? 'Incluso' : 'Contratante'} | Diesel: ${combustivelTermo} | Frete/Prancha: ${mobilizacaoTermo}]`;
-    const payload: CreateOrcamentoDTO = {
-      cliente_id: clienteId,
-      maquina_id: maquinaId || undefined,
-      descricao_servico: descricaoServico.trim(),
-      valor_hora: Number(valorHora),
-      horas_estimadas: Number(horasEstimadas),
-      valor_total: valorTotal,
-      status: orcamentoParaEditar?.status || 'PENDENTE',
-      validade_dias: Number(validadeDias) || 15,
-      observacoes: obsOperacional,
-      forma_pagamento: formaPagamento,
-      condicao_pagamento: condicaoPagamento,
-      conta_bancaria_id: contaBancariaId || undefined,
-      prazo_descricao: (prazoDescricao.trim() + descNota).trim() || undefined,
-      data_vencimento: dataVencimento || undefined
-    };
-
-    const res = (orcamentoParaEditar && onUpdate) ? await onUpdate(orcamentoParaEditar.id, payload) : await onSubmit(payload);
-    setSalvando(false);
-    if (res.success) onSuccess();
-    else setErro(res.error || 'Erro ao salvar proposta');
+  const handleCriarClienteRapido = async (dados: any) => {
+    const res = await criarCliente(dados);
+    if (res.success && res.data) {
+      st.setClienteId(res.data.id);
+      if (res.data.endereco && !st.localObra) st.setLocalObra(res.data.endereco);
+    }
+    return res.success;
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 text-xs text-left max-h-[78vh] overflow-y-auto pr-1">
-      {erro && <div className="p-2.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl">{erro}</div>}
+    <>
+      <form onSubmit={st.handleSubmit} className="space-y-3.5 text-xs text-left max-h-[80vh] overflow-y-auto pr-1">
+        {st.erro && <div className="p-2.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl">{st.erro}</div>}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-        <div>
-          <label className="block font-semibold text-gray-700 mb-1">Cliente Contratante *</label>
-          <select required value={clienteId} onChange={(e) => setClienteId(e.target.value)} className="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-300 rounded-xl">
-            <option value="">Selecione o Cliente</option>
-            {(clientes || []).map((c) => (<option key={c.id} value={c.id}>{c.nome}</option>))}
+        <div className="p-3 bg-white border border-gray-200 rounded-xl space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="font-bold text-gray-800">1. Cliente Contratante *</label>
+            <button type="button" onClick={() => setModalClienteAberto(true)} className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg font-bold cursor-pointer text-[11px]">
+              <Plus className="w-3 h-3" /> Cadastrar Novo Cliente
+            </button>
+          </div>
+          <select required value={st.clienteId} onChange={(e) => handleSelectCliente(e.target.value)} className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-xl font-medium">
+            <option value="">Selecione o Cliente na Carteira...</option>
+            {(clientes || []).map((c) => (<option key={c.id} value={c.id}>{c.nome} {c.documento ? `(${c.documento})` : ''}</option>))}
           </select>
+          <OrcamentoClienteCard cliente={clienteSelecionado} />
         </div>
-        <div>
-          <label className="block font-semibold text-gray-700 mb-1">Máquina / Equipamento da Frota</label>
-          <select value={maquinaId} onChange={(e) => handleSelectMaquina(e.target.value)} className="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-300 rounded-xl">
-            <option value="">Locação Geral de Linha Amarela</option>
-            {(equipments || []).map((eq) => (<option key={eq.id} value={eq.id}>{eq.code} - {eq.name} ({eq.model || 'Linha Amarela'})</option>))}
-          </select>
-        </div>
-      </div>
 
-      <OrcamentoClienteCard cliente={clienteSelecionado} />
-      <OrcamentoMaquinaCard equipment={maquinaSelecionada} />
+        <OrcamentoMaquinasListSection
+          itens={st.maquinasItens}
+          equipments={equipments || []}
+          operadores={operadores}
+          onAddMaquina={st.handleAddMaquina}
+          onRemoveMaquina={st.handleRemoveMaquina}
+          onUpdateMaquina={st.handleUpdateMaquina}
+          onSelectEquipmentFrota={st.handleSelectEquipmentFrota}
+          onAbrirNovaMaquina={() => setModalMaquinaAberto(true)}
+        />
 
-      <div>
-        <label className="block font-semibold text-gray-700 mb-1">Escopo do Serviço / Locação *</label>
-        <textarea required rows={2} placeholder="Ex: Terraplanagem, drenagem pluvial ou escavação de valas" value={descricaoServico} onChange={(e) => setDescricaoServico(e.target.value)} className="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-300 rounded-xl" />
-      </div>
+        <OrcamentoObraEscopoSection
+          obraId={st.obraId} setObraId={st.setObraId}
+          obraNome={st.obraNome} setObraNome={st.setObraNome}
+          localObra={st.localObra} setLocalObra={st.setLocalObra}
+          tipoOperacao={st.tipoOperacao} setTipoOperacao={st.setTipoOperacao}
+          tipoTerreno={st.tipoTerreno} setTipoTerreno={st.setTipoTerreno}
+          regimeTrabalho={st.regimeTrabalho} setRegimeTrabalho={st.setRegimeTrabalho}
+          previsaoInicio={st.previsaoInicio} setPrevisaoInicio={st.setPrevisaoInicio}
+          descricaoServico={st.descricaoServico} setDescricaoServico={st.setDescricaoServico}
+        />
 
-      <OrcamentoValoresSection
-        valorHora={valorHora} setValorHora={setValorHora}
-        horasEstimadas={horasEstimadas} setHorasEstimadas={setHorasEstimadas}
-        valorDesconto={valorDesconto} setValorDesconto={setValorDesconto}
-        validadeDias={validadeDias} setValidadeDias={setValidadeDias}
-      />
+        <OrcamentoValoresSection
+          valorMobilizacao={st.valorMobilizacao} setValorMobilizacao={st.setValorMobilizacao}
+          valorHoraParada={st.valorHoraParada} setValorHoraParada={st.setValorHoraParada}
+          valorDesconto={st.valorDesconto} setValorDesconto={st.setValorDesconto}
+          validadeDias={st.validadeDias} setValidadeDias={st.setValidadeDias}
+        />
 
-      <OrcamentoCondicoesOperacionaisSection
-        operadorIncluso={operadorIncluso} setOperadorIncluso={setOperadorIncluso}
-        combustivelTermo={combustivelTermo} setCombustivelTermo={setCombustivelTermo}
-        mobilizacaoTermo={mobilizacaoTermo} setMobilizacaoTermo={setMobilizacaoTermo}
-      />
+        <OrcamentoCondicoesOperacionaisSection
+          operadorIncluso={st.operadorIncluso} setOperadorIncluso={st.setOperadorIncluso}
+          combustivelTermo={st.combustivelTermo} setCombustivelTermo={st.setCombustivelTermo}
+          mobilizacaoTermo={st.mobilizacaoTermo} setMobilizacaoTermo={st.setMobilizacaoTermo}
+          alimentacaoTermo={st.alimentacaoTermo} setAlimentacaoTermo={st.setAlimentacaoTermo}
+          guardaTermo={st.guardaTermo} setGuardaTermo={st.setGuardaTermo}
+          observacoesLivres={st.observacoesLivres} setObservacoesLivres={st.setObservacoesLivres}
+        />
 
-      <OrcamentoCondicoesPagamentoSection
-        formaPagamento={formaPagamento} setFormaPagamento={setFormaPagamento}
-        condicaoPagamento={condicaoPagamento} setCondicaoPagamento={setCondicaoPagamento}
-        contaBancariaId={contaBancariaId} setContaBancariaId={setContaBancariaId}
-        prazoDescricao={prazoDescricao} setPrazoDescricao={setPrazoDescricao}
-        dataVencimento={dataVencimento} setDataVencimento={setDataVencimento}
-      />
+        <OrcamentoCondicoesPagamentoSection
+          formaPagamento={st.formaPagamento} setFormaPagamento={st.setFormaPagamento}
+          condicaoPagamento={st.condicaoPagamento} setCondicaoPagamento={st.setCondicaoPagamento}
+          contaBancariaId={st.contaBancariaId} setContaBancariaId={st.setContaBancariaId}
+          prazoDescricao={st.prazoDescricao} setPrazoDescricao={st.setPrazoDescricao}
+          dataVencimento={st.dataVencimento} setDataVencimento={st.setDataVencimento}
+        />
 
-      <OrcamentoFormFooter
-        subtotal={subtotal}
-        valorDesconto={valorDesconto}
-        valorTotal={valorTotal}
-        salvando={salvando}
-        clienteId={clienteId}
-        isEdicao={Boolean(orcamentoParaEditar)}
-        onCancel={onCancel}
-      />
-    </form>
+        <OrcamentoFormFooter
+          subtotal={st.subtotalHoras}
+          valorMobilizacao={st.valorMobilizacao}
+          valorDesconto={st.valorDesconto}
+          valorTotal={st.valorTotal}
+          salvando={st.salvando}
+          clienteId={st.clienteId}
+          isEdicao={Boolean(orcamentoParaEditar)}
+          onCancel={onCancel}
+        />
+      </form>
+
+      <ClienteModal isOpen={modalClienteAberto} onClose={() => setModalClienteAberto(false)} clienteParaEditar={null} onSalvar={handleCriarClienteRapido} />
+      <NovoEquipamentoModal isOpen={modalMaquinaAberto} onClose={() => setModalMaquinaAberto(false)} onCreated={() => refetchEquipments()} />
+    </>
   );
 };

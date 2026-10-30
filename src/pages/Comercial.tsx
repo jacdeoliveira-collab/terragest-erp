@@ -53,7 +53,7 @@ export const Comercial: React.FC = () => {
 
       <ErrorBoundary fallbackTitle="Erro ao carregar módulo comercial">
         {abaAtiva === 'horimetros' && <ServicoHorimetroList />}
-        {abaAtiva === 'orcamentos' && <OrcamentoList />}
+        {abaAtiva === 'orcamentos' && <OrcamentoList onIrParaHorimetros={() => setAbaAtiva('horimetros')} />}
         {abaAtiva === 'clientes' && <ClienteList />}
       </ErrorBoundary>
     </div>

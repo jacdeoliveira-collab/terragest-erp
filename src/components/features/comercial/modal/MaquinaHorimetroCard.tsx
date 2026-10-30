@@ -1,6 +1,8 @@
 import React from 'react';
 import { Trash2 } from 'lucide-react';
 import type { ServicoMaquinaItem } from '../../../../types/servicoHorimetro.types';
+import { useEquipments } from '../../../../hooks/useEquipments';
+import { OrcamentoMaquinaCard } from '../OrcamentoMaquinaCard';
 import { FotoHorimetroUploadField } from './FotoHorimetroUploadField';
 
 interface Props {
@@ -27,6 +29,22 @@ export const MaquinaHorimetroCard: React.FC<Props> = ({
   onAtualizar, onRemover, onAbrirNovaMaquina,
   handleImageUpload
 }) => {
+  const { data: equipments } = useEquipments();
+  const eqFrota = (equipments || []).find(
+    (eq) =>
+      `${eq.name} (${eq.code})`.toLowerCase() === (item.maquina_nome || '').trim().toLowerCase() ||
+      (eq.code && (item.maquina_nome || '').includes(eq.code))
+  );
+
+  const handleSelectMaquina = (val: string) => {
+    const found = (equipments || []).find((eq) => `${eq.name} (${eq.code})` === val);
+    const upd: Partial<ServicoMaquinaItem> = { maquina_nome: val, maquina_id: found?.id };
+    if (found?.current_hourmeter && (!item.horimetro_inicial || item.horimetro_inicial === 0)) {
+      upd.horimetro_inicial = Number(found.current_hourmeter);
+    }
+    onAtualizar(upd);
+  };
+
   return (
     <div className="p-3.5 bg-slate-50/80 border border-slate-200/90 rounded-xl space-y-3 text-left">
       <div className="flex items-center justify-between border-b border-slate-200 pb-2">
@@ -58,7 +76,7 @@ export const MaquinaHorimetroCard: React.FC<Props> = ({
           </div>
           <select
             value={item.maquina_nome}
-            onChange={(e) => onAtualizar({ maquina_nome: e.target.value })}
+            onChange={(e) => handleSelectMaquina(e.target.value)}
             className="w-full px-2.5 py-1.5 bg-white border border-gray-300 rounded-lg text-xs"
           >
             <option value="">Selecione o equipamento</option>
@@ -93,6 +111,8 @@ export const MaquinaHorimetroCard: React.FC<Props> = ({
         </div>
       </div>
 
+      {eqFrota && <OrcamentoMaquinaCard equipment={eqFrota} />}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
         <div className="p-2.5 bg-white rounded-lg border border-gray-200 space-y-1.5">
           <div className="flex items-center justify-between text-[11px] font-semibold text-gray-700">
@@ -106,11 +126,8 @@ export const MaquinaHorimetroCard: React.FC<Props> = ({
             className="w-full px-2.5 py-1 bg-gray-50 border border-gray-300 rounded-md text-xs font-mono font-bold"
           />
           <FotoHorimetroUploadField
-            label="Foto Horímetro Inicial"
-            badge="Inicial"
-            badgeClass="bg-emerald-100 text-emerald-800"
-            valorFoto={item.foto_horimetro_inicial}
-            inputId={`upload_ini_${item.id}`}
+            label="Foto Horímetro Inicial" badge="Inicial" badgeClass="bg-emerald-100 text-emerald-800"
+            valorFoto={item.foto_horimetro_inicial} inputId={`upload_ini_${item.id}`}
             onUpload={(e) => handleImageUpload(e, `ini_${item.id}`, (url) => onAtualizar({ foto_horimetro_inicial: url }))}
             onRemover={() => onAtualizar({ foto_horimetro_inicial: undefined })}
           />
@@ -128,11 +145,8 @@ export const MaquinaHorimetroCard: React.FC<Props> = ({
             className="w-full px-2.5 py-1 bg-gray-50 border border-gray-300 rounded-md text-xs font-mono font-bold"
           />
           <FotoHorimetroUploadField
-            label="Foto Horímetro Final"
-            badge="Final"
-            badgeClass="bg-amber-100 text-amber-800"
-            valorFoto={item.foto_horimetro_final}
-            inputId={`upload_fim_${item.id}`}
+            label="Foto Horímetro Final" badge="Final" badgeClass="bg-amber-100 text-amber-800"
+            valorFoto={item.foto_horimetro_final} inputId={`upload_fim_${item.id}`}
             onUpload={(e) => handleImageUpload(e, `fim_${item.id}`, (url) => onAtualizar({ foto_horimetro_final: url }))}
             onRemover={() => onAtualizar({ foto_horimetro_final: undefined })}
           />

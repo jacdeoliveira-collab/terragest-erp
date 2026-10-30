@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useTenantContext } from '../contexts/TenantContext';
 import type { Orcamento, CreateOrcamentoDTO, StatusOrcamento } from '../types/comercial.types';
 import { DEFAULT_LEGACY_TENANT, obterFiltroTenantString } from '../utils/tenantFilter';
-import { mapearOrcamentosCompletos } from './orcamentoMapeadorHelper';
+import { mapearOrcamentosCompletos, serializarOrcamentoParaBanco } from './orcamentoMapeadorHelper';
 
 const getStorageKey = (tId: string) => `terragest_orcamentos_${tId}`;
 
@@ -37,7 +37,7 @@ export function useOrcamentos() {
       if (cached.length > 0) setOrcamentos(cached);
 
       let qOrc = supabase.from('orcamentos').select('*').order('created_at', { ascending: false });
-      let qCli = supabase.from('clientes').select('id, nome, documento, telefone');
+      let qCli = supabase.from('clientes').select('id, nome, documento, telefone, endereco');
       let qEqp = supabase.from('equipment').select(
         'id, code, name, model, serial_number, chassi, placa, ano_fabricacao, potencia_hp, current_hourmeter, combustivel_padrao, capacidade_tanque, drive_url_foto'
       );
@@ -72,9 +72,10 @@ export function useOrcamentos() {
 
   const criarOrcamento = async (dto: CreateOrcamentoDTO) => {
     try {
+      const dbPayload = serializarOrcamentoParaBanco({ ...dto, tenant_id: tenantAtivoId || DEFAULT_LEGACY_TENANT });
       const { data, error: err } = await supabase
         .from('orcamentos')
-        .insert([{ ...dto, tenant_id: tenantAtivoId || DEFAULT_LEGACY_TENANT }])
+        .insert([dbPayload])
         .select().single();
       if (err) throw new Error(err.message);
       await fetchOrcamentos();
@@ -86,9 +87,10 @@ export function useOrcamentos() {
 
   const atualizarOrcamento = async (id: string, dto: Partial<CreateOrcamentoDTO>) => {
     try {
+      const dbPayload = serializarOrcamentoParaBanco({ ...dto, updated_at: new Date().toISOString() });
       const { data, error: err } = await supabase
         .from('orcamentos')
-        .update({ ...dto, updated_at: new Date().toISOString() })
+        .update(dbPayload)
         .eq('id', id).select().single();
       if (err) throw new Error(err.message);
       await fetchOrcamentos();
