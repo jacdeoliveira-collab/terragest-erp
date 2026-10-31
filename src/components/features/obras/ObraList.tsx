@@ -40,7 +40,7 @@ export const ObraList: React.FC = () => {
           <h2 className="text-base font-bold text-gray-900">Centros de Custo & Canteiros de Obras</h2>
           <p className="text-xs text-gray-500">Clique na obra para ver o resumo operacional, financeiro e máquinas</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button onClick={() => gerarRelatorioObrasPDF(obras)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 rounded-xl text-xs font-semibold cursor-pointer">
             <FileText className="w-4 h-4 text-rose-600" />
             <span>PDF</span>

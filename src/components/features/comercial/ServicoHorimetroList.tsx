@@ -90,7 +90,7 @@ export const ServicoHorimetroList: React.FC = () => {
               Centro de Custo: <strong className="text-emerald-700">{obraSelecionada ? obraSelecionada.nome : 'Todos os Centros de Custo'}</strong> • Horas, diesel e passivos
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button onClick={() => refetch()} title="Recarregar" className="inline-flex items-center gap-1 px-3 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl font-semibold transition-all cursor-pointer shadow-2xs">
               <RefreshCw className="w-3.5 h-3.5 text-slate-600" /><span>Atualizar</span>
             </button>

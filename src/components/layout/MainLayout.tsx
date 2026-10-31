@@ -28,7 +28,7 @@ export const MainLayout: React.FC = () => {
         <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
           <Header onOpenMenu={() => setIsMobileMenuOpen(true)} />
 
-          <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6">
+          <main className="flex-1 overflow-y-auto overflow-x-hidden p-2.5 sm:p-4 lg:p-6">
             <RoleRoute>
               <Outlet />
             </RoleRoute>

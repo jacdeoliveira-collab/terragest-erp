@@ -26,21 +26,21 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, maxWidth =
   const widthClass = WIDTH_CLASSES[maxWidth] || 'max-w-lg';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-4 bg-slate-950/70 backdrop-blur-xs animate-fade-in">
       <div 
-        className={`bg-white rounded-2xl w-full ${widthClass} max-h-[92vh] overflow-y-auto shadow-2xl border border-gray-100 flex flex-col text-slate-900`}
+        className={`bg-white rounded-2xl w-full ${widthClass} max-h-[92vh] overflow-y-auto overflow-x-hidden shadow-2xl border border-gray-100 flex flex-col text-slate-900`}
         role="dialog"
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-base font-bold text-gray-900">{title || 'Informações'}</h2>
+        <div className="flex items-center justify-between px-3.5 py-3 sm:px-6 sm:py-4 border-b border-gray-100 gap-2">
+          <h2 className="text-sm sm:text-base font-bold text-gray-900 truncate">{title || 'Informações'}</h2>
           <button
             onClick={onClose}
-            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
+            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
-        <div className="p-6">{children}</div>
+        <div className="p-3.5 sm:p-6">{children}</div>
       </div>
     </div>
   );

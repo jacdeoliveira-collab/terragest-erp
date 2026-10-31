@@ -56,7 +56,7 @@ export const OrcamentoList: React.FC<OrcamentoListProps> = ({ onIrParaHorimetros
 
   return (
     <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden text-xs text-left">
-      <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+      <div className="p-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-2.5">
         <div>
           <h3 className="font-bold text-gray-900 text-sm flex items-center gap-1.5">
             <FileText className="w-4 h-4 text-emerald-600" />

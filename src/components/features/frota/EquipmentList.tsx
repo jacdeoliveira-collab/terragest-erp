@@ -62,7 +62,7 @@ export const EquipmentList: React.FC = () => {
             <h2 className="text-sm font-bold text-gray-900 flex items-center gap-1.5"><Truck className="w-4 h-4 text-emerald-600" />Gestão de Frota & Linha Amarela ({filteredData.length})</h2>
             <p className="text-[11px] text-gray-500">Controle de horímetro, telemetria, laudos e status de máquinas</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button onClick={() => exportarFrotaExcel(filteredData)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 rounded-xl font-semibold shadow-2xs cursor-pointer">
               <FileSpreadsheet className="w-4 h-4 text-emerald-600" /><span>Excel</span>
             </button>

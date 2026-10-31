@@ -38,7 +38,7 @@ export const ManutencaoList: React.FC = () => {
           <p className="text-xs text-gray-500">Controle de revisões, preventivas/corretivas e apropriação de custos por obra</p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button onClick={() => exportarManutencoesPDF(data)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 rounded-xl text-xs font-semibold shadow-sm cursor-pointer">
             <FileText className="w-4 h-4 text-rose-600" />
             <span>PDF</span>
