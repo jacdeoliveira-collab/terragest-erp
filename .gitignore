@@ -32,3 +32,10 @@ google-credentials.json
 scratch/
 scratch_*.mjs
 *.traineddata
+
+.vercel
+*.apk
+android/.gradle
+android/app/build
+android/build
+android/local.properties

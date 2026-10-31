@@ -1,7 +1,14 @@
-import React, { useState } from 'react';
-import { Mail, Lock, AlertCircle, ArrowRight, Eye, EyeOff, KeyRound } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Mail, Lock, AlertCircle, ArrowRight, Eye, EyeOff, KeyRound, Fingerprint } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { RecuperarSenhaModal } from './RecuperarSenhaModal';
+import {
+  verificarBiometriaDisponivel,
+  possuiBiometriaSalva,
+  obterEmailBiometriaSalva,
+  salvarCredenciaisBiometria,
+  autenticarComBiometria
+} from '../../services/biometriaService';
 import type { PerfilAcesso } from '../../types/auth.types';
 
 interface LoginFormProps {
@@ -14,104 +21,120 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isModalRecuperar, setIsModalRecuperar] = useState(false);
+  const [biometriaSuportada, setBiometriaSuportada] = useState(false);
+  const [temBiometriaSalva, setTemBiometriaSalva] = useState(false);
+  const [emailBiometria, setEmailBiometria] = useState('');
+  const [salvarBiometria, setSalvarBiometria] = useState(true);
+  const [erroBiometria, setErroBiometria] = useState<string | null>(null);
+
+  useEffect(() => {
+    verificarBiometriaDisponivel().then((disp) => {
+      setBiometriaSuportada(disp);
+      const salva = possuiBiometriaSalva();
+      setTemBiometriaSalva(salva);
+      const savedMail = obterEmailBiometriaSalva();
+      if (savedMail) {
+        setEmail(savedMail);
+        setEmailBiometria(savedMail);
+      }
+      if (disp && salva) {
+        handleEntrarComDigital();
+      }
+    });
+  }, []);
+
+  const handleEntrarComDigital = async () => {
+    limparErro();
+    setErroBiometria(null);
+    try {
+      const creds = await autenticarComBiometria();
+      const res = await login(creds.email, creds.password);
+      onSuccess?.(res?.perfil_acesso);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : '';
+      if (msg && !msg.toLowerCase().includes('cancel')) {
+        setErroBiometria(msg);
+      }
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     limparErro();
+    setErroBiometria(null);
     try {
       const res = await login(email.trim(), password);
+      if (salvarBiometria) {
+        await salvarCredenciaisBiometria(email.trim(), password);
+        setTemBiometriaSalva(true);
+      }
       onSuccess?.(res?.perfil_acesso);
     } catch {
-      // O erro já está no estado do useAuth
+      // Erro tratado no useAuth
     }
   };
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="space-y-4 text-left">
-        {error && (
+      <form onSubmit={handleSubmit} className="space-y-3.5 text-left">
+        {(error || erroBiometria) && (
           <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-            <span>{error}</span>
+            <span>{error || erroBiometria}</span>
           </div>
         )}
 
-        <div>
-          <label className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
-            E-mail Corporativo
-          </label>
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-              <Mail className="w-4 h-4" />
+        {temBiometriaSalva && (
+          <button
+            type="button"
+            onClick={handleEntrarComDigital}
+            disabled={loading}
+            className="w-full py-3 px-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold rounded-xl shadow-md flex items-center justify-center gap-2.5 transition-all cursor-pointer border border-amber-400"
+          >
+            <Fingerprint className="w-5 h-5 text-slate-950 shrink-0" />
+            <div className="text-left leading-tight">
+              <span className="block text-xs font-black uppercase tracking-wide">Desbloquear com Impressão Digital</span>
+              {emailBiometria && <span className="block text-[10px] font-semibold opacity-80">{emailBiometria}</span>}
             </div>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="operador@terragest.com.br"
-              className="w-full pl-10 pr-3.5 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
-            />
+          </button>
+        )}
+
+        <div>
+          <label className="block text-xs font-semibold text-gray-700 mb-1 uppercase tracking-wide">E-mail Corporativo</label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400"><Mail className="w-4 h-4" /></div>
+            <input type="email" name="username" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="operador@terragest.com.br" className="w-full pl-10 pr-3.5 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white" />
           </div>
         </div>
 
         <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide">
-              Senha de Acesso
-            </label>
-            <button
-              type="button"
-              onClick={() => setIsModalRecuperar(true)}
-              className="text-[11px] text-emerald-600 hover:text-emerald-700 font-semibold cursor-pointer transition-colors"
-            >
-              Esqueci a senha
-            </button>
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide">Senha de Acesso</label>
+            <button type="button" onClick={() => setIsModalRecuperar(true)} className="text-[11px] text-emerald-600 hover:text-emerald-700 font-semibold cursor-pointer">Esqueci a senha</button>
           </div>
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-              <Lock className="w-4 h-4" />
-            </div>
-            <input
-              type={showPassword ? 'text' : 'password'}
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition-all"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((prev) => !prev)}
-              aria-label={showPassword ? 'Ocultar senha' : 'Ver senha'}
-              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-emerald-600 transition-colors cursor-pointer"
-            >
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400"><Lock className="w-4 h-4" /></div>
+            <input type={showPassword ? 'text' : 'password'} name="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white" />
+            <button type="button" onClick={() => setShowPassword((prev) => !prev)} className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-emerald-600 cursor-pointer">
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full mt-2 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-sm font-semibold rounded-xl shadow-md shadow-emerald-700/20 hover:shadow-lg hover:shadow-emerald-700/30 flex items-center justify-center gap-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
-        >
-          {loading ? (
-            <span>Conectando...</span>
-          ) : (
-            <>
-              <span>Acessar Plataforma</span>
-              <ArrowRight className="w-4 h-4" />
-            </>
-          )}
+        <label className="flex items-center gap-2 pt-0.5 cursor-pointer select-none">
+          <input type="checkbox" checked={salvarBiometria} onChange={(e) => setSalvarBiometria(e.target.checked)} className="w-4 h-4 rounded text-emerald-600 border-gray-300 focus:ring-emerald-500" />
+          <span className="text-xs text-gray-600 flex items-center gap-1 font-medium">
+            <Fingerprint className="w-3.5 h-3.5 text-emerald-600" />
+            {biometriaSuportada ? 'Ativar desbloqueio por Impressão Digital neste celular' : 'Lembrar credenciais para acesso rápido'}
+          </span>
+        </label>
+
+        <button type="submit" disabled={loading} className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl shadow-md flex items-center justify-center gap-2 transition-all disabled:opacity-60 cursor-pointer">
+          {loading ? <span>Conectando...</span> : <><span>Acessar Plataforma</span><ArrowRight className="w-4 h-4" /></>}
         </button>
 
         <div className="text-center pt-1">
-          <button
-            type="button"
-            onClick={() => setIsModalRecuperar(true)}
-            className="text-xs text-gray-500 hover:text-emerald-700 font-medium cursor-pointer transition-colors inline-flex items-center gap-1.5"
-          >
+          <button type="button" onClick={() => setIsModalRecuperar(true)} className="text-xs text-gray-500 hover:text-emerald-700 font-medium cursor-pointer inline-flex items-center gap-1.5">
             <KeyRound className="w-3.5 h-3.5 text-emerald-600" />
             <span>Primeiro acesso ou sem senha?</span>
             <span className="text-emerald-600 font-bold underline">Definir senha</span>
@@ -119,11 +142,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         </div>
       </form>
 
-      <RecuperarSenhaModal
-        isOpen={isModalRecuperar}
-        onClose={() => setIsModalRecuperar(false)}
-        emailPadrao={email}
-      />
+      <RecuperarSenhaModal isOpen={isModalRecuperar} onClose={() => setIsModalRecuperar(false)} emailPadrao={email} />
     </>
   );
 };

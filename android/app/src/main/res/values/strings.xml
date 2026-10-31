@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TerraGest ERP</string>
+    <string name="title_activity_main">TerraGest ERP</string>
+    <string name="package_name">br.com.agrodronesma.terragest</string>
+    <string name="custom_url_scheme">br.com.agrodronesma.terragest</string>
+</resources>
