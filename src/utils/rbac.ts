@@ -13,7 +13,7 @@ export const ROTAS_ENGENHARIA = [
 
 export const ROTAS_RH = ['/rh'];
 
-export const ROTAS_FINANCEIRO = ['/financeiro', '/asaas', '/faturamento', '/receber', '/pagar', '/comercial'];
+export const ROTAS_FINANCEIRO = ['/financeiro', '/faturamento', '/receber', '/pagar', '/comercial'];
 
 export const ROTAS_ADMIN = [
   '/',

@@ -10,7 +10,8 @@ import type {
 export async function validarEConectarAsaas(
   apiKey: string,
   environment: AsaasEnvironment,
-  walletId?: string,
+  chavePix?: string,
+  tipoChavePix?: 'CNPJ' | 'CPF' | 'EMAIL' | 'TELEFONE' | 'ALEATORIA',
   tenantId?: string
 ): Promise<{ ok: boolean; balance?: number; accountName?: string; email?: string; cnpj?: string; error?: string }> {
   const cleanKey = apiKey.trim();
@@ -31,7 +32,15 @@ export async function validarEConectarAsaas(
   }
 
   const saveRes = await salvarConfigAsaasBanco(
-    { apiKey: cleanKey, environment, walletId: walletId?.trim(), accountName, accountEmail: email, cnpj },
+    {
+      apiKey: cleanKey,
+      environment,
+      chavePix: chavePix?.trim() || cnpj || '',
+      tipoChavePix: tipoChavePix || 'CNPJ',
+      accountName,
+      accountEmail: email,
+      cnpj
+    },
     tenantId
   );
   if (!saveRes.ok) return { ok: false, error: saveRes.error };

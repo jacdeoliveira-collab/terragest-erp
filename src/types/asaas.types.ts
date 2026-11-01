@@ -3,6 +3,8 @@ export type AsaasEnvironment = 'production' | 'sandbox';
 export interface AsaasConfig {
   apiKey: string;
   environment: AsaasEnvironment;
+  chavePix?: string;
+  tipoChavePix?: 'CNPJ' | 'CPF' | 'EMAIL' | 'TELEFONE' | 'ALEATORIA';
   walletId?: string;
   accountName?: string;
   accountEmail?: string;
