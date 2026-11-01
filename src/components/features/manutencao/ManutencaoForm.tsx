@@ -6,32 +6,38 @@ import { useCategoriasCustos } from '../../../hooks/useCategoriasCustos';
 import { useCreateManutencao } from '../../../hooks/useCreateManutencao';
 import { ManutencaoDadosTab } from './ManutencaoDadosTab';
 import { ManutencaoCustosTab } from './ManutencaoCustosTab';
-import type { TipoManutencao } from '../../../types/manutencao.types';
+import type { PlanoManutencaoItem, TipoManutencao } from '../../../types/manutencao.types';
 import { isVehicleOrTruck } from '../../../utils/equipmentMeasurement';
 
 interface ManutencaoFormProps {
+  initialData?: PlanoManutencaoItem | null;
   onSuccess: () => void;
   onCancel: () => void;
 }
 
-export const ManutencaoForm: React.FC<ManutencaoFormProps> = ({ onSuccess, onCancel }) => {
+export const ManutencaoForm: React.FC<ManutencaoFormProps> = ({ initialData, onSuccess, onCancel }) => {
   const { data: equipments, isLoading: loadingEquips } = useEquipments({ onlyActives: true });
   const { obras, loading: loadingObras } = useObras();
   const { categorias, loading: loadingCategorias } = useCategoriasCustos('MANUTENCAO');
-  const { createManutencao, isSubmitting, error, limparErro } = useCreateManutencao();
+  const { createManutencao, updateManutencao, isSubmitting, error, limparErro } = useCreateManutencao();
 
   const [activeTab, setActiveTab] = useState<'dados' | 'custos'>('dados');
-  const [maquinaId, setMaquinaId] = useState('');
-  const [tipoManutencao, setTipoManutencao] = useState<TipoManutencao>('PREVENTIVA');
-  const [dataServico, setDataServico] = useState(new Date().toISOString().slice(0, 10));
-  const [descricaoServico, setDescricaoServico] = useState('');
-  const [intervaloHoras, setIntervaloHoras] = useState<number>(250);
-  const [ultimoHorimetro, setUltimoHorimetro] = useState<number>(0);
-  const [mecanico, setMecanico] = useState('');
-  const [obraId, setObraId] = useState('');
-  const [categoriaCustoId, setCategoriaCustoId] = useState('');
-  const [valorPecas, setValorPecas] = useState<number>(0);
-  const [valorMaoObra, setValorMaoObra] = useState<number>(0);
+  const [maquinaId, setMaquinaId] = useState(initialData?.maquina_id || '');
+  const [tipoManutencao, setTipoManutencao] = useState<TipoManutencao>(initialData?.tipo_manutencao || 'PREVENTIVA');
+  const [dataServico, setDataServico] = useState(
+    initialData?.data_servico || initialData?.data_ultima_execucao || new Date().toISOString().slice(0, 10)
+  );
+  const [descricaoServico, setDescricaoServico] = useState(
+    initialData?.descricao_servico || initialData?.tipo_servico_nome || ''
+  );
+  const [intervaloHoras, setIntervaloHoras] = useState<number>(initialData?.intervalo_horas || 250);
+  const [ultimoHorimetro, setUltimoHorimetro] = useState<number>(initialData?.ultimo_horimetro_realizado || 0);
+  const [mecanico, setMecanico] = useState(initialData?.responsavel_mecanico || '');
+  const [obraId, setObraId] = useState(initialData?.obra_id || '');
+  const [categoriaCustoId, setCategoriaCustoId] = useState(initialData?.categoria_custo_id || '');
+  const [valorPecas, setValorPecas] = useState<number>(initialData?.valor_pecas || 0);
+  const [valorMaoObra, setValorMaoObra] = useState<number>(initialData?.valor_mao_obra || 0);
+  const [comprovanteUrl, setComprovanteUrl] = useState(initialData?.comprovante_url || '');
 
   const handleMaquinaSelect = (id: string) => {
     setMaquinaId(id);
@@ -46,10 +52,10 @@ export const ManutencaoForm: React.FC<ManutencaoFormProps> = ({ onSuccess, onCan
     e.preventDefault();
     limparErro();
 
-    const result = await createManutencao({
+    const dto = {
       maquina_id: maquinaId,
       tipo_manutencao: tipoManutencao,
-      tipo_servico_nome: descricaoServico.slice(0, 60),
+      tipo_servico_nome: descricaoServico.slice(0, 140),
       descricao_servico: descricaoServico,
       data_servico: dataServico,
       intervalo_horas: intervaloHoras,
@@ -59,8 +65,13 @@ export const ManutencaoForm: React.FC<ManutencaoFormProps> = ({ onSuccess, onCan
       categoria_custo_id: categoriaCustoId || undefined,
       valor_pecas: valorPecas,
       valor_mao_obra: valorMaoObra,
-      status: 'EM_DIA'
-    });
+      comprovante_url: comprovanteUrl || undefined,
+      status: initialData?.status || ('EM_DIA' as const)
+    };
+
+    const result = initialData?.id
+      ? await updateManutencao(initialData.id, dto)
+      : await createManutencao(dto);
 
     if (result.success) {
       onSuccess();
@@ -78,8 +89,7 @@ export const ManutencaoForm: React.FC<ManutencaoFormProps> = ({ onSuccess, onCan
 
       <div className="flex border-b border-gray-200 gap-2">
         <button
-          type="button"
-          onClick={() => setActiveTab('dados')}
+          type="button" onClick={() => setActiveTab('dados')}
           className={`flex items-center gap-1.5 py-2 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer ${
             activeTab === 'dados' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
@@ -89,14 +99,13 @@ export const ManutencaoForm: React.FC<ManutencaoFormProps> = ({ onSuccess, onCan
         </button>
 
         <button
-          type="button"
-          onClick={() => setActiveTab('custos')}
+          type="button" onClick={() => setActiveTab('custos')}
           className={`flex items-center gap-1.5 py-2 px-3 text-xs font-semibold border-b-2 transition-all cursor-pointer ${
             activeTab === 'custos' ? 'border-emerald-600 text-emerald-600' : 'border-transparent text-gray-500 hover:text-gray-700'
           }`}
         >
           <DollarSign className="w-3.5 h-3.5" />
-          <span>Apropriação de Custos</span>
+          <span>Apropriação de Custos & Anexo</span>
         </button>
       </div>
 
@@ -119,6 +128,7 @@ export const ManutencaoForm: React.FC<ManutencaoFormProps> = ({ onSuccess, onCan
             categoriaCustoId={categoriaCustoId} setCategoriaCustoId={setCategoriaCustoId}
             valorPecas={valorPecas} setValorPecas={setValorPecas}
             valorMaoObra={valorMaoObra} setValorMaoObra={setValorMaoObra}
+            comprovanteUrl={comprovanteUrl} setComprovanteUrl={setComprovanteUrl}
             obras={obras} loadingObras={loadingObras}
             categorias={categorias} loadingCategorias={loadingCategorias}
           />
@@ -126,19 +136,11 @@ export const ManutencaoForm: React.FC<ManutencaoFormProps> = ({ onSuccess, onCan
       </div>
 
       <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold cursor-pointer"
-        >
+        <button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold cursor-pointer">
           Cancelar
         </button>
-        <button
-          type="submit"
-          disabled={isSubmitting || !maquinaId}
-          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-semibold shadow-sm cursor-pointer"
-        >
-          {isSubmitting ? 'Salvando...' : 'Salvar Ordem de Serviço'}
+        <button type="submit" disabled={isSubmitting || !maquinaId} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-semibold shadow-sm cursor-pointer">
+          {isSubmitting ? 'Salvando...' : initialData?.id ? 'Salvar Alterações' : 'Salvar Ordem de Serviço'}
         </button>
       </div>
     </form>

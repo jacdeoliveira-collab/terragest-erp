@@ -16,7 +16,7 @@ export async function criarPlanoRevisaoInicial(
 ): Promise<{ ok: boolean; error?: string }> {
   const intervalo = Number(plano.intervalo);
   const ultima = Number(plano.ultimaLeitura) || 0;
-  const desc = plano.descricao.trim() || 'Revisão periódica';
+  const desc = (plano.descricao.trim() || 'Revisão periódica').slice(0, 145);
   const hoje = new Date().toISOString().slice(0, 10);
 
   const { error } = await supabase.from('planos_manutencao').insert([{
@@ -24,17 +24,12 @@ export async function criarPlanoRevisaoInicial(
     equipment_id: equip.id,
     maquina_id: equip.id,
     servico: desc,
-    tipo_servico: desc,
-    tipo_servico_nome: desc,
-    descricao_servico: desc,
+    tipo_servico: 'PREVENTIVA',
     intervalo_horas: intervalo,
     ultimo_horimetro: ultima,
-    ultimo_horimetro_realizado: ultima,
     horimetro_proxima_troca: ultima + intervalo,
     data_ultima_execucao: hoje,
-    data_servico: hoje,
     status: 'EM_DIA',
-    tipo_manutencao: 'PREVENTIVA',
     valor_pecas: 0,
     valor_mao_obra: 0
   }]);

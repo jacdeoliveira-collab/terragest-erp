@@ -1,20 +1,31 @@
 import React, { useState } from 'react';
-import { Wrench, FileText, FileSpreadsheet, Plus, AlertTriangle, AlertCircle, CheckCircle } from 'lucide-react';
+import { Wrench, FileText, FileSpreadsheet, Plus, AlertTriangle, AlertCircle, CheckCircle, Eye, Pencil, Trash2 } from 'lucide-react';
 import { useManutencoes } from '../../../hooks/useManutencoes';
+import { useCreateManutencao } from '../../../hooks/useCreateManutencao';
 import { Modal } from '../../ui/Modal';
 import { ManutencaoForm } from './ManutencaoForm';
 import type { PlanoManutencaoItem } from '../../../types/manutencao.types';
 import { formatMeasurementValue } from '../../../utils/equipmentMeasurement';
+import { abrirVisualizacaoImagem } from '../../../utils/visualizadorImagem';
 import { exportarManutencoesPDF } from '../../../utils/exportCorporativoPdf';
 import { exportToExcel } from '../../../services/exportExcel';
 
 export const ManutencaoList: React.FC = () => {
   const { data, isLoading, error, refetch } = useManutencoes();
+  const { deleteManutencao } = useCreateManutencao();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editItem, setEditItem] = useState<PlanoManutencaoItem | null>(null);
 
-  const handleCreated = () => {
+  const handleSaved = () => {
     setIsModalOpen(false);
+    setEditItem(null);
     refetch();
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Deseja excluir esta Ordem de Serviço e suas despesas vinculadas?')) return;
+    const res = await deleteManutencao(id);
+    if (res.success) refetch();
   };
 
   if (isLoading) {
@@ -47,7 +58,7 @@ export const ManutencaoList: React.FC = () => {
             <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
             <span>Excel</span>
           </button>
-          <button onClick={() => setIsModalOpen(true)} className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm cursor-pointer ml-1">
+          <button onClick={() => { setEditItem(null); setIsModalOpen(true); }} className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm cursor-pointer ml-1">
             <Plus className="w-4 h-4" />
             <span>Nova OS</span>
           </button>
@@ -61,7 +72,7 @@ export const ManutencaoList: React.FC = () => {
           </div>
           <h3 className="text-sm font-semibold text-gray-800 mb-1">Nenhuma ordem de serviço registrada</h3>
           <p className="text-xs text-gray-400 max-w-sm mb-5">Cadastre as manutenções da frota apropriando os custos de peças e mão de obra diretamente na obra.</p>
-          <button onClick={() => setIsModalOpen(true)} className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm cursor-pointer">
+          <button onClick={() => { setEditItem(null); setIsModalOpen(true); }} className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm cursor-pointer">
             <Plus className="w-4 h-4" />
             <span>Nova OS</span>
           </button>
@@ -76,6 +87,7 @@ export const ManutencaoList: React.FC = () => {
                 <th className="p-3.5 text-right">Horímetro / KM</th>
                 <th className="p-3.5 text-right">Valor Total (Peças + MO)</th>
                 <th className="p-3.5 text-center">Status</th>
+                <th className="p-3.5 text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-gray-700">
@@ -89,40 +101,48 @@ export const ManutencaoList: React.FC = () => {
                   <tr key={item.id} className="hover:bg-gray-50/60 transition-colors">
                     <td className="p-3.5 font-mono font-bold text-emerald-700">
                       <div>{item.maquina_codigo || item.maquina_nome || '-'}</div>
-                      <div className="text-[10px] font-normal text-gray-400">{item.tipo_manutencao || 'PREVENTIVA'}</div>
+                      <div className="text-[10px] font-normal text-gray-400">{item.tipo_manutencao || 'PREVENTIVA'} • {item.data_servico || '-'}</div>
                     </td>
                     <td className="p-3.5">
                       <div className="font-medium text-gray-900">{item.tipo_servico_nome}</div>
-                      <div className="text-[11px] text-gray-500">{item.obra_nome ? `Obra: ${item.obra_nome}` : 'Sede Central'}</div>
+                      <div className="text-[11px] text-gray-500">
+                        {item.obra_nome ? `Obra: ${item.obra_nome}` : 'Sede Central'}
+                        {item.responsavel_mecanico ? ` • ${item.responsavel_mecanico}` : ''}
+                      </div>
                     </td>
                     <td className="p-3.5 text-right font-mono">
-                      <span className="font-bold text-gray-800">
-                        {formatMeasurementValue(item.horimetro_atual_maquina, equipRef)}
-                      </span>
+                      <span className="font-bold text-gray-800">{formatMeasurementValue(item.horimetro_atual_maquina, equipRef)}</span>
                       <span className="text-gray-400"> / </span>
-                      <span className="font-bold text-amber-700">
-                        {formatMeasurementValue(item.horimetro_proxima_troca || item.proximo_horimetro_alvo, equipRef)}
-                      </span>
+                      <span className="font-bold text-amber-700">{formatMeasurementValue(item.horimetro_proxima_troca || item.proximo_horimetro_alvo, equipRef)}</span>
                     </td>
                     <td className="p-3.5 text-right font-mono">
-                      <span className="font-bold text-emerald-700 text-sm">
-                        {total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                      </span>
-                      {(item.valor_pecas || 0) > 0 || (item.valor_mao_obra || 0) > 0 ? (
-                        <div className="text-[10px] text-gray-400">
-                          Pçs: R$ {(item.valor_pecas || 0).toFixed(2)} | MO: R$ {(item.valor_mao_obra || 0).toFixed(2)}
-                        </div>
-                      ) : null}
+                      <span className="font-bold text-emerald-700 text-sm">{total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
+                      {((item.valor_pecas || 0) > 0 || (item.valor_mao_obra || 0) > 0) && (
+                        <div className="text-[10px] text-gray-400">Pçs: R$ {(item.valor_pecas || 0).toFixed(2)} | MO: R$ {(item.valor_mao_obra || 0).toFixed(2)}</div>
+                      )}
                     </td>
                     <td className="p-3.5 text-center">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${
-                        atrasado ? 'bg-rose-100 text-rose-800 border-rose-300' :
-                        proximo ? 'bg-amber-100 text-amber-800 border-amber-300' :
-                        'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        atrasado ? 'bg-rose-100 text-rose-800 border-rose-300' : proximo ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                       }`}>
                         {atrasado ? <AlertTriangle className="w-3 h-3 text-rose-600" /> : <CheckCircle className="w-3 h-3 text-emerald-600" />}
                         {atrasado ? 'ATRASADA' : proximo ? 'PRÓXIMO' : 'EM DIA'}
                       </span>
+                    </td>
+                    <td className="p-3.5 text-right">
+                      <div className="inline-flex items-center gap-1">
+                        {item.comprovante_url && (
+                          <button onClick={() => abrirVisualizacaoImagem(item.comprovante_url, 'Comprovante OS Manutenção')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg cursor-pointer" title="Ver Foto / Comprovante">
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        <button onClick={() => { setEditItem(item); setIsModalOpen(true); }} className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer" title="Editar OS">
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => handleDelete(item.id)} className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer" title="Excluir OS">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -132,8 +152,8 @@ export const ManutencaoList: React.FC = () => {
         </div>
       )}
 
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Cadastrar Ordem de Serviço de Manutenção">
-        <ManutencaoForm onSuccess={handleCreated} onCancel={() => setIsModalOpen(false)} />
+      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setEditItem(null); }} title={editItem ? 'Editar Ordem de Serviço de Manutenção' : 'Cadastrar Ordem de Serviço de Manutenção'}>
+        <ManutencaoForm initialData={editItem} onSuccess={handleSaved} onCancel={() => { setIsModalOpen(false); setEditItem(null); }} />
       </Modal>
     </div>
   );

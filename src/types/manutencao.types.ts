@@ -39,6 +39,7 @@ export interface PlanoManutencaoItem {
   valor_pecas?: number;
   valor_mao_obra?: number;
   valor_total?: number;
+  comprovante_url?: string;
   created_at?: string;
   updated_at?: string;
 }
