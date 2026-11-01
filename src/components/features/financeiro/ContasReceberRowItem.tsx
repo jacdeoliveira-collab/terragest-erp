@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, CheckCircle2, Receipt, PlusCircle, Trash2 } from 'lucide-react';
+import { Check, CheckCircle2, Receipt, PlusCircle, Trash2, QrCode } from 'lucide-react';
 import type { MedicaoItem } from '../../../types/faturamento.types';
 import { gerarReciboPDF } from '../../../utils/reciboPdfGenerator';
 
@@ -8,17 +8,14 @@ interface Props {
   hoje: string;
   onAbrirBaixa: (item: MedicaoItem) => void;
   onAbrirHaver: (item: MedicaoItem) => void;
+  onAbrirAsaas?: (item: MedicaoItem) => void;
   onExcluir?: (item: MedicaoItem) => void;
 }
 
 const formatBRL = (val: number) => (Number(val) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export const ContasReceberRowItem: React.FC<Props> = ({
-  item,
-  hoje,
-  onAbrirBaixa,
-  onAbrirHaver,
-  onExcluir
+  item, hoje, onAbrirBaixa, onAbrirHaver, onAbrirAsaas, onExcluir
 }) => {
   const isPago = item.status_pagamento === 'PAGO';
   const isParcial = item.status_pagamento === 'PAGO_PARCIAL' || (Number(item.valor_adiantamento || 0) > 0 && !isPago);
@@ -55,14 +52,8 @@ export const ContasReceberRowItem: React.FC<Props> = ({
         </div>
       </td>
       <td className="p-3 text-right font-mono">
-        <div className="font-bold text-gray-900 text-xs">
-          {formatBRL(saldo > 0 ? saldo : Number(item.valor_total))}
-        </div>
-        {adiant > 0 && !isPago && (
-          <div className="text-[10px] text-emerald-700 font-semibold">
-            Haver pago: {formatBRL(adiant)}
-          </div>
-        )}
+        <div className="font-bold text-gray-900 text-xs">{formatBRL(saldo > 0 ? saldo : Number(item.valor_total))}</div>
+        {adiant > 0 && !isPago && <div className="text-[10px] text-emerald-700 font-semibold">Haver pago: {formatBRL(adiant)}</div>}
         <div className="text-[10px] text-gray-400">Total: {formatBRL(Number(item.valor_total))}</div>
       </td>
       <td className="p-3 text-center">
@@ -79,21 +70,26 @@ export const ContasReceberRowItem: React.FC<Props> = ({
         <div className="flex items-center justify-center gap-1.5 flex-wrap">
           {!isPago ? (
             <>
+              {onAbrirAsaas && (
+                <button
+                  type="button" onClick={() => onAbrirAsaas(item)}
+                  className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-[11px] font-bold cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                  title="Gerar Boleto ou PIX Dinâmico pelo Banco Asaas"
+                >
+                  <QrCode className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Asaas</span>
+                </button>
+              )}
               <button
-                type="button"
-                onClick={() => onAbrirHaver(item)}
-                className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[11px] font-bold cursor-pointer inline-flex items-center gap-1 shadow-2xs transition-colors"
-                title="Registrar haver ou pagamento parcial deste serviço"
+                type="button" onClick={() => onAbrirHaver(item)}
+                className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[11px] font-bold cursor-pointer inline-flex items-center gap-1 shadow-2xs"
               >
                 <PlusCircle className="w-3.5 h-3.5 text-blue-600" />
                 <span>+ Haver</span>
               </button>
-
               <button
-                type="button"
-                onClick={() => onAbrirBaixa(item)}
-                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold cursor-pointer inline-flex items-center gap-1 shadow-2xs transition-colors"
-                title="Quitar o saldo total deste título"
+                type="button" onClick={() => onAbrirBaixa(item)}
+                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold cursor-pointer inline-flex items-center gap-1 shadow-2xs"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>Quitar</span>
@@ -106,10 +102,8 @@ export const ContasReceberRowItem: React.FC<Props> = ({
           )}
 
           <button
-            type="button"
-            onClick={emitirReciboTitulo}
-            className="px-2 py-1 bg-gray-50 hover:bg-emerald-50 text-gray-700 hover:text-emerald-700 border border-gray-200 hover:border-emerald-300 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
-            title="Emitir Recibo Oficial TerraGest em PDF"
+            type="button" onClick={emitirReciboTitulo}
+            className="px-2 py-1 bg-gray-50 hover:bg-emerald-50 text-gray-700 hover:text-emerald-700 border border-gray-200 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer"
           >
             <Receipt className="w-3.5 h-3.5 text-emerald-600" />
             <span>Recibo</span>
@@ -123,8 +117,7 @@ export const ContasReceberRowItem: React.FC<Props> = ({
                   onExcluir(item);
                 }
               }}
-              className="p-1 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer transition-colors"
-              title="Excluir este lançamento / título duplicado"
+              className="p-1 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>

@@ -3,14 +3,17 @@ import { useContasReceber } from '../hooks/useContasReceber';
 import { ContasReceberList } from '../components/features/financeiro/ContasReceberList';
 import { BaixaTituloModal } from '../components/features/financeiro/BaixaTituloModal';
 import { LancarHaverModal } from '../components/features/financeiro/LancarHaverModal';
+import { AsaasCobrancaModal } from '../components/features/financeiro/AsaasCobrancaModal';
 import type { MedicaoItem, FormaPagamentoTitulo } from '../types/faturamento.types';
 
 export const ContasReceber: React.FC = () => {
   const { data, isLoading, error, darBaixa, registrarHaver, excluirTitulo } = useContasReceber();
   const [tituloParaBaixa, setTituloParaBaixa] = useState<MedicaoItem | null>(null);
   const [tituloParaHaver, setTituloParaHaver] = useState<MedicaoItem | null>(null);
+  const [tituloParaAsaas, setTituloParaAsaas] = useState<MedicaoItem | null>(null);
   const [isBaixaModalOpen, setIsBaixaModalOpen] = useState(false);
   const [isHaverModalOpen, setIsHaverModalOpen] = useState(false);
+  const [isAsaasModalOpen, setIsAsaasModalOpen] = useState(false);
 
   const handleAbrirBaixa = (item: MedicaoItem) => {
     setTituloParaBaixa(item);
@@ -20,6 +23,11 @@ export const ContasReceber: React.FC = () => {
   const handleAbrirHaver = (item: MedicaoItem) => {
     setTituloParaHaver(item);
     setIsHaverModalOpen(true);
+  };
+
+  const handleAbrirAsaas = (item: MedicaoItem) => {
+    setTituloParaAsaas(item);
+    setIsAsaasModalOpen(true);
   };
 
   const handleConfirmarBaixa = async (
@@ -51,6 +59,7 @@ export const ContasReceber: React.FC = () => {
         error={error}
         onAbrirBaixa={handleAbrirBaixa}
         onAbrirHaver={handleAbrirHaver}
+        onAbrirAsaas={handleAbrirAsaas}
         onExcluir={excluirTitulo}
       />
 
@@ -66,6 +75,12 @@ export const ContasReceber: React.FC = () => {
         onClose={() => { setIsHaverModalOpen(false); setTituloParaHaver(null); }}
         titulo={tituloParaHaver}
         onSalvarHaver={handleConfirmarHaver}
+      />
+
+      <AsaasCobrancaModal
+        isOpen={isAsaasModalOpen}
+        onClose={() => { setIsAsaasModalOpen(false); setTituloParaAsaas(null); }}
+        titulo={tituloParaAsaas}
       />
     </div>
   );

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Plus, Landmark, Star, Copy, Check, Pencil, Trash2, Wallet } from 'lucide-react';
 import { useContasBancarias } from '../../../hooks/useContasBancarias';
 import { ContaBancariaModal } from './ContaBancariaModal';
+import { AsaasIntegrationCard } from './AsaasIntegrationCard';
 import type { ContaBancaria } from '../../../types/contaBancaria.types';
 
 export const ContasBancariasTab: React.FC = () => {
@@ -24,6 +25,8 @@ export const ContasBancariasTab: React.FC = () => {
 
   return (
     <div className="space-y-4 text-left">
+      <AsaasIntegrationCard />
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-gray-200">
         <div>
           <h2 className="text-base font-bold text-gray-900">Contas Bancárias & Caixas</h2>

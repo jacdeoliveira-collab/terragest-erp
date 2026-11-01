@@ -12,7 +12,8 @@ import {
   Building2,
   Navigation,
   Boxes,
-  CircleDollarSign
+  CircleDollarSign,
+  Landmark
 } from 'lucide-react';
 
 export interface MenuItem {
@@ -30,6 +31,7 @@ export const menuItems: MenuItem[] = [
   { to: '/producao', label: 'Produção (Sinaleiro)', icon: Navigation },
   { to: '/almoxarifado', label: 'Almoxarifado & Insumos', icon: Boxes },
   { to: '/financeiro', label: 'Gestão Financeira', icon: CircleDollarSign },
+  { to: '/asaas', label: 'Banco Asaas (Chave API)', icon: Landmark },
   { to: '/rh', label: 'Recursos Humanos', icon: Users },
   { to: '/abastecimento', label: 'Abastecimento & Combustível', icon: Fuel },
   { to: '/manutencao', label: 'Manutenção Preventiva', icon: Wrench },

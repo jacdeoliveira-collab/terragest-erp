@@ -54,7 +54,7 @@ export const EmpresaConfigForm: React.FC<EmpresaConfigFormProps> = ({
     { id: 'fiscais' as TabType, label: 'Identidade & Fiscais', icon: FileText },
     { id: 'contato' as TabType, label: 'Contato & Endereço', icon: MapPin },
     { id: 'tecnica' as TabType, label: 'Responsabilidade Técnica', icon: Award },
-    { id: 'integracoes' as TabType, label: 'Integrações (Drive)', icon: Cloud },
+    { id: 'integracoes' as TabType, label: 'Integrações (Asaas & Drive)', icon: Cloud },
     { id: 'usuarios' as TabType, label: 'Usuários & RBAC', icon: Users }
   ];
 

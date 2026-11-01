@@ -10,21 +10,16 @@ interface ContasReceberListProps {
   error: string | null;
   onAbrirBaixa: (item: MedicaoItem) => void;
   onAbrirHaver: (item: MedicaoItem) => void;
+  onAbrirAsaas?: (item: MedicaoItem) => void;
   onExcluir?: (item: MedicaoItem) => void;
 }
 
 export const ContasReceberList: React.FC<ContasReceberListProps> = ({
-  data,
-  isLoading,
-  error,
-  onAbrirBaixa,
-  onAbrirHaver,
-  onExcluir
+  data, isLoading, error, onAbrirBaixa, onAbrirHaver, onAbrirAsaas, onExcluir
 }) => {
   const hoje = new Date().toISOString().slice(0, 10);
   const mesAtual = new Date().toISOString().slice(0, 7);
 
-  // Soma de todos os saldos em aberto pendentes de quitação
   const totalAReceber = data
     .filter((d) => d.status_pagamento !== 'PAGO')
     .reduce((acc, d) => {
@@ -32,7 +27,6 @@ export const ContasReceberList: React.FC<ContasReceberListProps> = ({
       return acc + (saldo > 0 ? saldo : 0);
     }, 0);
 
-  // Soma do que foi recebido no mês (quitação integral ou soma de haveres)
   const recebidoNoMes = data.reduce((acc, d) => {
     let soma = 0;
     if (d.status_pagamento === 'PAGO' && (d.data_pagamento?.startsWith(mesAtual) || d.competencia === mesAtual)) {
@@ -46,20 +40,16 @@ export const ContasReceberList: React.FC<ContasReceberListProps> = ({
   const [filtroCard, setFiltroCard] = React.useState<'TODOS' | 'PENDENTE' | 'RECEBIDO'>('TODOS');
 
   const listaFiltrada = React.useMemo(() => {
-    if (filtroCard === 'PENDENTE') {
-      return data.filter((d) => d.status_pagamento !== 'PAGO');
-    }
-    if (filtroCard === 'RECEBIDO') {
-      return data.filter((d) => d.status_pagamento === 'PAGO' || Number(d.valor_adiantamento || 0) > 0);
-    }
+    if (filtroCard === 'PENDENTE') return data.filter((d) => d.status_pagamento !== 'PAGO');
+    if (filtroCard === 'RECEBIDO') return data.filter((d) => d.status_pagamento === 'PAGO' || Number(d.valor_adiantamento || 0) > 0);
     return data;
   }, [data, filtroCard]);
 
   return (
     <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden text-left text-xs">
       <div className="p-5 border-b border-gray-200">
-        <h2 className="text-base font-bold text-gray-900">Contas a Receber (Gestão de Inadimplência & Haveres)</h2>
-        <p className="text-gray-500 mt-0.5">Conciliação de faturamentos, controle de haveres, emissão de recibos e quitação</p>
+        <h2 className="text-base font-bold text-gray-900">Contas a Receber (Gestão de Inadimplência, Boletos Asaas & Haveres)</h2>
+        <p className="text-gray-500 mt-0.5">Conciliação de faturamentos, emissão de Boleto/PIX via Asaas, controle de haveres e recibos</p>
       </div>
 
       {error && (
@@ -69,7 +59,6 @@ export const ContasReceberList: React.FC<ContasReceberListProps> = ({
         </div>
       )}
 
-      {/* KPI Cards Interativos */}
       <ContasReceberKpiCards
         totalAReceber={totalAReceber}
         recebidoNoMes={recebidoNoMes}
@@ -104,6 +93,7 @@ export const ContasReceberList: React.FC<ContasReceberListProps> = ({
                   hoje={hoje}
                   onAbrirBaixa={onAbrirBaixa}
                   onAbrirHaver={onAbrirHaver}
+                  onAbrirAsaas={onAbrirAsaas}
                   onExcluir={onExcluir}
                 />
               ))}

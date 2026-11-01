@@ -20,6 +20,7 @@ import { EmpresaSettings } from './pages/EmpresaSettings';
 import { Producao } from './pages/Producao';
 import { Almoxarifado } from './pages/Almoxarifado';
 import { Financeiro } from './pages/Financeiro';
+import { BancoAsaas } from './pages/BancoAsaas';
 import { SuperAdminRoute } from './components/auth/SuperAdminRoute';
 import { GoogleOAuthCallback } from './pages/GoogleOAuthCallback';
 import { HomeRoute } from './components/auth/HomeRoute';
@@ -63,6 +64,7 @@ export const App: React.FC = () => {
             <Route path="producao" element={<Producao />} />
             <Route path="almoxarifado" element={<Almoxarifado />} />
             <Route path="financeiro" element={<Financeiro />} />
+            <Route path="asaas" element={<BancoAsaas />} />
             <Route path="faturamento" element={<Navigate to="/financeiro?aba=faturamento" replace />} />
             <Route path="receber" element={<Navigate to="/financeiro?aba=receber" replace />} />
             <Route path="pagar" element={<Navigate to="/financeiro?aba=pagar" replace />} />
