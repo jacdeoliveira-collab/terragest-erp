@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Modal } from '../../../ui/Modal';
-import { CheckCircle2, AlertCircle, Printer } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Printer, Landmark } from 'lucide-react';
 import { registrarPagamentoOperador } from '../../../../services/quitarOperadorService';
 import { gerarReciboValeOperadorPDF } from '../../../../utils/reciboValeOperadorPdf';
+import { useFormaContaSync } from '../../../../hooks/useFormaContaSync';
 import type { FuncionarioRemuneracaoItem } from '../../../../types/funcionarioHistorico.types';
 
 interface Props {
@@ -16,13 +17,27 @@ interface Props {
 export const QuitarOperadorModal: React.FC<Props> = ({
   isOpen, onClose, item, operadorNome, onSuccess
 }) => {
-  if (!item) return null;
-
-  const [valorPago, setValorPago] = useState<number>(item.saldoRestante > 0 ? item.saldoRestante : item.totalGanho);
+  const [valorPago, setValorPago] = useState<number>(0);
   const [dataPagamento, setDataPagamento] = useState<string>(new Date().toISOString().slice(0, 10));
   const [formaPagamento, setFormaPagamento] = useState<string>('PIX');
+  const [contaBancariaId, setContaBancariaId] = useState<string>('');
+  const { contas, contaPadrao, onFormaChange, onContaChange } = useFormaContaSync(contaBancariaId, setFormaPagamento, setContaBancariaId);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (item) {
+      setValorPago(item.saldoRestante > 0 ? item.saldoRestante : item.totalGanho);
+    }
+  }, [item]);
+
+  useEffect(() => {
+    if (!contaBancariaId && contaPadrao?.id) {
+      setContaBancariaId(contaPadrao.id);
+    }
+  }, [contaPadrao, contaBancariaId]);
+
+  if (!item) return null;
 
   const handleImprimirRecibo = () => {
     gerarReciboValeOperadorPDF({
@@ -45,6 +60,7 @@ export const QuitarOperadorModal: React.FC<Props> = ({
         totalGanho: item.totalGanho,
         dataPagamento,
         formaPagamento,
+        contaBancariaId: contaBancariaId || contaPadrao?.id || null,
         operadorNome
       });
       onSuccess();
@@ -69,8 +85,7 @@ export const QuitarOperadorModal: React.FC<Props> = ({
 
         {erro && (
           <div className="p-2.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
-            <span>{erro}</span>
+            <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" /><span>{erro}</span>
           </div>
         )}
 
@@ -87,28 +102,35 @@ export const QuitarOperadorModal: React.FC<Props> = ({
             </div>
             <div>
               <label className="block font-semibold text-gray-700 mb-1">Forma de Pagamento</label>
-              <select value={formaPagamento} onChange={(e) => setFormaPagamento(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs bg-white">
+              <select value={formaPagamento} onChange={(e) => onFormaChange(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs bg-white">
                 <option value="PIX">PIX</option>
                 <option value="TRANSFERENCIA">Transferência</option>
                 <option value="DINHEIRO">Dinheiro</option>
               </select>
             </div>
           </div>
+
+          <div>
+            <label className="block font-semibold text-gray-700 mb-1 flex items-center gap-1">
+              <Landmark className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Banco / Caixa de Saída</span>
+            </label>
+            <select value={contaBancariaId} onChange={(e) => onContaChange(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs bg-white">
+              {contas.length === 0 && <option value="">Caixa Geral da Empresa</option>}
+              {contas.map((c) => <option key={c.id} value={c.id}>{c.nome_conta} ({c.banco})</option>)}
+            </select>
+          </div>
         </div>
 
         <div className="flex items-center justify-between pt-2 border-t border-gray-200">
           <button type="button" onClick={handleImprimirRecibo} className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-lg font-semibold text-xs cursor-pointer shadow-2xs">
-            <Printer className="w-3.5 h-3.5 text-amber-700" />
-            <span>Imprimir Recibo Vale</span>
+            <Printer className="w-3.5 h-3.5 text-amber-700" /><span>Imprimir Recibo Vale</span>
           </button>
 
           <div className="flex items-center gap-2">
-            <button type="button" onClick={onClose} className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 cursor-pointer">
-              Cancelar
-            </button>
+            <button type="button" onClick={onClose} className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 cursor-pointer">Cancelar</button>
             <button type="submit" disabled={salvando} className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold shadow-xs cursor-pointer disabled:opacity-50">
-              <CheckCircle2 className="w-4 h-4" />
-              <span>{salvando ? 'Salvando...' : 'Gravar Vale / Pagamento'}</span>
+              <CheckCircle2 className="w-4 h-4" /><span>{salvando ? 'Salvando...' : 'Gravar Vale / Pagamento'}</span>
             </button>
           </div>
         </div>

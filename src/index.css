@@ -15,6 +15,24 @@ input, select, textarea {
   color: #0f172a !important;
 }
 
+/* Scroll horizontal suave e nativo para menus no mobile */
+.scroll-touch-x {
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-x !important;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+}
+
+.scroll-touch-x::-webkit-scrollbar {
+  height: 4px;
+}
+
+.scroll-touch-x::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
 input::placeholder, textarea::placeholder {
   color: #94a3b8;
 }

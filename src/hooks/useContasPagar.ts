@@ -64,6 +64,8 @@ export function useContasPagar() {
         categoria: dto.categoria,
         valor: Number(dto.valor) || 0,
         data_vencimento: dto.data_vencimento,
+        forma_pagamento: dto.forma_pagamento || 'PIX',
+        conta_bancaria_id: dto.conta_bancaria_id || null,
         status: 'PENDENTE',
         observacoes: dto.observacoes?.trim() || null
       };
@@ -87,6 +89,7 @@ export function useContasPagar() {
       if (dto.categoria !== undefined) payload.categoria = dto.categoria;
       if (dto.valor !== undefined) payload.valor = Number(dto.valor) || 0;
       if (dto.data_vencimento !== undefined) payload.data_vencimento = dto.data_vencimento;
+      if (dto.conta_bancaria_id !== undefined) payload.conta_bancaria_id = dto.conta_bancaria_id || null;
       if (dto.obra_id !== undefined) payload.obra_id = dto.obra_id || null;
       if (dto.observacoes !== undefined) payload.observacoes = dto.observacoes?.trim() || null;
 

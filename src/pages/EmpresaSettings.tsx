@@ -1,10 +1,26 @@
 import React from 'react';
-import { Building2, ShieldCheck, RefreshCw } from 'lucide-react';
+import { Navigate } from 'react-router-dom';
+import { Building2, ShieldCheck, RefreshCw, Lock } from 'lucide-react';
 import { useEmpresaConfig } from '../hooks/useEmpresaConfig';
+import { useAuth } from '../hooks/useAuth';
+import { useTenantContext } from '../contexts/TenantContext';
+import { isMasterEmail } from '../services/adminService';
 import { EmpresaConfigForm } from '../components/features/empresa/EmpresaConfigForm';
 
 export const EmpresaSettings: React.FC = () => {
+  const { user, perfil_acesso: authPerfil } = useAuth();
+  const { tenantAtivo, isMaster: isMasterTenant } = useTenantContext();
   const { empresa, isLoading, isSaving, error, success, salvarConfiguracoes, refetch } = useEmpresaConfig();
+
+  const isAdmin = Boolean(
+    isMasterTenant ||
+    (user && (isMasterEmail(user.email) || user.user_metadata?.is_super_admin === true)) ||
+    (tenantAtivo?.perfil_acesso || user?.perfil_acesso || authPerfil || 'ADMIN') === 'ADMIN'
+  );
+
+  if (!isAdmin) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -28,6 +44,9 @@ export const EmpresaSettings: React.FC = () => {
               <span>Plano {empresa.plano}</span>
             </span>
           )}
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-[11px] font-bold">
+            <Lock className="w-3 h-3 text-slate-500" /> Acesso Restrito Admin
+          </span>
           <button
             onClick={() => refetch()}
             disabled={isLoading}

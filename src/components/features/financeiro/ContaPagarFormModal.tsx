@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { AlertCircle, Check, DollarSign, Calendar, Building, Tag } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { AlertCircle, Check, DollarSign, Calendar, Building, Tag, Landmark, CreditCard } from 'lucide-react';
 import { Modal } from '../../ui/Modal';
 import { useObras } from '../../../hooks/useObras';
-import type { CategoriaContaPagar, CreateContaPagarDTO } from '../../../types/contasPagar.types';
+import { useFormaContaSync } from '../../../hooks/useFormaContaSync';
+import type { CategoriaContaPagar, CreateContaPagarDTO, FormaPagamentoDespesa } from '../../../types/contasPagar.types';
 
 interface ContaPagarFormModalProps {
   isOpen: boolean;
@@ -17,16 +18,30 @@ export const ContaPagarFormModal: React.FC<ContaPagarFormModalProps> = ({ isOpen
   const [categoria, setCategoria] = useState<CategoriaContaPagar>('PECAS_MANUTENCAO');
   const [valor, setValor] = useState<number>(0);
   const [dataVencimento, setDataVencimento] = useState(new Date().toISOString().slice(0, 10));
+  const [formaPagamento, setFormaPagamento] = useState<FormaPagamentoDespesa>('PIX');
+  const [contaBancariaId, setContaBancariaId] = useState('');
+  const { contas, contaPadrao, onFormaChange, onContaChange } = useFormaContaSync(contaBancariaId, setFormaPagamento, setContaBancariaId);
   const [obraId, setObraId] = useState('');
   const [observacoes, setObservacoes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!contaBancariaId && contaPadrao) setContaBancariaId(contaPadrao.id);
+  }, [contaPadrao, contaBancariaId]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsSubmitting(true);
-    const res = await onSalvar({ descricao, fornecedor, categoria, valor, data_vencimento: dataVencimento, obra_id: obraId || undefined, observacoes });
+    const res = await onSalvar({
+      descricao, fornecedor, categoria, valor,
+      data_vencimento: dataVencimento,
+      forma_pagamento: formaPagamento,
+      conta_bancaria_id: contaBancariaId || contaPadrao?.id || undefined,
+      obra_id: obraId || undefined,
+      observacoes
+    });
     setIsSubmitting(false);
     if (res.success) {
       setDescricao(''); setFornecedor(''); setValor(0); setObservacoes('');
@@ -78,12 +93,27 @@ export const ContaPagarFormModal: React.FC<ContaPagarFormModalProps> = ({ isOpen
           </div>
         </div>
 
-        <div>
-          <label className="block font-semibold text-gray-700 mb-1 flex items-center gap-1"><Building className="w-3.5 h-3.5 text-gray-500" /> Obra / Centro de Custo (Opcional)</label>
-          <select value={obraId} onChange={(e) => setObraId(e.target.value)} className="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-300 rounded-xl font-medium">
-            <option value="">Geral / Despesa Administrativa</option>
-            {obras.map((o) => (<option key={o.id} value={o.id}>{o.nome}</option>))}
-          </select>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label className="block font-semibold text-gray-700 mb-1 flex items-center gap-1"><CreditCard className="w-3.5 h-3.5 text-blue-600" /> Forma Pagamento</label>
+            <select value={formaPagamento} onChange={(e) => onFormaChange(e.target.value)} className="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-300 rounded-xl font-medium">
+              <option value="PIX">PIX Bancário</option><option value="DINHEIRO">Dinheiro em Mãos</option><option value="BOLETO">Boleto</option><option value="TED">TED / Transferência</option><option value="CARTAO">Cartão</option><option value="OUTRO">Outro</option>
+            </select>
+          </div>
+          <div>
+            <label className="block font-semibold text-gray-700 mb-1 flex items-center gap-1"><Landmark className="w-3.5 h-3.5 text-emerald-600" /> Banco / Caixa de Saída</label>
+            <select value={contaBancariaId} onChange={(e) => onContaChange(e.target.value)} className="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-300 rounded-xl font-medium">
+              {contas.map((c) => (<option key={c.id} value={c.id}>{c.nome_conta} {c.is_padrao ? '(Padrão)' : ''}</option>))}
+              {contas.length === 0 && <option value="">Caixa Geral</option>}
+            </select>
+          </div>
+          <div>
+            <label className="block font-semibold text-gray-700 mb-1 flex items-center gap-1"><Building className="w-3.5 h-3.5 text-gray-500" /> Centro de Custo</label>
+            <select value={obraId} onChange={(e) => setObraId(e.target.value)} className="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-300 rounded-xl font-medium">
+              <option value="">Geral / Sede</option>
+              {obras.map((o) => (<option key={o.id} value={o.id}>{o.nome}</option>))}
+            </select>
+          </div>
         </div>
 
         <div>

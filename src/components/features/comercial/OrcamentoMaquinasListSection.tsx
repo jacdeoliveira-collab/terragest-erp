@@ -5,37 +5,21 @@ import type { OrcamentoMaquinaItem } from '../../../types/comercial.types';
 import { OrcamentoMaquinaCard } from './OrcamentoMaquinaCard';
 
 interface Props {
-  itens: OrcamentoMaquinaItem[];
-  equipments: Equipment[];
-  operadores: string[];
-  onAddMaquina: () => void;
-  onRemoveMaquina: (id: string) => void;
+  itens: OrcamentoMaquinaItem[]; equipments: Equipment[]; operadores: string[];
+  onAddMaquina: () => void; onRemoveMaquina: (id: string) => void;
   onUpdateMaquina: (id: string, updates: Partial<OrcamentoMaquinaItem>) => void;
-  onSelectEquipmentFrota: (itemId: string, eqId: string) => void;
-  onAbrirNovaMaquina: () => void;
+  onSelectEquipmentFrota: (itemId: string, eqId: string) => void; onAbrirNovaMaquina: () => void;
 }
 
 const IMPLEMENTOS_OPCOES = [
-  'Concha Padrão (Escavação/Carga)',
-  'Concha Reforçada p/ Rocha (HD)',
-  'Rompedor Hidráulico (Martelete)',
-  'Lâmina Frontal + Escarificador (Ripper)',
-  'Concha + Lâmina (Retroescavadeira)',
-  'Rolo Compactador Pé de Carneiro / Liso',
-  'Caçamba Basculante (Transporte)',
-  'Caminhão Pipa (Canhão / Barra Irrigadora)',
-  'Garfo Pallet / Braço Munck',
-  'Trado / Perfuratriz de Solo'
+  'Concha Padrão (Escavação/Carga)', 'Concha Reforçada p/ Rocha (HD)', 'Rompedor Hidráulico (Martelete)',
+  'Lâmina Frontal + Escarificador (Ripper)', 'Concha + Lâmina (Retroescavadeira)', 'Rolo Compactador Pé de Carneiro / Liso',
+  'Caçamba Basculante (Transporte)', 'Caminhão Pipa (Canhão / Barra Irrigadora)', 'Garfo Pallet / Braço Munck', 'Trado / Perfuratriz de Solo'
 ];
 
 const FRANQUIAS_OPCOES = [
-  'Por Medição de Horímetro (Sem Franquia)',
-  'Franquia Mínima 8h / Dia',
-  'Franquia Mínima 10h / Dia',
-  'Franquia Mínima 40h / Semana',
-  'Franquia Mínima 100h / Mês',
-  'Franquia Mínima 180h / Mês',
-  'Franquia Mínima 200h / Mês'
+  'Por Medição de Horímetro (Sem Franquia)', 'Franquia Mínima 8h / Dia', 'Franquia Mínima 10h / Dia',
+  'Franquia Mínima 40h / Semana', 'Franquia Mínima 100h / Mês', 'Franquia Mínima 180h / Mês', 'Franquia Mínima 200h / Mês'
 ];
 
 export const OrcamentoMaquinasListSection: React.FC<Props> = ({

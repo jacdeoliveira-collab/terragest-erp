@@ -78,11 +78,18 @@ export const FotoHorimetroUploadField: React.FC<FotoHorimetroUploadFieldProps> =
             title="Clique para ver a foto em tamanho real"
             className="block shrink-0 relative group cursor-pointer"
           >
-            <img
-              src={thumbSrc || valorFoto}
-              alt={badge}
-              className="w-12 h-12 object-cover rounded-md border border-gray-300 shadow-xs group-hover:opacity-85 transition-opacity"
-            />
+            {thumbSrc ? (
+              <img
+                src={thumbSrc}
+                alt={badge}
+                className="w-12 h-12 object-cover rounded-md border border-gray-300 shadow-xs group-hover:opacity-85 transition-opacity"
+              />
+            ) : (
+              <div className="w-12 h-12 bg-emerald-50 border border-emerald-200 rounded-md flex flex-col items-center justify-center text-emerald-700">
+                <Camera className="w-4 h-4" />
+                <span className="text-[7px] font-bold mt-0.5">Drive</span>
+              </div>
+            )}
             <span className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-md opacity-0 group-hover:opacity-100 transition-opacity text-white">
               <ExternalLink className="w-3.5 h-3.5" />
             </span>
@@ -91,7 +98,9 @@ export const FotoHorimetroUploadField: React.FC<FotoHorimetroUploadFieldProps> =
             <span className={`inline-block font-semibold px-1.5 py-0.5 rounded text-[9px] ${badgeClass}`}>
               {badge}
             </span>
-            <p className="text-gray-500 mt-0.5 truncate">Foto do painel anexada</p>
+            <p className="text-gray-500 mt-0.5 truncate">
+              Foto do painel salva no Google Drive
+            </p>
             <button
               type="button"
               onClick={() => abrirVisualizacaoImagem(valorFoto, `Foto do Painel - ${badge}`)}

@@ -3,8 +3,8 @@ import { supabase } from '../lib/supabase';
 import serviceAccount from '../../google-credentials.json';
 
 export const DRIVE_CONFIG = {
-  rhFolderId: (import.meta.env.VITE_DRIVE_RH_FOLDER_ID as string) || '17Neh8Ngob6sCTsThY73MyGb0AtVVI4Qv',
-  frotaFolderId: (import.meta.env.VITE_DRIVE_FROTA_FOLDER_ID as string) || '1euaw3LAbdxek1Dh-qbUxUMeMPEL5XKsd'
+  rhFolderId: (import.meta.env.VITE_DRIVE_RH_FOLDER_ID as string) || '1euaw3LAbdxek1Dh-qbUxUMeMPEL5XKsd',
+  frotaFolderId: (import.meta.env.VITE_DRIVE_FROTA_FOLDER_ID as string) || '17Neh8Ngob6sCTsThY73MyGb0AtVVI4Qv'
 };
 
 export function getDriveFolderId(pastaTipo: 'rh' | 'frota'): string {
@@ -37,23 +37,29 @@ async function getServiceAccountToken(): Promise<string> {
   return cachedAccessToken.token;
 }
 
-async function getAccessTokenForUpload(): Promise<string> {
-  if (typeof window !== 'undefined') {
+async function getAccessTokenForUpload(forceServiceAccount = false): Promise<string> {
+  if (!forceServiceAccount && typeof window !== 'undefined') {
     const local = localStorage.getItem('terragest_google_drive_token');
-    if (local) return local;
+    const tokenTime = localStorage.getItem('terragest_google_drive_token_time');
+    // Se o token foi salvo há menos de 50 minutos (3000s)
+    if (local && tokenTime && Date.now() - Number(tokenTime) < 3000 * 1000) {
+      return local;
+    }
   }
   try {
-    const { data: userData } = await supabase.auth.getUser();
-    const activeTenant = typeof window !== 'undefined' ? localStorage.getItem('terragest_tenant_ativo_id') : null;
-    const tenantId = activeTenant || userData.user?.user_metadata?.tenant_id || '00000000-0000-0000-0000-000000000001';
-    const { data: integ } = await supabase
-      .from('tenant_integrations')
-      .select('access_token')
-      .eq('tenant_id', tenantId)
-      .eq('provider', 'GOOGLE_DRIVE')
-      .maybeSingle();
+    if (!forceServiceAccount) {
+      const { data: userData } = await supabase.auth.getUser();
+      const activeTenant = typeof window !== 'undefined' ? localStorage.getItem('terragest_tenant_ativo_id') : null;
+      const tenantId = activeTenant || userData.user?.user_metadata?.tenant_id || '00000000-0000-0000-0000-000000000001';
+      const { data: integ } = await supabase
+        .from('tenant_integrations')
+        .select('access_token')
+        .eq('tenant_id', tenantId)
+        .eq('provider', 'GOOGLE_DRIVE')
+        .maybeSingle();
 
-    if (integ?.access_token) return integ.access_token;
+      if (integ?.access_token) return integ.access_token;
+    }
   } catch {}
   return getServiceAccountToken();
 }
@@ -64,7 +70,7 @@ export async function uploadParaGoogleDrive(
 ): Promise<{ sucesso: boolean; driveUrl?: string; fileId?: string; erro?: string }> {
   try {
     const folderId = getDriveFolderId(pastaTipo);
-    const token = await getAccessTokenForUpload();
+    let token = await getAccessTokenForUpload();
 
     const metadata: Record<string, any> = { name: `${Date.now()}_${arquivo.name}`, parents: [folderId] };
     const boundary = '-------314159265358979323846';
@@ -86,22 +92,23 @@ export async function uploadParaGoogleDrive(
     ], { type: `multipart/related; boundary=${boundary}` });
 
     const apiUrl = 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,webViewLink';
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 4000);
-
     let uploadRes = await fetch(apiUrl, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
-      body: criarBlob(metadata),
-      signal: controller.signal
+      body: criarBlob(metadata)
     });
-    clearTimeout(timer);
 
-    if (!uploadRes.ok && uploadRes.status !== 403) {
+    // Se o token expirou (401), limpa o cache e tenta com Service Account
+    if (uploadRes.status === 401) {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('terragest_google_drive_token');
+        localStorage.removeItem('terragest_google_drive_token_time');
+      }
+      token = await getAccessTokenForUpload(true);
       uploadRes = await fetch(apiUrl, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
-        body: criarBlob({ name: metadata.name })
+        body: criarBlob(metadata)
       });
     }
 
@@ -112,8 +119,8 @@ export async function uploadParaGoogleDrive(
         const json = JSON.parse(errTxt);
         friendly = json?.error?.message || friendly;
       } catch {}
-      if (friendly.includes('storage quota')) {
-        friendly = 'Cota do Drive pessoal: Conecte sua conta do Google em Minha Empresa > Integrações para sincronização em nuvem.';
+      if (friendly.includes('storage quota') || friendly.includes('invalid authentication credentials')) {
+        friendly = 'Sua conexão com o Google Drive expirou. Acesse Minha Empresa > Bancos e Drive e clique em "Conectar Google Drive" para autorizar o envio.';
       }
       throw new Error(friendly);
     }

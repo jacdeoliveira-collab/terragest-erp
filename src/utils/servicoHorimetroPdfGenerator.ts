@@ -12,7 +12,7 @@ import {
   desenharAssinaturas
 } from './pdf/pdfTabelasServico';
 import { prepararImagemParaPdf, desenharImagemProporcional } from './pdf/pdfImageHelper';
-import { desenharBlocoPagamentoPix } from './pdf/pdfOrcamentoPagamentoBlock';
+import { desenharBlocoPagamentoPix, obterDadosPlanilhaBancoCache } from './pdf/pdfOrcamentoPagamentoBlock';
 import { supabase } from '../lib/supabase';
 
 async function buscarContaServico(contaId?: string) {
@@ -104,14 +104,15 @@ export async function gerarRelatorioServicoPDF(servico: ServicoHorimetro): Promi
   ]);
 
   const conta = await buscarContaServico(servico.conta_bancaria_id);
+  const plan = obterDadosPlanilhaBancoCache();
   let yPagamento = finalResumoY;
   if (yPagamento + 34 > 245) { doc.addPage(); yPagamento = 20; }
   const finalPagamentoY = desenharBlocoPagamentoPix(doc, {
     prazo: servico.prazo_descricao,
     forma: servico.forma_pagamento,
-    banco: conta?.banco,
-    titular: conta?.titular || conta?.nome_conta,
-    chavePix: conta?.chave_pix
+    banco: conta?.banco || plan.banco,
+    titular: conta?.titular || conta?.nome_conta || plan.titular,
+    chavePix: conta?.chave_pix || plan.chavePix
   }, yPagamento + 3);
 
   const finalFotosY = desenharSecaoFotos(doc, servico, finalPagamentoY, fotoIni, fotoFim, fotoCupom);

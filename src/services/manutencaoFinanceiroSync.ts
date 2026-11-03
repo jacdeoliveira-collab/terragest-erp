@@ -17,6 +17,9 @@ interface ManutencaoRow {
   valor_pecas?: number;
   valor_mao_obra?: number;
   comprovante_url?: string | null;
+  conta_bancaria_id?: string | null;
+  forma_pagamento?: string | null;
+  status_pagamento_os?: 'PAGO' | 'PENDENTE';
 }
 
 export function extrairMetadadosTipoServico(rawTipo?: string): {
@@ -42,10 +45,6 @@ export function codificarTipoServicoBanco(
   return (mec ? `${tipo}|${mec}` : tipo).slice(0, 145);
 }
 
-/**
- * Manutenção (preventiva/corretiva) -> Contas a Pagar + Repositório de Documentos do Equipamento.
- * Peças e mão de obra geram despesas separadas, vinculadas à obra e identificadas pelo [REF].
- */
 export async function sincronizarManutencaoFinanceiro(m: ManutencaoRow): Promise<void> {
   const pecas = Number(m.valor_pecas) || 0;
   const maoObra = Number(m.valor_mao_obra) || 0;
@@ -56,7 +55,6 @@ export async function sincronizarManutencaoFinanceiro(m: ManutencaoRow): Promise
   const servico = m.descricao_servico || m.servico || 'Manutenção';
   const venc = m.data_servico || m.data_ultima_execucao || new Date().toISOString().slice(0, 10);
 
-  // Se houver comprovante do Google Drive, registra também em equipamento_documentos
   if (m.comprovante_url && maqId && m.comprovante_url.startsWith('http')) {
     const tagDoc = `[MANUT_${m.id}]`;
     const { data: docExist } = await supabase
@@ -95,7 +93,16 @@ export async function sincronizarManutencaoFinanceiro(m: ManutencaoRow): Promise
   const tipoLabel = tipoManut === 'CORRETIVA' ? 'Corretiva' : 'Preventiva';
   const fornecedor = mecanico || 'Oficina / Fornecedor de peças';
   const obsFoto = m.comprovante_url && m.comprovante_url.startsWith('http') ? `[FOTO:${m.comprovante_url}]` : undefined;
-  const base = { tenantId: m.tenant_id, obraId: m.obra_id, fornecedor, dataVencimento: venc, observacoes: obsFoto };
+  const base = {
+    tenantId: m.tenant_id,
+    obraId: m.obra_id,
+    fornecedor,
+    dataVencimento: venc,
+    status: m.status_pagamento_os || 'PAGO',
+    formaPagamento: m.forma_pagamento || 'PIX',
+    contaBancariaId: m.conta_bancaria_id || null,
+    observacoes: obsFoto
+  };
 
   if (pecas > 0) {
     await sincronizarDespesa({

@@ -1,5 +1,7 @@
 import type jsPDF from 'jspdf';
 import type { Orcamento } from '../../types/comercial.types';
+import { obterMetadataBanco } from '../bancosProvidersCatalog';
+import type { AsaasConfig } from '../../types/asaas.types';
 
 export interface DadosPagamentoPdf {
   prazo?: string;
@@ -7,6 +9,26 @@ export interface DadosPagamentoPdf {
   banco?: string;
   titular?: string;
   chavePix?: string;
+}
+
+export function obterDadosPlanilhaBancoCache(): { banco?: string; titular?: string; chavePix?: string } {
+  if (typeof window === 'undefined') return {};
+  try {
+    const activeTenant = localStorage.getItem('terragest_tenant_ativo_id');
+    const raw = (activeTenant && localStorage.getItem(`terragest_asaas_config_${activeTenant}`)) || localStorage.getItem('terragest_asaas_config');
+    if (!raw) return {};
+    const cfg = JSON.parse(raw) as AsaasConfig;
+    const meta = obterMetadataBanco(cfg.provider);
+    const nomeBanco = cfg.provider === 'OUTRO_BANCO' && cfg.nomeBancoCustom ? cfg.nomeBancoCustom : meta.nome;
+    const agConta = [cfg.agenciaCustom ? `Ag: ${cfg.agenciaCustom}` : '', cfg.contaCustom ? `CC: ${cfg.contaCustom}` : ''].filter(Boolean).join(' / ');
+    return {
+      banco: [nomeBanco, agConta].filter(Boolean).join(' • '),
+      titular: cfg.accountName || undefined,
+      chavePix: cfg.chavePix ? `${cfg.tipoChavePix ? `(${cfg.tipoChavePix}) ` : ''}${cfg.chavePix}` : undefined
+    };
+  } catch {
+    return {};
+  }
 }
 
 /** Desenha o quadro de pagamento usando apenas dados reais; linhas sem dado são omitidas. */
@@ -50,11 +72,12 @@ export function desenharBlocoPagamentoPix(doc: jsPDF, dados: DadosPagamentoPdf, 
 }
 
 export function desenharBlocoPagamentoPixOrcamento(doc: jsPDF, orc: Orcamento, startY: number): number {
+  const plan = obterDadosPlanilhaBancoCache();
   return desenharBlocoPagamentoPix(doc, {
     prazo: orc.prazo_descricao,
     forma: orc.forma_pagamento,
-    banco: orc.conta_bancaria_banco,
-    titular: orc.conta_bancaria_nome,
-    chavePix: orc.conta_bancaria_pix || orc.chave_pix_manual
+    banco: orc.conta_bancaria_banco || plan.banco,
+    titular: orc.conta_bancaria_nome || plan.titular,
+    chavePix: orc.conta_bancaria_pix || orc.chave_pix_manual || plan.chavePix
   }, startY);
 }

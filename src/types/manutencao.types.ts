@@ -40,6 +40,9 @@ export interface PlanoManutencaoItem {
   valor_mao_obra?: number;
   valor_total?: number;
   comprovante_url?: string;
+  conta_bancaria_id?: string;
+  forma_pagamento?: string;
+  status_pagamento_os?: 'PAGO' | 'PENDENTE';
   created_at?: string;
   updated_at?: string;
 }

@@ -19,6 +19,7 @@ export interface LancarCupomCombustivelDTO {
   formaPagamento: FormaPagamentoDespesa | string;
   statusPagamento: 'PAGO' | 'PENDENTE';
   contaSaida: string;
+  contaBancariaId?: string;
   obraId?: string;
   servicoId?: string;
   maquinaPrincipal: ItemCombustivelCupom;

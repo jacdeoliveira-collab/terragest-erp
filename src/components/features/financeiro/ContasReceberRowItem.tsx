@@ -74,10 +74,10 @@ export const ContasReceberRowItem: React.FC<Props> = ({
                 <button
                   type="button" onClick={() => onAbrirAsaas(item)}
                   className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-[11px] font-bold cursor-pointer inline-flex items-center gap-1 shadow-2xs"
-                  title="Gerar Boleto ou PIX Dinâmico pelo Banco Asaas"
+                  title="Emitir Cobrança Bancária (Boleto / PIX QR Code)"
                 >
                   <QrCode className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>Asaas</span>
+                  <span>Boleto / PIX</span>
                 </button>
               )}
               <button

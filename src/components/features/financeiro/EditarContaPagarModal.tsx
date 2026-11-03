@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, Check, DollarSign, Calendar, Building, Tag } from 'lucide-react';
+import { AlertCircle, Check, DollarSign, Calendar, Building, Tag, Landmark } from 'lucide-react';
 import { Modal } from '../../ui/Modal';
 import { useObras } from '../../../hooks/useObras';
+import { useContasBancarias } from '../../../hooks/useContasBancarias';
 import type { ContaPagarItem, CategoriaContaPagar, CreateContaPagarDTO } from '../../../types/contasPagar.types';
 
 interface Props {
@@ -13,11 +14,13 @@ interface Props {
 
 export const EditarContaPagarModal: React.FC<Props> = ({ isOpen, onClose, conta, onSalvar }) => {
   const { obras } = useObras();
+  const { contas, contaPadrao } = useContasBancarias();
   const [descricao, setDescricao] = useState('');
   const [fornecedor, setFornecedor] = useState('');
   const [categoria, setCategoria] = useState<CategoriaContaPagar>('PECAS_MANUTENCAO');
   const [valor, setValor] = useState<number>(0);
   const [dataVencimento, setDataVencimento] = useState('');
+  const [contaBancariaId, setContaBancariaId] = useState('');
   const [obraId, setObraId] = useState('');
   const [observacoes, setObservacoes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,11 +33,12 @@ export const EditarContaPagarModal: React.FC<Props> = ({ isOpen, onClose, conta,
       setCategoria((conta.categoria as CategoriaContaPagar) || 'PECAS_MANUTENCAO');
       setValor(Number(conta.valor) || 0);
       setDataVencimento(conta.data_vencimento || '');
+      setContaBancariaId(conta.conta_bancaria_id || contaPadrao?.id || '');
       setObraId(conta.obra_id || '');
       setObservacoes(conta.observacoes || '');
       setError(null);
     }
-  }, [conta]);
+  }, [conta, contaPadrao]);
 
   if (!conta) return null;
 
@@ -45,6 +49,7 @@ export const EditarContaPagarModal: React.FC<Props> = ({ isOpen, onClose, conta,
     const res = await onSalvar(conta.id, {
       descricao, fornecedor, categoria, valor,
       data_vencimento: dataVencimento,
+      conta_bancaria_id: contaBancariaId || contaPadrao?.id || undefined,
       obra_id: obraId || undefined,
       observacoes
     });
@@ -54,7 +59,7 @@ export const EditarContaPagarModal: React.FC<Props> = ({ isOpen, onClose, conta,
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Alterar Despesa / Centro de Custo">
+    <Modal isOpen={isOpen} onClose={onClose} title="Alterar Despesa / Banco / Centro de Custo">
       <form onSubmit={handleSubmit} className="text-left space-y-3 text-xs">
         {error && (
           <div className="p-2 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 flex items-center gap-2">
@@ -95,15 +100,25 @@ export const EditarContaPagarModal: React.FC<Props> = ({ isOpen, onClose, conta,
           </div>
         </div>
 
-        <div>
-          <label className="block font-semibold text-gray-700 mb-0.5 flex items-center gap-1">
-            <Building className="w-3 h-3 text-emerald-600" /> Centro de Custo / Obra Alocada
-          </label>
-          <select value={obraId} onChange={(e) => setObraId(e.target.value)} className="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-300 rounded-xl font-medium focus:bg-white focus:border-emerald-500">
-            <option value="">Geral / Despesa Administrativa (Sem Obra)</option>
-            {obras.map((o) => (<option key={o.id} value={o.id}>{o.nome}</option>))}
-          </select>
-          <span className="text-[10px] text-gray-400 block mt-0.5">Aloca este custo ao Centro de Custo específico para o Dashboard e DRE.</span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          <div>
+            <label className="block font-semibold text-gray-700 mb-0.5 flex items-center gap-1">
+              <Landmark className="w-3 h-3 text-emerald-600" /> Banco / Caixa de Saída
+            </label>
+            <select value={contaBancariaId} onChange={(e) => setContaBancariaId(e.target.value)} className="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-300 rounded-xl font-medium">
+              {contas.map((c) => (<option key={c.id} value={c.id}>{c.nome_conta} {c.is_padrao ? '(Padrão)' : ''}</option>))}
+              {contas.length === 0 && <option value="">Caixa Geral</option>}
+            </select>
+          </div>
+          <div>
+            <label className="block font-semibold text-gray-700 mb-0.5 flex items-center gap-1">
+              <Building className="w-3 h-3 text-emerald-600" /> Centro de Custo / Obra
+            </label>
+            <select value={obraId} onChange={(e) => setObraId(e.target.value)} className="w-full px-2.5 py-1.5 bg-gray-50 border border-gray-300 rounded-xl font-medium">
+              <option value="">Geral / Sede</option>
+              {obras.map((o) => (<option key={o.id} value={o.id}>{o.nome}</option>))}
+            </select>
+          </div>
         </div>
 
         <div>

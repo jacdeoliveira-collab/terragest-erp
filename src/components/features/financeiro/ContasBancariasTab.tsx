@@ -1,15 +1,27 @@
 import React, { useState } from 'react';
-import { Plus, Landmark, Star, Copy, Check, Pencil, Trash2, Wallet } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Plus, Landmark, Star, Copy, Check, Pencil, Trash2, Wallet, ShieldCheck, ArrowUpRight } from 'lucide-react';
 import { useContasBancarias } from '../../../hooks/useContasBancarias';
+import { useAuth } from '../../../hooks/useAuth';
+import { useTenantContext } from '../../../contexts/TenantContext';
+import { isMasterEmail } from '../../../services/adminService';
 import { ContaBancariaModal } from './ContaBancariaModal';
-import { AsaasIntegrationCard } from './AsaasIntegrationCard';
+import { ExtratoBancarioCard } from './ExtratoBancarioCard';
 import type { ContaBancaria } from '../../../types/contaBancaria.types';
 
 export const ContasBancariasTab: React.FC = () => {
+  const { user, perfil_acesso: authPerfil } = useAuth();
+  const { tenantAtivo, isMaster: isMasterTenant } = useTenantContext();
   const { contas, isLoading, error, criarConta, atualizarConta, excluirConta } = useContasBancarias();
   const [modalAberto, setModalAberto] = useState(false);
   const [contaEdicao, setContaEdicao] = useState<ContaBancaria | null>(null);
   const [copiadoId, setCopiadoId] = useState<string | null>(null);
+
+  const isAdmin = Boolean(
+    isMasterTenant ||
+    (user && (isMasterEmail(user.email) || user.user_metadata?.is_super_admin === true)) ||
+    (tenantAtivo?.perfil_acesso || user?.perfil_acesso || authPerfil || 'ADMIN') === 'ADMIN'
+  );
 
   const copiarPix = (chave: string, id: string) => {
     navigator.clipboard.writeText(chave);
@@ -18,6 +30,7 @@ export const ContasBancariasTab: React.FC = () => {
   };
 
   const handleExcluir = async (id: string, nome: string) => {
+    if (!isAdmin) return;
     if (window.confirm(`Deseja realmente remover a conta "${nome}"?`)) {
       await excluirConta(id);
     }
@@ -25,26 +38,32 @@ export const ContasBancariasTab: React.FC = () => {
 
   return (
     <div className="space-y-4 text-left">
-      <AsaasIntegrationCard />
+      <ExtratoBancarioCard />
+      {isAdmin && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-blue-50/70 border border-blue-200 p-3.5 rounded-2xl text-xs">
+          <div className="flex items-center gap-2.5 text-blue-900">
+            <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0" />
+            <span><b>Planilha Multi-Banco de Chaves (Asaas, Mercado Pago, Inter, Cora, PIX e Webhook):</b> protegida no menu restrito <b>Minha Empresa</b>.</span>
+          </div>
+          <Link to="/minha-empresa?aba=integracoes" className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shrink-0 shadow-xs">
+            <span>Configurar Banco em Minha Empresa</span><ArrowUpRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      )}
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-gray-200">
         <div>
           <h2 className="text-base font-bold text-gray-900">Contas Bancárias & Caixas</h2>
           <p className="text-xs text-gray-500">Gestão de contas e chaves PIX para impressão em orçamentos e conciliação de caixa</p>
         </div>
-        <button
-          onClick={() => { setContaEdicao(null); setModalAberto(true); }}
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm cursor-pointer"
-        >
-          <Plus className="w-4 h-4" /><span>Nova Conta / Caixa</span>
-        </button>
+        {isAdmin && (
+          <button onClick={() => { setContaEdicao(null); setModalAberto(true); }} className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm cursor-pointer">
+            <Plus className="w-4 h-4" /><span>Nova Conta / Caixa</span>
+          </button>
+        )}
       </div>
 
-      {error && (
-        <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700">
-          {error}
-        </div>
-      )}
+      {error && <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700">{error}</div>}
 
       {isLoading ? (
         <div className="p-8 text-center text-xs text-gray-400 bg-white border border-gray-200 rounded-2xl">Carregando contas bancárias...</div>
@@ -100,20 +119,12 @@ export const ContasBancariasTab: React.FC = () => {
                 <div className="p-2 bg-gray-50 rounded-xl text-[10px] text-gray-400 italic">Sem chave PIX cadastrada</div>
               )}
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
-                <button
-                  onClick={() => { setContaEdicao(c); setModalAberto(true); }}
-                  className="p-1.5 text-gray-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg text-xs cursor-pointer flex items-center gap-1"
-                >
-                  <Pencil className="w-3.5 h-3.5" /><span>Editar</span>
-                </button>
-                <button
-                  onClick={() => handleExcluir(c.id, c.nome_conta)}
-                  className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg text-xs cursor-pointer flex items-center gap-1"
-                >
-                  <Trash2 className="w-3.5 h-3.5" /><span>Excluir</span>
-                </button>
-              </div>
+              {isAdmin && (
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                  <button onClick={() => { setContaEdicao(c); setModalAberto(true); }} className="p-1.5 text-gray-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg text-xs cursor-pointer flex items-center gap-1"><Pencil className="w-3.5 h-3.5" /><span>Editar</span></button>
+                  <button onClick={() => handleExcluir(c.id, c.nome_conta)} className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg text-xs cursor-pointer flex items-center gap-1"><Trash2 className="w-3.5 h-3.5" /><span>Excluir</span></button>
+                </div>
+              )}
             </div>
           ))}
         </div>

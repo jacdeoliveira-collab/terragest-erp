@@ -9,34 +9,43 @@ export default async function handler(req, res) {
 
   try {
     const apiKey = req.headers['x-asaas-key'] || req.body?.apiKey;
+    const provider = req.headers['x-bank-provider'] || req.body?.provider || 'ASAAS';
     const environment = req.headers['x-asaas-env'] || req.body?.environment || 'production';
     const endpoint = req.query?.endpoint || req.body?.endpoint;
     const method = req.body?.method || req.method || 'GET';
     const payload = req.body?.payload;
 
     if (!apiKey) {
-      return res.status(400).json({ error: 'Chave de API do Asaas não informada.' });
+      return res.status(400).json({ error: 'Chave de API / Token não informado.' });
     }
     if (!endpoint) {
-      return res.status(400).json({ error: 'Endpoint da API Asaas não especificado.' });
+      return res.status(400).json({ error: 'Endpoint da API bancária não especificado.' });
     }
 
-    const baseUrl = environment === 'sandbox'
+    let baseUrl = environment === 'sandbox'
       ? 'https://sandbox.asaas.com/api/v3'
       : 'https://api.asaas.com/v3';
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      'User-Agent': 'TerraGest-ERP/1.0'
+    };
+
+    if (provider === 'MERCADO_PAGO') {
+      baseUrl = 'https://api.mercadopago.com';
+      headers['Authorization'] = `Bearer ${String(apiKey).trim()}`;
+      if (method === 'POST') {
+        headers['X-Idempotency-Key'] = `tg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      }
+    } else {
+      headers['access_token'] = String(apiKey).trim();
+    }
 
     const cleanEndpoint = String(endpoint).startsWith('/') ? endpoint : `/${endpoint}`;
     const targetUrl = `${baseUrl}${cleanEndpoint}`;
 
-    const fetchOptions = {
-      method,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'access_token': String(apiKey).trim(),
-        'User-Agent': 'TerraGest-ERP/1.0'
-      }
-    };
+    const fetchOptions = { method, headers };
 
     if (payload && (method === 'POST' || method === 'PUT')) {
       fetchOptions.body = JSON.stringify(payload);

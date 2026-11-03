@@ -6,6 +6,7 @@ interface QuitarOperadorParams {
   totalGanho: number;
   dataPagamento: string;
   formaPagamento?: string;
+  contaBancariaId?: string | null;
   tenantId?: string;
   operadorNome?: string;
   obraId?: string | null;
@@ -17,6 +18,7 @@ export async function registrarPagamentoOperador({
   totalGanho,
   dataPagamento,
   formaPagamento = 'PIX',
+  contaBancariaId,
   tenantId,
   operadorNome = 'Operador',
   obraId
@@ -39,12 +41,13 @@ export async function registrarPagamentoOperador({
 
   const { data: srvData } = await supabase
     .from('servicos_horimetro')
-    .select('obra_id, tenant_id')
+    .select('obra_id, tenant_id, conta_bancaria_id')
     .eq('id', servicoId)
     .maybeSingle();
 
   const finalObraId = obraId !== undefined ? obraId : (srvData?.obra_id || null);
   const finalTenantId = tenantId || srvData?.tenant_id || null;
+  const finalContaId = contaBancariaId || srvData?.conta_bancaria_id || null;
 
   // 2. Conexão com CONTAS A PAGAR
   const { data: existCP } = await supabase
@@ -62,6 +65,7 @@ export async function registrarPagamentoOperador({
         status: statusPagamento === 'PAGO' ? 'PAGO' : 'PENDENTE',
         data_pagamento: statusPagamento === 'PAGO' ? dataPagamento : null,
         forma_pagamento: formaPagamento,
+        conta_bancaria_id: finalContaId,
         obra_id: finalObraId,
         observacoes: `[REF:${servicoId}] Remuneração: R$ ${totalGanho.toFixed(2)} | Pago: R$ ${valorPago.toFixed(2)} | Saldo: R$ ${saldoRestante.toFixed(2)}`
       })
@@ -77,6 +81,7 @@ export async function registrarPagamentoOperador({
       data_vencimento: dataPagamento,
       data_pagamento: statusPagamento === 'PAGO' ? dataPagamento : null,
       forma_pagamento: formaPagamento,
+      conta_bancaria_id: finalContaId,
       status: statusPagamento === 'PAGO' ? 'PAGO' : 'PENDENTE',
       observacoes: `[REF:${servicoId}] Total: R$ ${totalGanho.toFixed(2)} | Pago: R$ ${valorPago.toFixed(2)}`
     }]);

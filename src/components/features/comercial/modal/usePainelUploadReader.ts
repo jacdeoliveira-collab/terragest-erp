@@ -89,19 +89,32 @@ export function usePainelUploadReader({
     }
 
     try {
-      setMensagemOcr('Foto salva! Tentando sincronizar com Google Drive...');
+      setMensagemOcr('Enviando foto ao Google Drive...');
+      let arquivoParaEnvio = file;
+      if (imagemBase64 && imagemBase64.startsWith('data:image')) {
+        try {
+          const arr = imagemBase64.split(',');
+          const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+          const bstr = atob(arr[1]);
+          let n = bstr.length;
+          const u8arr = new Uint8Array(n);
+          while (n--) u8arr[n] = bstr.charCodeAt(n);
+          arquivoParaEnvio = new File([u8arr], file.name.replace(/\.[^/.]+$/, '.jpg'), { type: mime });
+        } catch {}
+      }
+
       const timeoutPromise = new Promise<{ sucesso: boolean; erro: string }>((resolve) => {
-        setTimeout(() => resolve({ sucesso: false, erro: 'Tempo limite ao conectar ao Drive' }), 4000);
+        setTimeout(() => resolve({ sucesso: false, erro: 'Tempo limite ao conectar ao Drive' }), 30000);
       });
-      const res = await Promise.race([uploadParaGoogleDrive(file, 'frota'), timeoutPromise]);
+      const res = await Promise.race([uploadParaGoogleDrive(arquivoParaEnvio, 'frota'), timeoutPromise]);
       if (res.sucesso && (res as any).driveUrl) {
         setter((res as any).driveUrl);
         setMensagemOcr('Foto sincronizada no Google Drive com sucesso!');
       } else {
-        setMensagemOcr('Foto salva e vinculada com sucesso.');
+        setMensagemOcr('Foto salva no aparelho. Conecte o Google Drive para sincronizar com a nuvem.');
       }
     } catch {
-      setMensagemOcr('Foto salva e vinculada com sucesso.');
+      setMensagemOcr('Foto salva no aparelho.');
     } finally {
       setUploadingImage(null);
     }

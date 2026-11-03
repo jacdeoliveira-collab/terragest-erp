@@ -8,7 +8,7 @@ export type CategoriaContaPagar =
   | 'ADMINISTRATIVO'
   | 'OUTROS';
 
-export type FormaPagamentoDespesa = 'PIX' | 'BOLETO' | 'TED' | 'TRANSFERENCIA' | 'CARTAO' | 'OUTRO';
+export type FormaPagamentoDespesa = 'PIX' | 'DINHEIRO' | 'BOLETO' | 'TED' | 'TRANSFERENCIA' | 'CARTAO' | 'OUTRO';
 
 export interface ContaPagarItem {
   id: string;

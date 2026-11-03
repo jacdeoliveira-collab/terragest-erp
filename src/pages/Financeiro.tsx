@@ -13,7 +13,7 @@ export type FinanceiroTab = 'pagar' | 'receber' | 'centros-custo' | 'faturamento
 const TABS: Array<{ id: FinanceiroTab; label: string; icon: React.ElementType }> = [
   { id: 'pagar', label: 'Contas a Pagar', icon: CreditCard },
   { id: 'receber', label: 'Contas a Receber', icon: CircleDollarSign },
-  { id: 'contas', label: 'Contas Bancárias & Pix', icon: Landmark },
+  { id: 'contas', label: 'Saldo, Extrato & Contas', icon: Landmark },
   { id: 'centros-custo', label: 'Centros de Custo & DRE', icon: Building2 },
   { id: 'faturamento', label: 'Medição & Faturamento', icon: ReceiptText }
 ];

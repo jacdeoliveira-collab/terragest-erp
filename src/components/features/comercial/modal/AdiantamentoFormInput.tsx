@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Camera, X, Tag } from 'lucide-react';
+import { useFormaContaSync } from '../../../../hooks/useFormaContaSync';
 import { comprimirImagem } from '../../../../services/comprovanteStorageService';
 import type { AdiantamentoItem } from '../../../../types/servicoHorimetro.types';
 
@@ -11,10 +12,16 @@ interface Props {
 export const AdiantamentoFormInput: React.FC<Props> = ({ onAdicionar, isFirst }) => {
   const [valor, setValor] = useState('');
   const [forma, setForma] = useState('PIX');
+  const [contaId, setContaId] = useState('');
+  const { contas, contaPadrao, onFormaChange, onContaChange } = useFormaContaSync(contaId, setForma, setContaId, 'Dinheiro');
   const [data, setData] = useState(new Date().toISOString().slice(0, 10));
   const [obs, setObs] = useState('');
   const [comprovante, setComprovante] = useState<string | undefined>();
   const [carregandoFoto, setCarregandoFoto] = useState(false);
+
+  useEffect(() => {
+    if (!contaId && contaPadrao?.id) setContaId(contaPadrao.id);
+  }, [contaPadrao, contaId]);
 
   const isDesconto = forma === 'DESCONTO';
 
@@ -42,6 +49,7 @@ export const AdiantamentoFormInput: React.FC<Props> = ({ onAdicionar, isFirst })
       : (isFirst ? 'Sinal / Entrada' : 'Parcela / A Haver');
     onAdicionar({
       valor: v, forma_pagamento: forma,
+      conta_bancaria_id: isDesconto ? undefined : (contaId || undefined),
       data: data || new Date().toISOString().slice(0, 10),
       observacao: obs.trim() || defaultObs,
       comprovante_url: isDesconto ? undefined : comprovante
@@ -66,7 +74,7 @@ export const AdiantamentoFormInput: React.FC<Props> = ({ onAdicionar, isFirst })
         </div>
         <div>
           <label className="text-[10px] font-bold text-gray-600 block mb-0.5">Tipo / Forma</label>
-          <select value={forma} onChange={(e) => setForma(e.target.value)} className="w-full px-2 py-1 bg-gray-50 border border-gray-300 rounded-lg">
+          <select value={forma} onChange={(e) => onFormaChange(e.target.value)} className="w-full px-2 py-1 bg-gray-50 border border-gray-300 rounded-lg">
             <option value="PIX">PIX</option>
             <option value="Dinheiro">Dinheiro</option>
             <option value="Transferência">Transferência</option>
@@ -87,6 +95,11 @@ export const AdiantamentoFormInput: React.FC<Props> = ({ onAdicionar, isFirst })
 
       <div className="flex items-center justify-between pt-1">
         <div className="flex items-center gap-2">
+          {!isDesconto && (
+            <select value={contaId} onChange={(e) => onContaChange(e.target.value)} title="Banco / Caixa de Entrada" className="px-2 py-1 bg-gray-50 border border-gray-300 rounded-lg text-[11px] max-w-[190px]">
+              {contas.map((c) => <option key={c.id} value={c.id}>{c.nome_conta}</option>)}
+            </select>
+          )}
           {!isDesconto && (
             <>
               <label className="inline-flex items-center gap-1.5 px-2.5 py-1 border border-dashed border-gray-300 hover:border-emerald-500 rounded-lg cursor-pointer text-[11px] text-gray-600 hover:text-emerald-700 bg-gray-50">

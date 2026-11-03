@@ -12,7 +12,7 @@ interface Props {
   onFecharOperador: () => void;
   servicoParaRecibo: ServicoHorimetro | null;
   onFecharRecibo: () => void;
-  onConfirmarAdiantamento: (valor: number, forma: string, data: string) => Promise<void>;
+  onConfirmarAdiantamento: (valor: number, forma: string, data: string, contaBancariaId?: string) => Promise<void>;
 }
 
 export const ServicoExtratosModais: React.FC<Props> = ({

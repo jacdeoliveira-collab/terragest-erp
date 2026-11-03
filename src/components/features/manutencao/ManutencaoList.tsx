@@ -16,11 +16,7 @@ export const ManutencaoList: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editItem, setEditItem] = useState<PlanoManutencaoItem | null>(null);
 
-  const handleSaved = () => {
-    setIsModalOpen(false);
-    setEditItem(null);
-    refetch();
-  };
+  const handleSaved = () => { setIsModalOpen(false); setEditItem(null); refetch(); };
 
   const handleDelete = async (id: string) => {
     if (!window.confirm('Deseja excluir esta Ordem de Serviço e suas despesas vinculadas?')) return;
@@ -28,18 +24,8 @@ export const ManutencaoList: React.FC = () => {
     if (res.success) refetch();
   };
 
-  if (isLoading) {
-    return <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center text-sm text-gray-400">Carregando ordens de manutenção...</div>;
-  }
-
-  if (error) {
-    return (
-      <div className="bg-rose-50 border border-rose-200 rounded-2xl p-6 text-sm text-rose-700 flex items-center gap-3">
-        <AlertCircle className="w-5 h-5 shrink-0 text-rose-500" />
-        <span>{error}</span>
-      </div>
-    );
-  }
+  if (isLoading) return <div className="bg-white border border-gray-200 rounded-2xl p-12 text-center text-sm text-gray-400">Carregando ordens de manutenção...</div>;
+  if (error) return <div className="bg-rose-50 border border-rose-200 rounded-2xl p-6 text-sm text-rose-700 flex items-center gap-3"><AlertCircle className="w-5 h-5 shrink-0 text-rose-500" /><span>{error}</span></div>;
 
   return (
     <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden text-left">

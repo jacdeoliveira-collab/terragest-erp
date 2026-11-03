@@ -14,10 +14,11 @@ interface TenantUserRecord {
 }
 
 const BADGE_COLORS: Record<PerfilAcesso, string> = {
+  OPERADOR: 'bg-emerald-50 text-emerald-800 border-emerald-300',
   OPERACIONAL: 'bg-amber-50 text-amber-700 border-amber-200',
   ENGENHARIA: 'bg-blue-50 text-blue-700 border-blue-200',
   RH: 'bg-purple-50 text-purple-700 border-purple-200',
-  FINANCEIRO: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  FINANCEIRO: 'bg-teal-50 text-teal-700 border-teal-200',
   ADMIN: 'bg-rose-50 text-rose-700 border-rose-200'
 };
 

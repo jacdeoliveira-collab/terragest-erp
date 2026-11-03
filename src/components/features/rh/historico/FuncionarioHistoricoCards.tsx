@@ -8,6 +8,9 @@ interface Props {
 }
 
 export const FuncionarioHistoricoCards: React.FC<Props> = ({ data, onSelectAba }) => {
+  const totalValesValor = data.vales.reduce((acc, v) => acc + v.valor, 0);
+  const saldoAdiantadoAMais = Math.max(0, data.totalPago - data.totalGanhos);
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-left">
       <button
@@ -42,7 +45,7 @@ export const FuncionarioHistoricoCards: React.FC<Props> = ({ data, onSelectAba }
           R$ {data.totalPago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
         </div>
         <p className="text-[10px] text-blue-700/80 mt-0.5">
-          {data.qtdQuitados} quitados • Filtrar
+          {data.vales.length > 0 ? `${data.vales.length} vale${data.vales.length !== 1 ? 's' : ''} (R$ ${totalValesValor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })})` : `${data.qtdQuitados} quitados`}
         </p>
       </button>
 
@@ -64,7 +67,11 @@ export const FuncionarioHistoricoCards: React.FC<Props> = ({ data, onSelectAba }
           R$ {data.totalSaldoAberto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
         </div>
         <p className={`text-[10px] mt-0.5 ${data.totalSaldoAberto > 0 ? 'text-amber-700' : 'text-gray-500'}`}>
-          {data.totalSaldoAberto > 0 ? 'Pagamento pendente • Filtrar' : 'Tudo quitado'}
+          {data.totalSaldoAberto > 0
+            ? 'Pagamento pendente • Filtrar'
+            : saldoAdiantadoAMais > 0
+              ? `Adiantado a maior: R$ ${saldoAdiantadoAMais.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+              : 'Tudo quitado'}
         </p>
       </button>
 

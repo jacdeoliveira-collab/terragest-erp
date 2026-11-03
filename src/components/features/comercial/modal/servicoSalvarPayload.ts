@@ -1,4 +1,5 @@
 import type { ServicoHorimetro, FotoTrabalhoItem, ServicoMaquinaItem } from '../../../../types/servicoHorimetro.types';
+import { salvarComprovante } from '../../../../services/comprovanteStorageService';
 
 export function montarPayloadServico(
   servicoId: string | undefined,
@@ -67,13 +68,17 @@ export function montarPayloadServico(
   }
 ): Partial<ServicoHorimetro> {
   const adiantamento = Number(dados.valorAdiantamento || 0);
-  const saldo = metricas.saldoRestanteCliente !== undefined
-    ? metricas.saldoRestanteCliente
-    : Math.max(0, metricas.faturamentoBruto - adiantamento);
+  const saldo = metricas.saldoRestanteCliente !== undefined ? metricas.saldoRestanteCliente : Math.max(0, metricas.faturamentoBruto - adiantamento);
 
   const limparUrl = (url?: string) => {
-    if (!url || url.startsWith('data:image/') || url.length > 500) return undefined;
-    return url;
+    if (!url) return undefined;
+    if (url.startsWith('http') || url.startsWith('idb://') || url.startsWith('ref_')) return url;
+    if (url.startsWith('data:image/')) {
+      const k = `idb://hor_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+      salvarComprovante(k, url);
+      return k;
+    }
+    return url.length <= 500 ? url : undefined;
   };
 
   return {

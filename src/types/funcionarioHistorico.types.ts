@@ -1,5 +1,6 @@
 import type { ServicoHorimetro } from './servicoHorimetro.types';
 import type { DailyBulletin } from './bde.types';
+import type { ValeColaboradorItem } from './valeRh.types';
 
 export interface MaquinaOperadaResumo {
   maquinaNome: string;
@@ -36,4 +37,5 @@ export interface FuncionarioHistoricoData {
   servicos: ServicoHorimetro[];
   bulletins: DailyBulletin[];
   remuneracoes: FuncionarioRemuneracaoItem[];
+  vales: ValeColaboradorItem[];
 }

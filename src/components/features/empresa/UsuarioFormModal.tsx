@@ -11,6 +11,7 @@ interface UsuarioFormModalProps {
 }
 
 const PERFIS: { value: PerfilAcesso; label: string }[] = [
+  { value: 'OPERADOR', label: 'Operador de Máquinas (BDE, Horímetro & Campo)' },
   { value: 'OPERACIONAL', label: 'Operacional (Sinaleiro / Apontador)' },
   { value: 'ENGENHARIA', label: 'Engenharia (Encarregado)' },
   { value: 'RH', label: 'Recursos Humanos (DP)' },
@@ -23,7 +24,7 @@ export const UsuarioFormModal: React.FC<UsuarioFormModalProps> = ({
 }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [perfil, setPerfil] = useState<PerfilAcesso>('OPERACIONAL');
+  const [perfil, setPerfil] = useState<PerfilAcesso>('OPERADOR');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);

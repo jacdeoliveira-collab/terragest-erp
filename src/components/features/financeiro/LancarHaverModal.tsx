@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { DollarSign, Calendar, CreditCard, Receipt, FileText } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { DollarSign, Calendar, CreditCard, Receipt, FileText, Landmark } from 'lucide-react';
 import { Modal } from '../../ui/Modal';
+import { useFormaContaSync } from '../../../hooks/useFormaContaSync';
 import type { MedicaoItem } from '../../../types/faturamento.types';
 import { gerarReciboPDF } from '../../../utils/reciboPdfGenerator';
 
@@ -18,22 +19,31 @@ export const LancarHaverModal: React.FC<Props> = ({ isOpen, onClose, titulo, onS
   const [valor, setValor] = useState<number>(saldoMax > 0 ? saldoMax : 0);
   const [data, setData] = useState(new Date().toISOString().slice(0, 10));
   const [forma, setForma] = useState('PIX');
+  const [contaBancariaId, setContaBancariaId] = useState('');
+  const { contas, contaPadrao, onFormaChange, onContaChange } = useFormaContaSync(contaBancariaId, setForma, setContaBancariaId);
   const [obs, setObs] = useState('');
   const [salvando, setSalvando] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (titulo) {
       const s = titulo.saldo_restante !== undefined ? Number(titulo.saldo_restante) : Number(titulo.valor_total || 0);
       setValor(s > 0 ? s : Number(titulo.valor_total || 0));
+      setContaBancariaId(titulo.conta_bancaria_id || contaPadrao?.id || '');
+    } else if (contaPadrao) {
+      setContaBancariaId(contaPadrao.id);
     }
-  }, [titulo]);
+  }, [titulo, contaPadrao]);
 
   if (!titulo) return null;
+
+  const contaSel = contas.find((c) => c.id === contaBancariaId) || contaPadrao;
 
   const handleSalvar = async (emitirRecibo: boolean) => {
     if (!valor || valor <= 0) return;
     setSalvando(true);
-    const ok = await onSalvarHaver(titulo.id, valor, data, forma, obs);
+    const infoConta = contaSel ? `[Conta: ${contaSel.nome_conta}]` : '';
+    const obsFinal = [obs.trim(), infoConta].filter(Boolean).join(' ');
+    const ok = await onSalvarHaver(titulo.id, valor, data, forma, obsFinal);
     setSalvando(false);
     if (ok) {
       if (emitirRecibo) {
@@ -43,9 +53,9 @@ export const LancarHaverModal: React.FC<Props> = ({ isOpen, onClose, titulo, onS
           clienteNome: titulo.cliente_nome || 'Cliente',
           clienteDocumento: titulo.cliente_documento,
           clienteTelefone: titulo.cliente_telefone,
-          dataPagamento: data, formaPagamento: forma,
+          dataPagamento: data, formaPagamento: `${forma}${contaSel ? ` (${contaSel.nome_conta})` : ''}`,
           referente: `Haver / Pagamento parcial ref. ao serviço ${titulo.numero_medicao} (${titulo.obra_nome})`,
-          observacoes: obs || undefined
+          observacoes: obsFinal || undefined
         });
       }
       onClose();
@@ -55,7 +65,6 @@ export const LancarHaverModal: React.FC<Props> = ({ isOpen, onClose, titulo, onS
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Lançar Haver / Pagamento Parcial do Cliente">
       <div className="text-left space-y-3.5 text-xs">
-        {/* Painel do Cliente e Saldo */}
         <div className="p-3.5 bg-blue-50/70 border border-blue-200 rounded-xl space-y-1.5">
           <div className="flex items-center justify-between">
             <span className="font-bold text-gray-900 text-sm">{titulo.cliente_nome}</span>
@@ -78,13 +87,13 @@ export const LancarHaverModal: React.FC<Props> = ({ isOpen, onClose, titulo, onS
             <input
               type="number" step="0.01" min="0.01" max={saldoMax || undefined} value={valor || ''}
               onChange={(e) => setValor(parseFloat(e.target.value) || 0)}
-              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl font-mono text-sm font-bold text-blue-950 focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl font-mono text-sm font-bold text-blue-950"
             />
           </div>
 
           <div>
             <label className="block font-semibold text-gray-700 mb-1 flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5 text-emerald-600" /> Data do Pagamento *
+              <Calendar className="w-3.5 h-3.5 text-emerald-600" /> Data do Recebimento *
             </label>
             <input
               type="date" value={data} onChange={(e) => setData(e.target.value)}
@@ -93,50 +102,39 @@ export const LancarHaverModal: React.FC<Props> = ({ isOpen, onClose, titulo, onS
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
           <div>
             <label className="block font-semibold text-gray-700 mb-1 flex items-center gap-1">
-              <CreditCard className="w-3.5 h-3.5 text-purple-600" /> Forma de Pagamento *
+              <CreditCard className="w-3.5 h-3.5 text-purple-600" /> Forma *
             </label>
-            <select value={forma} onChange={(e) => setForma(e.target.value)} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl text-gray-900">
-              <option value="PIX">PIX</option>
-              <option value="DINHEIRO">Dinheiro em Espécie</option>
-              <option value="TRANSFERENCIA">Transferência / TED</option>
-              <option value="CARTAO">Cartão</option>
-              <option value="BOLETO">Boleto</option>
-              <option value="CHEQUE">Cheque</option>
-              <option value="DESCONTO">🏷️ Desconto / Abatimento Comercial</option>
+            <select value={forma} onChange={(e) => onFormaChange(e.target.value)} className="w-full px-2.5 py-2 bg-white border border-gray-300 rounded-xl text-gray-900">
+              <option value="PIX">PIX</option><option value="DINHEIRO">Dinheiro</option><option value="TRANSFERENCIA">Transferência / TED</option><option value="CARTAO">Cartão</option><option value="BOLETO">Boleto</option><option value="CHEQUE">Cheque</option><option value="DESCONTO">🏷️ Desconto Comercial</option>
             </select>
           </div>
-
           <div>
             <label className="block font-semibold text-gray-700 mb-1 flex items-center gap-1">
-              <FileText className="w-3.5 h-3.5 text-gray-500" /> Referente / Observação
+              <Landmark className="w-3.5 h-3.5 text-emerald-600" /> Banco de Entrada
             </label>
-            <input
-              type="text" placeholder="Ex: 1º Haver no canteiro de obras" value={obs}
-              onChange={(e) => setObs(e.target.value)}
-              className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl text-gray-900"
-            />
+            <select value={contaBancariaId} onChange={(e) => onContaChange(e.target.value)} className="w-full px-2.5 py-2 bg-white border border-gray-300 rounded-xl font-medium text-gray-900">
+              {contas.map((c) => (<option key={c.id} value={c.id}>{c.nome_conta} {c.is_padrao ? '(Padrão)' : ''}</option>))}
+              {contas.length === 0 && <option value="">Caixa Principal</option>}
+            </select>
+          </div>
+          <div>
+            <label className="block font-semibold text-gray-700 mb-1 flex items-center gap-1">
+              <FileText className="w-3.5 h-3.5 text-gray-500" /> Observação
+            </label>
+            <input type="text" placeholder="Ex: 1º Haver na obra" value={obs} onChange={(e) => setObs(e.target.value)} className="w-full px-2.5 py-2 bg-white border border-gray-300 rounded-xl text-gray-900" />
           </div>
         </div>
 
         <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
-          <button type="button" onClick={onClose} className="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold cursor-pointer">
-            Cancelar
-          </button>
-          <button
-            type="button" disabled={salvando || valor <= 0} onClick={() => handleSalvar(false)}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold cursor-pointer transition-all shadow-xs"
-          >
+          <button type="button" onClick={onClose} className="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold cursor-pointer">Cancelar</button>
+          <button type="button" disabled={salvando || valor <= 0} onClick={() => handleSalvar(false)} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold cursor-pointer">
             {salvando ? 'Salvando...' : 'Salvar Haver'}
           </button>
-          <button
-            type="button" disabled={salvando || valor <= 0} onClick={() => handleSalvar(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold cursor-pointer transition-all shadow-xs"
-          >
-            <Receipt className="w-3.5 h-3.5" />
-            <span>Salvar & Emitir Recibo</span>
+          <button type="button" disabled={salvando || valor <= 0} onClick={() => handleSalvar(true)} className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold cursor-pointer">
+            <Receipt className="w-3.5 h-3.5" /><span>Salvar & Emitir Recibo</span>
           </button>
         </div>
       </div>

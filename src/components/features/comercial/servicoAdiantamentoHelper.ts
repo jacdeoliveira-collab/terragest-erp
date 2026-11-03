@@ -6,7 +6,8 @@ export async function processarNovoAdiantamentoServico(
   valor: number,
   forma: string,
   data: string,
-  salvarServico: (s: Partial<ServicoHorimetro>) => Promise<{ success: boolean; data?: ServicoHorimetro }>
+  salvarServico: (s: Partial<ServicoHorimetro>) => Promise<{ success: boolean; data?: ServicoHorimetro }>,
+  contaBancariaId?: string
 ) {
   const historicoAtual: AdiantamentoItem[] = Array.isArray(servico.adiantamentos_historico) && servico.adiantamentos_historico.length > 0
     ? [...servico.adiantamentos_historico]
@@ -25,6 +26,7 @@ export async function processarNovoAdiantamentoServico(
     valor,
     data,
     forma_pagamento: forma,
+    conta_bancaria_id: contaBancariaId || servico.conta_bancaria_id,
     observacao: `Haver recebido (${forma})`
   };
   const novoHistorico = [...historicoAtual, novoItem];

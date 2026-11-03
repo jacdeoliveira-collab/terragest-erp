@@ -49,6 +49,8 @@ export interface CreateMedicaoDTO {
   numero_medicao?: string;
   data_emissao: string;
   data_vencimento: string;
+  forma_pagamento?: FormaPagamentoTitulo | string;
+  conta_bancaria_id?: string;
   total_horas_produtivas: number;
   valor_total: number;
   status_pagamento?: StatusPagamentoMedicao;

@@ -11,6 +11,8 @@ export interface DespesaSyncInput {
   valor: number;
   dataVencimento: string;
   status?: StatusContaPagar;
+  formaPagamento?: string | null;
+  contaBancariaId?: string | null;
   observacoes?: string;
 }
 
@@ -22,6 +24,7 @@ export async function sincronizarDespesa(input: DespesaSyncInput): Promise<{ ok:
   if (!(Number(input.valor) > 0)) return { ok: true };
 
   const tag = `[REF:${input.ref}]`;
+  const isPago = input.status === 'PAGO';
   const payload = {
     tenant_id: input.tenantId || null,
     obra_id: input.obraId || null,
@@ -30,6 +33,9 @@ export async function sincronizarDespesa(input: DespesaSyncInput): Promise<{ ok:
     categoria: input.categoria,
     valor: Number(input.valor),
     data_vencimento: input.dataVencimento,
+    data_pagamento: isPago ? input.dataVencimento : null,
+    forma_pagamento: input.formaPagamento || 'PIX',
+    conta_bancaria_id: input.contaBancariaId || null,
     status: input.status || 'PENDENTE',
     observacoes: `${tag} ${input.observacoes || ''}`.trim()
   };
@@ -42,9 +48,8 @@ export async function sincronizarDespesa(input: DespesaSyncInput): Promise<{ ok:
     .maybeSingle();
 
   if (existente) {
-    // Preserva baixa já realizada pelo financeiro
-    const { status, ...resto } = payload;
-    const upd = existente.status === 'PAGO' ? resto : { ...resto, status };
+    const { status, data_pagamento, ...resto } = payload;
+    const upd = existente.status === 'PAGO' && status !== 'PAGO' ? resto : { ...resto, status, data_pagamento };
     const { error } = await supabase.from('contas_pagar').update(upd).eq('id', existente.id);
     return error ? { ok: false, error: error.message } : { ok: true };
   }

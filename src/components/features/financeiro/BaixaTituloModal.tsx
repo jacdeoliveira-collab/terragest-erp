@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CheckCircle2, AlertCircle, Calendar, CreditCard, Landmark } from 'lucide-react';
 import { Modal } from '../../ui/Modal';
-import { useContasBancarias } from '../../../hooks/useContasBancarias';
+import { useFormaContaSync } from '../../../hooks/useFormaContaSync';
 import type { MedicaoItem, FormaPagamentoTitulo } from '../../../types/faturamento.types';
 
 interface BaixaTituloModalProps {
@@ -14,17 +14,23 @@ interface BaixaTituloModalProps {
 const formatBRL = (val: number) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export const BaixaTituloModal: React.FC<BaixaTituloModalProps> = ({
-  isOpen,
-  onClose,
-  titulo,
-  onConfirmar
+  isOpen, onClose, titulo, onConfirmar
 }) => {
-  const { contas } = useContasBancarias();
   const [dataPagamento, setDataPagamento] = useState(new Date().toISOString().slice(0, 10));
   const [formaPagamento, setFormaPagamento] = useState<FormaPagamentoTitulo>('PIX');
   const [contaBancariaId, setContaBancariaId] = useState<string>('');
+  const { contas, contaPadrao, onFormaChange, onContaChange } = useFormaContaSync(contaBancariaId, setFormaPagamento, setContaBancariaId);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (titulo) {
+      if (titulo.forma_pagamento) setFormaPagamento(titulo.forma_pagamento as FormaPagamentoTitulo);
+      setContaBancariaId(titulo.conta_bancaria_id || contaPadrao?.id || '');
+    } else if (contaPadrao) {
+      setContaBancariaId(contaPadrao.id);
+    }
+  }, [titulo, contaPadrao]);
 
   if (!titulo) return null;
 
@@ -33,13 +39,10 @@ export const BaixaTituloModal: React.FC<BaixaTituloModalProps> = ({
     setError(null);
     setIsSubmitting(true);
 
-    const success = await onConfirmar(titulo.id, dataPagamento, formaPagamento, contaBancariaId || undefined);
+    const success = await onConfirmar(titulo.id, dataPagamento, formaPagamento, contaBancariaId || contaPadrao?.id || undefined);
     setIsSubmitting(false);
-    if (success) {
-      onClose();
-    } else {
-      setError('Falha ao confirmar recebimento do título.');
-    }
+    if (success) onClose();
+    else setError('Falha ao confirmar recebimento do título.');
   };
 
   return (
@@ -52,7 +55,6 @@ export const BaixaTituloModal: React.FC<BaixaTituloModalProps> = ({
           </div>
         )}
 
-        {/* Resumo do Título */}
         <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-1">
           <div className="flex items-center justify-between">
             <span className="font-mono font-bold text-emerald-900 text-sm">{titulo.numero_medicao}</span>
@@ -70,12 +72,10 @@ export const BaixaTituloModal: React.FC<BaixaTituloModalProps> = ({
           <div>
             <label className="block font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5 text-emerald-600" />
-              Data do Pagamento *
+              Data do Recebimento *
             </label>
             <input
-              type="date"
-              required
-              value={dataPagamento}
+              type="date" required value={dataPagamento}
               onChange={(e) => setDataPagamento(e.target.value)}
               className="w-full px-2.5 py-2 bg-gray-50 border border-gray-300 rounded-xl font-mono text-gray-900"
             />
@@ -88,8 +88,8 @@ export const BaixaTituloModal: React.FC<BaixaTituloModalProps> = ({
             </label>
             <select
               value={formaPagamento}
-              onChange={(e) => setFormaPagamento(e.target.value as FormaPagamentoTitulo)}
-              className="w-full px-2.5 py-2 bg-gray-50 border border-gray-300 rounded-xl font-medium text-gray-900 focus:ring-2 focus:ring-emerald-500"
+              onChange={(e) => onFormaChange(e.target.value)}
+              className="w-full px-2.5 py-2 bg-gray-50 border border-gray-300 rounded-xl font-medium text-gray-900"
             >
               <option value="PIX">PIX Instantâneo</option>
               <option value="BOLETO">Boleto Bancário</option>
@@ -103,34 +103,26 @@ export const BaixaTituloModal: React.FC<BaixaTituloModalProps> = ({
           <div>
             <label className="block font-semibold text-gray-700 mb-1 flex items-center gap-1.5">
               <Landmark className="w-3.5 h-3.5 text-emerald-600" />
-              Conta / Caixa de Destino
+              Banco / Conta de Entrada
             </label>
             <select
               value={contaBancariaId}
-              onChange={(e) => setContaBancariaId(e.target.value)}
-              className="w-full px-2.5 py-2 bg-gray-50 border border-gray-300 rounded-xl font-medium text-gray-900 focus:ring-2 focus:ring-emerald-500"
+              onChange={(e) => onContaChange(e.target.value)}
+              className="w-full px-2.5 py-2 bg-gray-50 border border-gray-300 rounded-xl font-medium text-gray-900"
             >
-              <option value="">Selecione a conta</option>
               {contas.map((c) => (
-                <option key={c.id} value={c.id}>{c.nome_conta} ({c.banco})</option>
+                <option key={c.id} value={c.id}>{c.nome_conta} {c.is_padrao ? '(Padrão)' : ''}</option>
               ))}
+              {contas.length === 0 && <option value="">Caixa Geral da Empresa</option>}
             </select>
           </div>
         </div>
 
         <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold cursor-pointer"
-          >
+          <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold cursor-pointer">
             Cancelar
           </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="inline-flex items-center gap-1.5 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl font-bold shadow-sm cursor-pointer transition-all"
-          >
+          <button type="submit" disabled={isSubmitting} className="inline-flex items-center gap-1.5 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl font-bold shadow-sm cursor-pointer">
             <CheckCircle2 className="w-4 h-4" />
             <span>{isSubmitting ? 'Confirmando...' : 'Confirmar Recebimento'}</span>
           </button>

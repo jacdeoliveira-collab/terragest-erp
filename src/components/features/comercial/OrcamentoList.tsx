@@ -37,11 +37,12 @@ export const OrcamentoList: React.FC<OrcamentoListProps> = ({ onIrParaHorimetros
     }
   };
 
-  const handleSalvarAdiantamento = async (valor: number, forma: string, data: string) => {
+  const handleSalvarAdiantamento = async (valor: number, forma: string, data: string, contaBancariaId?: string) => {
     if (!orcamentoParaRecibo) return;
     const saldo = Math.max(0, orcamentoParaRecibo.valor_total - valor);
     await atualizarOrcamento(orcamentoParaRecibo.id, {
-      valor_adiantamento: valor, data_adiantamento: data, forma_pagamento_adiantamento: forma, saldo_restante: saldo
+      valor_adiantamento: valor, data_adiantamento: data, forma_pagamento_adiantamento: forma, saldo_restante: saldo,
+      ...(contaBancariaId ? { conta_bancaria_id: contaBancariaId } : {})
     });
     try {
       await supabase.from('contas_receber').insert([{

@@ -1,7 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+﻿import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { useTenantContext } from '../contexts/TenantContext';
+import { obterConfigAsaas, salvarConfigAsaasBanco } from '../services/asaasApiClient';
+import { isContaCaixaFisico, garantirCaixaFisico } from '../services/caixaFisicoService';
 import type { ContaBancaria, CreateContaBancariaDTO, UpdateContaBancariaDTO } from '../types/contaBancaria.types';
+
+export { isContaCaixaFisico };
 
 export function useContasBancarias() {
   const { tenantAtivoId } = useTenantContext();
@@ -21,7 +25,23 @@ export function useContasBancarias() {
 
       const { data, error: err } = await q;
       if (err) throw new Error(err.message);
-      setContas((data as ContaBancaria[]) || []);
+      let lista = (data as ContaBancaria[]) || [];
+
+      if (lista.length === 0) {
+        const cfg = await obterConfigAsaas(tenantId);
+        if (cfg && (cfg.apiKey || cfg.chavePix || cfg.nomeBancoCustom)) {
+          await salvarConfigAsaasBanco(cfg, tenantId);
+          let qRetry = supabase.from('contas_bancarias').select('*').order('is_padrao', { ascending: false }).order('nome_conta');
+          if (tenantId) qRetry = qRetry.or(`tenant_id.eq.${tenantId},tenant_id.is.null`);
+          const { data: dataRetry } = await qRetry;
+          lista = (dataRetry as ContaBancaria[]) || [];
+        }
+      }
+
+      // Garante que sempre exista uma conta de Caixa Físico (Dinheiro em Mãos) para pagamentos e recebimentos em espécie
+      lista = await garantirCaixaFisico(lista, tenantId);
+
+      setContas(lista);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Falha ao buscar contas bancárias');
       setContas([]);
@@ -94,5 +114,14 @@ export function useContasBancarias() {
     fetchContas();
   }, [fetchContas]);
 
-  return { contas, isLoading, error, refetch: fetchContas, criarConta, atualizarConta, excluirConta };
+  const contaPadrao = useMemo(() => {
+    return contas.find((c) => c.is_padrao) || contas.find((c) => !isContaCaixaFisico(c)) || contas[0] || null;
+  }, [contas]);
+
+  const contaCaixa = useMemo(() => {
+    return contas.find((c) => isContaCaixaFisico(c)) || null;
+  }, [contas]);
+
+  return { contas, contaPadrao, contaCaixa, isLoading, error, refetch: fetchContas, criarConta, atualizarConta, excluirConta };
 }
+

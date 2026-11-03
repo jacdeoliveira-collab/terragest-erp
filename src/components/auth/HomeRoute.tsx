@@ -9,6 +9,9 @@ export const HomeRoute: React.FC = () => {
   const { tenantAtivo } = useTenantContext();
   const perfil = tenantAtivo?.perfil_acesso || user?.perfil_acesso || authPerfil || 'ADMIN';
 
+  if (perfil === 'OPERADOR') {
+    return <Navigate to="/bde" replace />;
+  }
   if (perfil === 'OPERACIONAL') {
     return <Navigate to="/producao" replace />;
   }

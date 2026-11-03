@@ -27,6 +27,8 @@ async function obterObraOuPadrao(clienteNome: string, tenantId: string): Promise
 export async function sincronizarServicoFinanceiro(servico: ServicoHorimetro): Promise<void> {
   const tenantId = servico.tenant_id || DEFAULT_LEGACY_TENANT;
   const obraId = servico.obra_id || await obterObraOuPadrao(servico.cliente_nome, tenantId);
+  const contaBancariaId = servico.conta_bancaria_id || null;
+  const formaPag = servico.forma_pagamento || 'PIX';
 
   // 1. Integração com CONTAS A RECEBER (tabela medicoes)
   if (servico.faturamento_bruto > 0) {
@@ -42,6 +44,8 @@ export async function sincronizarServicoFinanceiro(servico: ServicoHorimetro): P
       data_vencimento: servico.data_fim || servico.data_inicio,
       total_horas_produtivas: Number(servico.horas_trabalhadas || 0),
       valor_total: Number(servico.faturamento_bruto || 0),
+      forma_pagamento: formaPag,
+      conta_bancaria_id: contaBancariaId,
       status_pagamento: isPago
         ? 'PAGO'
         : (servico.valor_adiantamento && servico.valor_adiantamento > 0 ? 'PAGO_PARCIAL' : (servico.status === 'FINALIZADO' ? 'AGUARDANDO_PAGAMENTO' : 'EM_ANALISE')),
@@ -74,6 +78,8 @@ export async function sincronizarServicoFinanceiro(servico: ServicoHorimetro): P
       categoria: 'COMBUSTIVEL',
       valor: Number(servico.combustivel_total_valor),
       data_vencimento: servico.data_inicio,
+      forma_pagamento: formaPag,
+      conta_bancaria_id: contaBancariaId,
       status: 'PENDENTE',
       observacoes: `[REF:${servico.id}] Cupom: ${servico.foto_cupom_combustivel || 'Anexado'} | Máq: ${servico.combustivel_maquina_litros || 0}L | Apoio: ${servico.combustivel_apoio_litros || 0}L`
     };
@@ -111,6 +117,8 @@ export async function sincronizarServicoFinanceiro(servico: ServicoHorimetro): P
       categoria: 'FOLHA_RH',
       valor: valorPagarOp,
       data_vencimento: dataVencimentoOp,
+      forma_pagamento: formaPag,
+      conta_bancaria_id: contaBancariaId,
       status: servico.status_pagamento_operador || 'PENDENTE',
       observacoes: `[REF:${servico.id}] Total: R$ ${despOpCalculada} | Vale: R$ ${servico.adiantamento_operador_valor || 0} (em ${servico.adiantamento_operador_data || '-'}) | Saldo: R$ ${valorPagarOp}`
     };
@@ -131,7 +139,7 @@ export async function sincronizarServicoFinanceiro(servico: ServicoHorimetro): P
     }
   }
 
-  // 4. Integração com ABASTECIMENTOS (Máquina e Veículo de Apoio / Caminhonete)
+  // 4. Integração com ABASTECIMENTOS
   await sincronizarAbastecimentosDoServico(servico, obraId, tenantId);
 
   // 5. Integração com CONTAS A PAGAR (Peças, Lubrificantes, Manutenção & Logística)

@@ -6,14 +6,10 @@ import { OrcamentoMaquinaCard } from '../OrcamentoMaquinaCard';
 import { FotoHorimetroUploadField } from './FotoHorimetroUploadField';
 
 interface Props {
-  item: ServicoMaquinaItem;
-  indice: number;
-  podeRemover: boolean;
-  maquinasDisponiveis: string[];
-  operadoresDisponiveis: string[];
+  item: ServicoMaquinaItem; indice: number; podeRemover: boolean;
+  maquinasDisponiveis: string[]; operadoresDisponiveis: string[];
   onAtualizar: (updates: Partial<ServicoMaquinaItem>) => void;
-  onRemover: () => void;
-  onAbrirNovaMaquina?: () => void;
+  onRemover: () => void; onAbrirNovaMaquina?: () => void;
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>, key: string, setter: (url: string) => void) => void;
 }
 
@@ -24,16 +20,12 @@ function parseNumero(val: string): number {
 }
 
 export const MaquinaHorimetroCard: React.FC<Props> = ({
-  item, indice, podeRemover,
-  maquinasDisponiveis, operadoresDisponiveis,
-  onAtualizar, onRemover, onAbrirNovaMaquina,
-  handleImageUpload
+  item, indice, podeRemover, maquinasDisponiveis, operadoresDisponiveis,
+  onAtualizar, onRemover, onAbrirNovaMaquina, handleImageUpload
 }) => {
   const { data: equipments } = useEquipments();
   const eqFrota = (equipments || []).find(
-    (eq) =>
-      `${eq.name} (${eq.code})`.toLowerCase() === (item.maquina_nome || '').trim().toLowerCase() ||
-      (eq.code && (item.maquina_nome || '').includes(eq.code))
+    (eq) => `${eq.name} (${eq.code})`.toLowerCase() === (item.maquina_nome || '').trim().toLowerCase() || (eq.code && (item.maquina_nome || '').includes(eq.code))
   );
 
   const handleSelectMaquina = (val: string) => {

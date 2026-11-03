@@ -92,6 +92,7 @@ export interface AdiantamentoItem {
   valor: number;
   data: string;
   forma_pagamento: string;
+  conta_bancaria_id?: string;
   observacao?: string;
   comprovante_url?: string;
   numero_recibo?: string;

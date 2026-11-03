@@ -27,6 +27,8 @@ export const MedicaoForm: React.FC<MedicaoFormProps> = ({ onSuccess, onCancel })
   vencDefault.setDate(vencDefault.getDate() + 30);
   const [dataVencimento, setDataVencimento] = useState(vencDefault.toISOString().slice(0, 10));
   const [numeroMedicao, setNumeroMedicao] = useState(`MED-${competencia.replace('-', '')}-001`);
+  const [formaPagamento, setFormaPagamento] = useState('PIX');
+  const [contaBancariaId, setContaBancariaId] = useState('');
   const [valorTotal, setValorTotal] = useState<number>(0);
   const [observacoes, setObservacoes] = useState('');
 
@@ -55,6 +57,8 @@ export const MedicaoForm: React.FC<MedicaoFormProps> = ({ onSuccess, onCancel })
       numero_medicao: numeroMedicao,
       data_emissao: dataEmissao,
       data_vencimento: dataVencimento,
+      forma_pagamento: formaPagamento,
+      conta_bancaria_id: contaBancariaId || undefined,
       total_horas_produtivas: totalHoras,
       valor_total: valorTotal,
       status_pagamento: 'AGUARDANDO_PAGAMENTO',
@@ -121,22 +125,17 @@ export const MedicaoForm: React.FC<MedicaoFormProps> = ({ onSuccess, onCancel })
             numeroMedicao={numeroMedicao} setNumeroMedicao={setNumeroMedicao}
             dataEmissao={dataEmissao} setDataEmissao={setDataEmissao}
             dataVencimento={dataVencimento} setDataVencimento={setDataVencimento}
+            formaPagamento={formaPagamento} setFormaPagamento={setFormaPagamento}
+            contaBancariaId={contaBancariaId} setContaBancariaId={setContaBancariaId}
             observacoes={observacoes} setObservacoes={setObservacoes}
           />
         )}
       </div>
 
       <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
-        <button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold cursor-pointer">
-          Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={salvando || bdesElegiveis.length === 0}
-          className="inline-flex items-center gap-1.5 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-sm cursor-pointer transition-all"
-        >
-          <Check className="w-4 h-4" />
-          <span>{salvando ? 'Processando Medição...' : 'Gerar Medição'}</span>
+        <button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-xs font-semibold cursor-pointer">Cancelar</button>
+        <button type="submit" disabled={salvando || bdesElegiveis.length === 0} className="inline-flex items-center gap-1.5 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-sm cursor-pointer transition-all">
+          <Check className="w-4 h-4" /><span>{salvando ? 'Processando Medição...' : 'Gerar Medição'}</span>
         </button>
       </div>
     </form>

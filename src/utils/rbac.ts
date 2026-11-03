@@ -1,5 +1,6 @@
 import type { PerfilAcesso } from '../types/auth.types';
 
+export const ROTAS_OPERADOR = ['/bde', '/comercial', '/checklist', '/abastecimento', '/producao'];
 export const ROTAS_OPERACIONAL = ['/producao', '/bde', '/checklist'];
 
 export const ROTAS_ENGENHARIA = [
@@ -12,7 +13,6 @@ export const ROTAS_ENGENHARIA = [
 ];
 
 export const ROTAS_RH = ['/rh'];
-
 export const ROTAS_FINANCEIRO = ['/financeiro', '/faturamento', '/receber', '/pagar', '/comercial'];
 
 export const ROTAS_ADMIN = [
@@ -37,6 +37,7 @@ export const ROTAS_ADMIN = [
 ];
 
 export const PERFIS_ROTAS: Record<PerfilAcesso, string[]> = {
+  OPERADOR: ROTAS_OPERADOR,
   OPERACIONAL: ROTAS_OPERACIONAL,
   ENGENHARIA: ROTAS_ENGENHARIA,
   RH: ROTAS_RH,
@@ -52,6 +53,7 @@ export function canAccessRoute(perfil: PerfilAcesso | undefined | null, path: st
 }
 
 export function getDefaultRouteForPerfil(perfil: PerfilAcesso | undefined | null): string {
+  if (perfil === 'OPERADOR') return '/bde';
   if (perfil === 'OPERACIONAL') return '/producao';
   if (perfil === 'RH') return '/rh';
   if (perfil === 'FINANCEIRO') return '/financeiro';

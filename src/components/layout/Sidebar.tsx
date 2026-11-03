@@ -29,6 +29,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
   const perfil = tenantAtivo?.perfil_acesso || user?.perfil_acesso || authPerfil || 'ADMIN';
 
   const visibleMenuItems = menuItems.filter((item) => {
+    if (perfil === 'OPERADOR') {
+      return ['/bde', '/comercial', '/checklist', '/abastecimento', '/producao'].includes(item.to);
+    }
     if (perfil === 'OPERACIONAL') {
       return ['/producao', '/bde', '/checklist'].includes(item.to);
     }

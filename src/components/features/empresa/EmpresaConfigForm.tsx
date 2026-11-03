@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Save, CheckCircle2, AlertCircle, Building2, FileText, MapPin, Award, Cloud, Users } from 'lucide-react';
 import type { TenantMaster, EmpresaConfigPayload } from '../../../types/tenant.types';
 import { EmpresaFiscalTab } from './EmpresaFiscalTab';
@@ -16,11 +17,14 @@ interface EmpresaConfigFormProps {
 }
 
 type TabType = 'fiscais' | 'contato' | 'tecnica' | 'integracoes' | 'usuarios';
+const VALID_TABS: TabType[] = ['fiscais', 'contato', 'tecnica', 'integracoes', 'usuarios'];
 
 export const EmpresaConfigForm: React.FC<EmpresaConfigFormProps> = ({
   empresa, isSaving, error, success, onSave
 }) => {
-  const [activeTab, setActiveTab] = useState<TabType>('fiscais');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = (searchParams.get('aba') as TabType) || 'fiscais';
+  const [activeTab, setActiveTab] = useState<TabType>(VALID_TABS.includes(initialTab) ? initialTab : 'fiscais');
   const [razaoSocial, setRazaoSocial] = useState(''); const [cnpj, setCnpj] = useState('');
   const [inscricaoEstadual, setInscricaoEstadual] = useState(''); const [inscricaoMunicipal, setInscricaoMunicipal] = useState('');
   const [cnae, setCnae] = useState(''); const [telefone, setTelefone] = useState('');
@@ -28,6 +32,11 @@ export const EmpresaConfigForm: React.FC<EmpresaConfigFormProps> = ({
   const [responsavelTecnico, setResponsavelTecnico] = useState(''); const [registroCrea, setRegistroCrea] = useState('');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [assinaturaUrl, setAssinaturaUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    const aba = searchParams.get('aba') as TabType;
+    if (aba && VALID_TABS.includes(aba)) setActiveTab(aba);
+  }, [searchParams]);
 
   useEffect(() => {
     if (!empresa) return;
@@ -54,7 +63,7 @@ export const EmpresaConfigForm: React.FC<EmpresaConfigFormProps> = ({
     { id: 'fiscais' as TabType, label: 'Identidade & Fiscais', icon: FileText },
     { id: 'contato' as TabType, label: 'Contato & Endereço', icon: MapPin },
     { id: 'tecnica' as TabType, label: 'Responsabilidade Técnica', icon: Award },
-    { id: 'integracoes' as TabType, label: 'Banco Asaas (API & PIX) e Drive', icon: Cloud },
+    { id: 'integracoes' as TabType, label: 'Bancos (API & PIX) e Drive', icon: Cloud },
     { id: 'usuarios' as TabType, label: 'Usuários & RBAC', icon: Users }
   ];
 
@@ -70,14 +79,14 @@ export const EmpresaConfigForm: React.FC<EmpresaConfigFormProps> = ({
         </div>
       </div>
 
-      <div className="flex border-b border-gray-200 bg-gray-50/50 px-6 gap-2">
+      <div className="flex border-b border-gray-200 bg-gray-50/50 px-2 sm:px-6 gap-1.5 overflow-x-auto scroll-touch-x whitespace-nowrap flex-nowrap w-full max-w-full py-0.5">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (
             <button
-              key={tab.id} type="button" onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition-all cursor-pointer ${
+              key={tab.id} type="button" onClick={() => { setActiveTab(tab.id); setSearchParams({ aba: tab.id }); }}
+              className={`flex items-center gap-2 py-3 px-4 text-xs font-semibold border-b-2 transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                 isActive ? 'border-emerald-600 text-emerald-600 bg-white' : 'border-transparent text-gray-500 hover:text-gray-800'
               }`}
             >
@@ -127,12 +136,8 @@ export const EmpresaConfigForm: React.FC<EmpresaConfigFormProps> = ({
       {activeTab !== 'integracoes' && activeTab !== 'usuarios' && (
         <div className="flex items-center justify-between p-4 px-6 bg-gray-50 border-t border-gray-100">
           <span className="text-[11px] text-gray-500">Alterações salvas refletem imediatamente nos relatórios e boletins (PDF)</span>
-          <button
-            type="submit" disabled={isSaving}
-            className="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-semibold shadow-sm cursor-pointer transition-all"
-          >
-            <Save className="w-4 h-4" />
-            <span>{isSaving ? 'Salvando Configurações...' : 'Salvar Configurações'}</span>
+          <button type="submit" disabled={isSaving} className="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-semibold shadow-sm cursor-pointer transition-all">
+            <Save className="w-4 h-4" /><span>{isSaving ? 'Salvando...' : 'Salvar Configurações'}</span>
           </button>
         </div>
       )}

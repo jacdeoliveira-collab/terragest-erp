@@ -88,6 +88,8 @@ export function useFaturamento() {
         numero_medicao: numero,
         data_emissao: dto.data_emissao,
         data_vencimento: dto.data_vencimento,
+        forma_pagamento: dto.forma_pagamento || 'PIX',
+        conta_bancaria_id: dto.conta_bancaria_id || null,
         total_horas_produtivas: Number(dto.total_horas_produtivas) || 0,
         valor_total: Number(dto.valor_total) || 0,
         status_pagamento: dto.status_pagamento || 'AGUARDANDO_PAGAMENTO',

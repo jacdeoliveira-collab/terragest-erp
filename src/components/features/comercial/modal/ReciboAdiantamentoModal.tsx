@@ -12,7 +12,7 @@ interface ReciboAdiantamentoModalProps {
   descricaoOriginal: string;
   valorTotalOriginal?: number;
   valorInicial?: number;
-  onConfirmarAdiantamento?: (valor: number, forma: string, data: string) => Promise<void> | void;
+  onConfirmarAdiantamento?: (valor: number, forma: string, data: string, contaBancariaId?: string) => Promise<void> | void;
 }
 
 export const ReciboAdiantamentoModal: React.FC<ReciboAdiantamentoModalProps> = ({
@@ -22,6 +22,7 @@ export const ReciboAdiantamentoModal: React.FC<ReciboAdiantamentoModalProps> = (
   const [valor, setValor] = useState<number>(valorInicial || (valorTotalOriginal ? valorTotalOriginal * 0.3 : 0));
   const [formaPagamento, setFormaPagamento] = useState<string>('PIX');
   const [dataPagamento, setDataPagamento] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [contaBancariaId, setContaBancariaId] = useState<string>('');
   const [referente, setReferente] = useState<string>(
     `Adiantamento / Sinal referente à prestação de serviços: ${descricaoOriginal}`
   );
@@ -45,7 +46,7 @@ export const ReciboAdiantamentoModal: React.FC<ReciboAdiantamentoModalProps> = (
     setSalvando(true);
     try {
       if (onConfirmarAdiantamento) {
-        await onConfirmarAdiantamento(Number(valor), formaPagamento, dataPagamento);
+        await onConfirmarAdiantamento(Number(valor), formaPagamento, dataPagamento, contaBancariaId || undefined);
       }
       handleGerarPdf();
       setSucesso(true);
@@ -74,6 +75,7 @@ export const ReciboAdiantamentoModal: React.FC<ReciboAdiantamentoModalProps> = (
         <ReciboFormFields
           valor={valor} setValor={setValor}
           formaPagamento={formaPagamento} setFormaPagamento={setFormaPagamento}
+          contaBancariaId={contaBancariaId} setContaBancariaId={setContaBancariaId}
           dataPagamento={dataPagamento} setDataPagamento={setDataPagamento}
           referente={referente} setReferente={setReferente}
           observacoes={observacoes} setObservacoes={setObservacoes}

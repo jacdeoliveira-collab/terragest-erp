@@ -19,21 +19,28 @@ export default async function handler(req, res) {
 
   try {
     const body = req.body || {};
-    const event = body.event;
-    const payment = body.payment;
+    const event = body.event || body.action || body.type;
+    const payment = body.payment || body.data;
 
-    if (!event || !payment) {
+    if (!event && !payment) {
       return res.status(200).json({ received: true, ignored: true });
     }
 
     const supabaseUrl = process.env.VITE_SUPABASE_URL;
     const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
 
-    if (supabaseUrl && supabaseKey && (event === 'PAYMENT_RECEIVED' || event === 'PAYMENT_CONFIRMED')) {
+    const isPaidEvent =
+      event === 'PAYMENT_RECEIVED' ||
+      event === 'PAYMENT_CONFIRMED' ||
+      event === 'payment.updated' ||
+      event === 'invoice.paid' ||
+      body.status === 'PAID';
+
+    if (supabaseUrl && supabaseKey && isPaidEvent) {
       const supabase = createClient(supabaseUrl, supabaseKey);
-      const extRef = payment.externalReference || '';
-      const dataPgto = payment.paymentDate || payment.clientPaymentDate || new Date().toISOString().slice(0, 10);
-      const forma = payment.billingType === 'PIX' ? 'PIX' : 'BOLETO';
+      const extRef = payment?.externalReference || payment?.external_reference || body?.externalReference || '';
+      const dataPgto = payment?.paymentDate || payment?.clientPaymentDate || new Date().toISOString().slice(0, 10);
+      const forma = payment?.billingType === 'PIX' || body?.type === 'pix' ? 'PIX' : 'BOLETO';
 
       if (extRef) {
         const cleanId = String(extRef).replace(/^serv_/, '').split('_p')[0];
@@ -67,3 +74,4 @@ export default async function handler(req, res) {
     });
   }
 }
+

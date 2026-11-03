@@ -69,6 +69,7 @@ export const FuncionarioProducaoTab: React.FC<Props> = ({ funcionario }) => {
       {subTab === 'financeiro' ? (
         <FuncionarioRemuneracaoTable
           remuneracoes={data.remuneracoes}
+          operadorNome={funcionario.nome}
           onQuitarItem={(it) => setItemParaQuitar(it)}
         />
       ) : (

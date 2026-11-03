@@ -43,7 +43,8 @@ export async function processarLancamentoCupom(dto: LancarCupomCombustivelDTO): 
       tenant_id: tenantId, obra_id: dto.obraId || srv?.obra_id || null, descricao: descPagar,
       fornecedor: (dto.postoFornecedor || 'Posto').slice(0, 80), categoria: 'COMBUSTIVEL',
       valor: totalValor, data_vencimento: dto.data, data_pagamento: dto.statusPagamento === 'PAGO' ? dto.data : null,
-      forma_pagamento: dto.formaPagamento, status: dto.statusPagamento, observacoes: obsDespesa
+      forma_pagamento: dto.formaPagamento, conta_bancaria_id: dto.contaBancariaId || null,
+      status: dto.statusPagamento, observacoes: obsDespesa
     };
 
     if (existCupId) await supabase.from('contas_pagar').update(payloadPagar).eq('id', existCupId);

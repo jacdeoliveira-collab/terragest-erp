@@ -26,7 +26,8 @@ async function sincronizarItemDespesa(
     valor: Number(item.valor || 0),
     data_vencimento: item.data || servico.data_inicio,
     data_pagamento: item.status_pagamento === 'PAGO' ? (item.data || servico.data_inicio) : null,
-    forma_pagamento: item.forma_pagamento || 'PIX',
+    forma_pagamento: item.forma_pagamento || servico.forma_pagamento || 'PIX',
+    conta_bancaria_id: servico.conta_bancaria_id || null,
     status: item.status_pagamento || 'PAGO',
     observacoes: `[REF:${servico.id}] [DESP_ITEM:${item.id}] Comprovante: ${item.comprovante_url || 'Nenhum'}`
   };
@@ -50,6 +51,8 @@ export async function sincronizarDespesasDetalhadasServico(
   tenantId: string
 ): Promise<void> {
   const itens = servico.despesas_itens || [];
+  const contaBancariaId = servico.conta_bancaria_id || null;
+  const formaPag = servico.forma_pagamento || 'PIX';
 
   if (itens.length > 0) {
     for (const item of itens) {
@@ -60,7 +63,6 @@ export async function sincronizarDespesasDetalhadasServico(
     return;
   }
 
-  // Fallback caso não haja itens avulsos cadastrados mas haja valores consolidados
   if (Number(servico.despesa_manutencao || 0) > 0) {
     const payloadManut = {
       tenant_id: tenantId,
@@ -70,6 +72,9 @@ export async function sincronizarDespesasDetalhadasServico(
       categoria: 'PECAS_MANUTENCAO',
       valor: Number(servico.despesa_manutencao),
       data_vencimento: servico.data_inicio,
+      data_pagamento: servico.data_inicio,
+      forma_pagamento: formaPag,
+      conta_bancaria_id: contaBancariaId,
       status: 'PAGO',
       observacoes: `[REF:${servico.id}] [CAT:MANUTENCAO] Manutenção preventiva/corretiva do serviço`
     };
@@ -91,6 +96,9 @@ export async function sincronizarDespesasDetalhadasServico(
       categoria: 'OUTROS',
       valor: Number(servico.despesa_apoio),
       data_vencimento: servico.data_inicio,
+      data_pagamento: servico.data_inicio,
+      forma_pagamento: formaPag,
+      conta_bancaria_id: contaBancariaId,
       status: 'PAGO',
       observacoes: `[REF:${servico.id}] [CAT:LOGISTICA] Logística e deslocamento do serviço`
     };

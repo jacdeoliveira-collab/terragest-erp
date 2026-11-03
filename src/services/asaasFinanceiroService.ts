@@ -1,6 +1,8 @@
-import { chamarApiAsaas, salvarConfigAsaasBanco } from './asaasApiClient';
+import { chamarApiAsaas, salvarConfigAsaasBanco, obterConfigAsaas } from './asaasApiClient';
+import { obterMetadataBanco } from '../utils/bancosProvidersCatalog';
 import type {
   AsaasEnvironment,
+  GatewayProvider,
   AsaasChargePayload,
   AsaasChargeResult,
   AsaasPixTransferPayload,
@@ -12,31 +14,56 @@ export async function validarEConectarAsaas(
   environment: AsaasEnvironment,
   chavePix?: string,
   tipoChavePix?: 'CNPJ' | 'CPF' | 'EMAIL' | 'TELEFONE' | 'ALEATORIA',
-  tenantId?: string
+  webhookToken?: string,
+  tenantId?: string,
+  provider: GatewayProvider = 'ASAAS',
+  clientId?: string,
+  customFields?: { nomeBancoCustom?: string; agenciaCustom?: string; contaCustom?: string; apiBaseUrlCustom?: string }
 ): Promise<{ ok: boolean; balance?: number; accountName?: string; email?: string; cnpj?: string; error?: string }> {
   const cleanKey = apiKey.trim();
-  if (!cleanKey) return { ok: false, error: 'Informe a Chave de API (API Key) do Asaas.' };
-
-  const balRes = await chamarApiAsaas<{ balance: number }>('/finance/balance', 'GET', undefined, { apiKey: cleanKey, environment });
-  if (!balRes.ok) return { ok: false, error: balRes.error || 'Chave de API inválida ou ambiente incorreto.' };
-
-  let accountName = 'Conta Digital Asaas';
+  const metaBanco = obterMetadataBanco(provider);
+  let accountName = customFields?.nomeBancoCustom?.trim() || metaBanco.nome;
   let email = '';
   let cnpj = '';
+  let balance: number | undefined = undefined;
 
-  const infoRes = await chamarApiAsaas<any>('/myAccount/commercialInfo', 'GET', undefined, { apiKey: cleanKey, environment });
-  if (infoRes.ok && infoRes.data) {
-    accountName = infoRes.data.companyName || infoRes.data.tradingName || infoRes.data.name || accountName;
-    email = infoRes.data.email || '';
-    cnpj = infoRes.data.cpfCnpj || '';
+  if (provider === 'ASAAS') {
+    if (!cleanKey) return { ok: false, error: 'Informe a Chave de API (API Key) do Asaas.' };
+    const balRes = await chamarApiAsaas<{ balance: number }>('/finance/balance', 'GET', undefined, { apiKey: cleanKey, environment, provider });
+    if (!balRes.ok) return { ok: false, error: balRes.error || 'Chave de API Asaas inválida ou ambiente incorreto.' };
+    balance = Number(balRes.data?.balance ?? 0);
+
+    const infoRes = await chamarApiAsaas<any>('/myAccount/commercialInfo', 'GET', undefined, { apiKey: cleanKey, environment, provider });
+    if (infoRes.ok && infoRes.data) {
+      accountName = infoRes.data.companyName || infoRes.data.tradingName || infoRes.data.name || accountName;
+      email = infoRes.data.email || '';
+      cnpj = infoRes.data.cpfCnpj || '';
+    }
+  } else if (provider === 'MERCADO_PAGO') {
+    if (!cleanKey) return { ok: false, error: 'Informe o Access Token do Mercado Pago (APP_USR-...).' };
+    const usrRes = await chamarApiAsaas<any>('/users/me', 'GET', undefined, { apiKey: cleanKey, environment, provider });
+    if (usrRes.ok && usrRes.data) {
+      accountName = `${usrRes.data.first_name || ''} ${usrRes.data.last_name || usrRes.data.nickname || ''}`.trim() || 'Mercado Pago';
+      email = usrRes.data.email || '';
+      cnpj = usrRes.data.identification?.number || '';
+    }
+  } else if (!cleanKey && !chavePix?.trim() && !customFields?.nomeBancoCustom?.trim()) {
+    return { ok: false, error: 'Informe ao menos a Chave PIX, o Nome do Banco ou as Credenciais de API.' };
   }
 
   const saveRes = await salvarConfigAsaasBanco(
     {
+      provider,
+      nomeBancoCustom: customFields?.nomeBancoCustom,
+      agenciaCustom: customFields?.agenciaCustom,
+      contaCustom: customFields?.contaCustom,
+      apiBaseUrlCustom: customFields?.apiBaseUrlCustom,
       apiKey: cleanKey,
+      clientId: clientId?.trim() || '',
       environment,
+      webhookToken: webhookToken?.trim() || '',
       chavePix: chavePix?.trim() || cnpj || '',
-      tipoChavePix: tipoChavePix || 'CNPJ',
+      tipoChavePix: tipoChavePix || 'CPF',
       accountName,
       accountEmail: email,
       cnpj
@@ -45,89 +72,78 @@ export async function validarEConectarAsaas(
   );
   if (!saveRes.ok) return { ok: false, error: saveRes.error };
 
-  return { ok: true, balance: Number(balRes.data?.balance ?? 0), accountName, email, cnpj };
+  return { ok: true, balance, accountName, email, cnpj };
 }
 
 export async function consultarSaldoAsaas(): Promise<{ ok: boolean; balance?: number; error?: string }> {
+  const cfg = await obterConfigAsaas();
+  if (!cfg || (cfg.provider && cfg.provider !== 'ASAAS')) return { ok: false };
   const res = await chamarApiAsaas<{ balance: number }>('/finance/balance', 'GET');
   if (!res.ok) return { ok: false, error: res.error };
   return { ok: true, balance: Number(res.data?.balance ?? 0) };
 }
 
-async function obterOuCriarClienteAsaas(
-  name: string,
-  cpfCnpj: string,
-  phone?: string,
-  email?: string
-): Promise<{ ok: boolean; customerId?: string; error?: string }> {
+async function obterOuCriarClienteAsaas(name: string, cpfCnpj: string, phone?: string, email?: string) {
   const docLimpo = cpfCnpj.replace(/\D/g, '');
   if (docLimpo) {
     const busca = await chamarApiAsaas<{ data?: Array<{ id: string }> }>(`/customers?cpfCnpj=${docLimpo}`, 'GET');
-    if (busca.ok && busca.data?.data && busca.data.data.length > 0) {
-      return { ok: true, customerId: busca.data.data[0].id };
-    }
+    if (busca.ok && busca.data?.data && busca.data.data.length > 0) return { ok: true, customerId: busca.data.data[0].id };
   }
-
   const criacao = await chamarApiAsaas<{ id: string }>('/customers', 'POST', {
-    name: name.trim() || 'Cliente TerraGest',
-    cpfCnpj: docLimpo || undefined,
-    mobilePhone: phone ? phone.replace(/\D/g, '') : undefined,
-    email: email?.trim() || undefined
+    name: name.trim() || 'Cliente TerraGest', cpfCnpj: docLimpo || undefined,
+    mobilePhone: phone ? phone.replace(/\D/g, '') : undefined, email: email?.trim() || undefined
   });
-
-  if (!criacao.ok || !criacao.data?.id) {
-    return { ok: false, error: criacao.error || 'Não foi possível cadastrar o cliente no Asaas.' };
-  }
+  if (!criacao.ok || !criacao.data?.id) return { ok: false, error: criacao.error || 'Falha ao cadastrar cliente no Asaas.' };
   return { ok: true, customerId: criacao.data.id };
 }
 
-export async function emitirCobrancaAsaas(
-  input: AsaasChargePayload
-): Promise<{ ok: boolean; charge?: AsaasChargeResult; error?: string }> {
+export async function emitirCobrancaAsaas(input: AsaasChargePayload): Promise<{ ok: boolean; charge?: AsaasChargeResult; error?: string }> {
+  const cfg = await obterConfigAsaas();
+  if (cfg?.provider === 'MERCADO_PAGO') {
+    const mpRes = await chamarApiAsaas<any>('/v1/payments', 'POST', {
+      transaction_amount: Number(input.value),
+      description: input.description,
+      payment_method_id: 'pix',
+      payer: {
+        email: input.customerEmail || 'financeiro@terragest.com.br',
+        first_name: input.customerName,
+        identification: { type: input.customerCpfCnpj.replace(/\D/g, '').length > 11 ? 'CNPJ' : 'CPF', number: input.customerCpfCnpj.replace(/\D/g, '') }
+      }
+    });
+    if (!mpRes.ok || !mpRes.data?.id) return { ok: false, error: mpRes.error || 'Erro ao gerar PIX no Mercado Pago.' };
+    const tx = mpRes.data.point_of_interaction?.transaction_data;
+    return {
+      ok: true,
+      charge: {
+        id: String(mpRes.data.id), status: mpRes.data.status, value: Number(input.value), billingType: 'PIX',
+        invoiceUrl: tx?.ticket_url, pixQrCodeBase64: tx?.qr_code_base64, pixCopiaECola: tx?.qr_code, dueDate: input.dueDate
+      }
+    };
+  }
+
   const cli = await obterOuCriarClienteAsaas(input.customerName, input.customerCpfCnpj, input.customerPhone, input.customerEmail);
   if (!cli.ok || !cli.customerId) return { ok: false, error: cli.error };
-
   const cobRes = await chamarApiAsaas<any>('/payments', 'POST', {
-    customer: cli.customerId,
-    billingType: input.billingType,
-    value: Number(input.value),
-    dueDate: input.dueDate,
-    description: input.description,
-    externalReference: input.externalReference
+    customer: cli.customerId, billingType: input.billingType, value: Number(input.value),
+    dueDate: input.dueDate, description: input.description, externalReference: input.externalReference
   });
   if (!cobRes.ok || !cobRes.data?.id) return { ok: false, error: cobRes.error || 'Falha ao gerar cobrança no Asaas.' };
-
   const payment = cobRes.data;
   const qrRes = await chamarApiAsaas<{ encodedImage?: string; payload?: string }>(`/payments/${payment.id}/pixQrCode`, 'GET');
 
   return {
     ok: true,
     charge: {
-      id: payment.id,
-      status: payment.status,
-      value: payment.value,
-      netValue: payment.netValue,
-      billingType: payment.billingType,
-      invoiceUrl: payment.invoiceUrl,
-      bankSlipUrl: payment.bankSlipUrl,
-      pixQrCodeBase64: qrRes.data?.encodedImage,
-      pixCopiaECola: qrRes.data?.payload,
-      dueDate: payment.dueDate
+      id: payment.id, status: payment.status, value: payment.value, netValue: payment.netValue, billingType: payment.billingType,
+      invoiceUrl: payment.invoiceUrl, bankSlipUrl: payment.bankSlipUrl, pixQrCodeBase64: qrRes.data?.encodedImage, pixCopiaECola: qrRes.data?.payload, dueDate: payment.dueDate
     }
   };
 }
 
-export async function realizarTransferenciaPixAsaas(
-  input: AsaasPixTransferPayload
-): Promise<{ ok: boolean; transfer?: AsaasPixTransferResult; error?: string }> {
+export async function realizarTransferenciaPixAsaas(input: AsaasPixTransferPayload): Promise<{ ok: boolean; transfer?: AsaasPixTransferResult; error?: string }> {
   const res = await chamarApiAsaas<AsaasPixTransferResult>('/transfers', 'POST', {
-    value: Number(input.value),
-    operationType: 'PIX',
-    pixAddressKey: input.pixAddressKey.trim(),
-    pixAddressKeyType: input.pixAddressKeyType || undefined,
-    description: input.description || 'Pagamento Fornecedor TerraGest ERP',
-    scheduleDate: input.scheduleDate || undefined
+    value: Number(input.value), operationType: 'PIX', pixAddressKey: input.pixAddressKey.trim(),
+    pixAddressKeyType: input.pixAddressKeyType || undefined, description: input.description || 'Pagamento Fornecedor TerraGest ERP', scheduleDate: input.scheduleDate || undefined
   });
-  if (!res.ok || !res.data?.id) return { ok: false, error: res.error || 'Não foi possível realizar a transferência PIX no Asaas.' };
-  return { ok: true, transfer: res.data };
+  return (!res.ok || !res.data?.id) ? { ok: false, error: res.error || 'Não foi possível realizar a transferência PIX.' } : { ok: true, transfer: res.data };
 }

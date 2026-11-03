@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Cloud, CheckCircle2, Unlink, ExternalLink, HardDrive, Shield } from 'lucide-react';
 import { useIntegrations } from '../../../hooks/useIntegrations';
+import { desconectarConfigAsaasBanco } from '../../../services/asaasApiClient';
 import { AsaasIntegrationCard } from '../financeiro/AsaasIntegrationCard';
 
 interface MinhaEmpresaIntegracoesTabProps {
@@ -32,10 +33,10 @@ export const MinhaEmpresaIntegracoesTab: React.FC<MinhaEmpresaIntegracoesTabProp
   };
 
   const handleDisconnectAsaas = async () => {
-    if (!confirm('Deseja realmente desconectar a conta Asaas desta empresa?')) return;
+    if (!confirm('Deseja realmente desconectar e limpar a planilha Asaas desta empresa?')) return;
     setActionLoading(true);
-    localStorage.removeItem('terragest_asaas_config');
-    await desconectar('ASAAS');
+    await desconectarConfigAsaasBanco(tenantId);
+    await refetch();
     setActionLoading(false);
   };
 
@@ -44,7 +45,7 @@ export const MinhaEmpresaIntegracoesTab: React.FC<MinhaEmpresaIntegracoesTabProp
       <div className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-3 flex items-start gap-2.5">
         <Shield className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
         <p className="text-emerald-900 text-[11px] leading-relaxed">
-          Conecte o Banco Digital <b>Asaas (API v3)</b> para boletos, PIX e transferências financeiras, e o <b>Google Drive</b> para armazenamento em nuvem de fotos e laudos.
+          Configure a planilha do seu <b>Banco / Gateway (Asaas, Mercado Pago, Banco Inter, Cora, Efí, Sicoob)</b> para emissão de boletos, PIX e Webhook automático no Supabase, e conecte o <b>Google Drive</b> para guardar fotos e laudos.
         </p>
       </div>
 

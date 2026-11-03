@@ -7,6 +7,8 @@ export interface Cliente {
   documento?: string; // CPF ou CNPJ
   telefone?: string;
   endereco?: string;
+  cidade?: string;
+  estado?: string;
   email?: string;
   created_at?: string;
   updated_at?: string;

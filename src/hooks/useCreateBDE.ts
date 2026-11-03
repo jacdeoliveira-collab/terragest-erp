@@ -52,7 +52,6 @@ export function useCreateBDE() {
         work_location: input.work_location.trim(),
         initial_hourmeter: Number(input.initial_hourmeter),
         final_hourmeter: Number(input.final_hourmeter),
-        total_hours: calculatedHours,
         horas_produtivas: productiveHours,
         horas_ociosas: Number(input.horas_ociosas) || 0,
         estaca_inicial: input.estaca_inicial?.trim() || null,

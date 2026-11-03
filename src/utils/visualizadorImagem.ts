@@ -59,6 +59,11 @@ export async function abrirVisualizacaoImagem(url?: string, titulo = 'Comprovant
       renderizarJanelaVisualizador(dados, titulo);
       return;
     }
+    alert(
+      `Foto em sincronização com o Google Drive (${titulo}).\n\n` +
+      `Conecte a conta do Google Drive em Minha Empresa > Bancos e Drive para sincronização completa na nuvem.`
+    );
+    return;
   }
 
   if (url.startsWith('data:image') || url.startsWith('blob:')) {

@@ -1,8 +1,25 @@
 export type AsaasEnvironment = 'production' | 'sandbox';
 
+export type GatewayProvider =
+  | 'ASAAS'
+  | 'MERCADO_PAGO'
+  | 'BANCO_INTER'
+  | 'CORA'
+  | 'EFI_BANK'
+  | 'SICOOB'
+  | 'OUTRO_BANCO'
+  | 'CAIXA_DINHEIRO';
+
 export interface AsaasConfig {
+  provider?: GatewayProvider;
+  nomeBancoCustom?: string;
+  agenciaCustom?: string;
+  contaCustom?: string;
+  apiBaseUrlCustom?: string;
   apiKey: string;
+  clientId?: string;
   environment: AsaasEnvironment;
+  webhookToken?: string;
   chavePix?: string;
   tipoChavePix?: 'CNPJ' | 'CPF' | 'EMAIL' | 'TELEFONE' | 'ALEATORIA';
   walletId?: string;
@@ -56,5 +73,14 @@ export interface AsaasPixTransferResult {
   transferFee?: number;
   effectiveDate?: string;
   transactionReceiptUrl?: string;
+}
+
+export interface AsaasExtratoItem {
+  id: string;
+  value: number;
+  balance?: number;
+  type: string;
+  date: string;
+  description: string;
 }
 

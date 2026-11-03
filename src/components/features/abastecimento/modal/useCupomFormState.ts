@@ -16,7 +16,8 @@ export function useCupomFormState({ equipments, onSuccess, onClose }: Props) {
   const [postoFornecedor, setPostoFornecedor] = useState('');
   const [formaPagamento, setFormaPagamento] = useState<FormaPagamentoDespesa>('PIX');
   const [statusPagamento, setStatusPagamento] = useState<'PAGO' | 'PENDENTE'>('PAGO');
-  const [contaSaida, setContaSaida] = useState('Caixa da Obra');
+  const [contaSaida, setContaSaida] = useState('');
+  const [contaBancariaId, setContaBancariaId] = useState('');
   const [obraId, setObraId] = useState('');
   const [servicoId, setServicoId] = useState('');
 
@@ -79,6 +80,7 @@ export function useCupomFormState({ equipments, onSuccess, onClose }: Props) {
 
     const res = await processarLancamentoCupom({
       data, postoFornecedor, formaPagamento, statusPagamento, contaSaida,
+      contaBancariaId: contaBancariaId || undefined,
       numeroNfCupom: numeroDoc || undefined,
       obraId: obraId || undefined, servicoId: servicoId || undefined,
       fotoCupomUrl: fotoCupomUrl || undefined,
@@ -104,7 +106,7 @@ export function useCupomFormState({ equipments, onSuccess, onClose }: Props) {
 
   return {
     data, setData, postoFornecedor, setPostoFornecedor, formaPagamento, setFormaPagamento,
-    statusPagamento, setStatusPagamento, contaSaida, setContaSaida, obraId, setObraId,
+    statusPagamento, setStatusPagamento, contaSaida, setContaSaida, contaBancariaId, setContaBancariaId, obraId, setObraId,
     servicoId, setServicoId, maquinaId, setMaquinaId, horimetro, setHorimetro,
     tipoCombMaq, setTipoCombMaq, litrosMaq, setLitrosMaq, valorMaq, setValorMaq,
     incluirApoio, setIncluirApoio, veiculoApoioId, setVeiculoApoioId, kmApoio, setKmApoio,
