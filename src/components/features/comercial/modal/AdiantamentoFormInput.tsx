@@ -93,17 +93,17 @@ export const AdiantamentoFormInput: React.FC<Props> = ({ onAdicionar, isFirst })
         </div>
       </div>
 
-      <div className="flex items-center justify-between pt-1">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1">
+        <div className="flex flex-wrap items-center gap-2">
           {!isDesconto && (
-            <select value={contaId} onChange={(e) => onContaChange(e.target.value)} title="Banco / Caixa de Entrada" className="px-2 py-1 bg-gray-50 border border-gray-300 rounded-lg text-[11px] max-w-[190px]">
+            <select value={contaId} onChange={(e) => onContaChange(e.target.value)} title="Banco / Caixa de Entrada" className="px-2 py-1 bg-gray-50 border border-gray-300 rounded-lg text-[11px] max-w-full sm:max-w-[190px]">
               {contas.map((c) => <option key={c.id} value={c.id}>{c.nome_conta}</option>)}
             </select>
           )}
           {!isDesconto && (
-            <>
+            <div className="flex items-center gap-1.5">
               <label className="inline-flex items-center gap-1.5 px-2.5 py-1 border border-dashed border-gray-300 hover:border-emerald-500 rounded-lg cursor-pointer text-[11px] text-gray-600 hover:text-emerald-700 bg-gray-50">
-                <Camera className="w-3.5 h-3.5 text-emerald-600" />
+                <Camera className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 <span>{carregandoFoto ? 'Processando...' : comprovante ? 'Comprovante Anexado ✓' : 'Anexar Comprovante'}</span>
                 <input type="file" accept="image/*,application/pdf" onChange={handleFoto} className="hidden" />
               </label>
@@ -112,13 +112,13 @@ export const AdiantamentoFormInput: React.FC<Props> = ({ onAdicionar, isFirst })
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
-            </>
+            </div>
           )}
         </div>
 
         <button
           type="button" onClick={handleSubmit}
-          className={`inline-flex items-center gap-1.5 px-3 py-1 font-bold rounded-lg shadow-xs cursor-pointer text-xs text-white ${
+          className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 font-bold rounded-lg shadow-xs cursor-pointer text-xs text-white shrink-0 ${
             isDesconto ? 'bg-amber-600 hover:bg-amber-700' : 'bg-emerald-600 hover:bg-emerald-700'
           }`}
         >

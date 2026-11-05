@@ -17,21 +17,24 @@ interface Props {
 }
 
 export const OrcamentoCondicoesPagamentoSection: React.FC<Props> = ({
-  formaPagamento, setFormaPagamento,
-  condicaoPagamento, setCondicaoPagamento,
-  contaBancariaId, setContaBancariaId,
-  prazoDescricao, setPrazoDescricao,
+  formaPagamento, setFormaPagamento, condicaoPagamento, setCondicaoPagamento,
+  contaBancariaId, setContaBancariaId, prazoDescricao, setPrazoDescricao,
   dataVencimento, setDataVencimento
 }) => {
   const { contas, isLoading } = useContasBancarias();
 
-  // Seleciona automaticamente a conta padrão se nenhuma tiver sido escolhida
+  // Seleciona automaticamente a conta padrão se nenhuma tiver sido escolhida ou se for inválida
   useEffect(() => {
-    if (!contaBancariaId && contas.length > 0) {
-      const padrao = contas.find((c) => c.is_padrao) || contas[0];
-      if (padrao) setContaBancariaId(padrao.id);
+    if (contas && contas.length > 0) {
+      const existe = contas.some((c) => c.id === contaBancariaId);
+      if (!contaBancariaId || !existe) {
+        const padrao = contas.find((c) => c.is_padrao) || contas[0];
+        if (padrao) setContaBancariaId(padrao.id);
+      }
+    } else if (!isLoading && (!contas || contas.length === 0) && contaBancariaId) {
+      setContaBancariaId('');
     }
-  }, [contas, contaBancariaId, setContaBancariaId]);
+  }, [contas, contaBancariaId, isLoading, setContaBancariaId]);
 
   const aplicarCondicao = (val: string) => {
     setCondicaoPagamento(val);

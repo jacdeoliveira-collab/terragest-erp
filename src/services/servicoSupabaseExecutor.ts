@@ -18,7 +18,25 @@ function prepararFallbackSemObra(payload: Record<string, unknown>): Record<strin
   return fb;
 }
 
+function ehErroFkContaBancaria(err: { message?: string } | null | undefined): boolean {
+  return !!err?.message && err.message.includes('conta_bancaria_id_fkey');
+}
+
 export async function executarPersistenciaServico(
+  limpo: Record<string, unknown>,
+  servicoId: string
+): Promise<{ success: boolean; data?: ServicoHorimetro; error?: string }> {
+  const res = await executarPersistenciaInterna(limpo, servicoId);
+  if (!res.success && limpo.conta_bancaria_id && ehErroFkContaBancaria({ message: res.error })) {
+    // A conta selecionada não existe mais no banco: salva sem vínculo para não bloquear o serviço.
+    const semConta = { ...limpo };
+    delete semConta.conta_bancaria_id;
+    return executarPersistenciaInterna(semConta, servicoId);
+  }
+  return res;
+}
+
+async function executarPersistenciaInterna(
   limpo: Record<string, unknown>,
   servicoId: string
 ): Promise<{ success: boolean; data?: ServicoHorimetro; error?: string }> {
