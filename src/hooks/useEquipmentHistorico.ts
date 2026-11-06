@@ -29,6 +29,7 @@ const INICIAL: EquipmentHistoricoData = {
 };
 
 interface RawAbastItem extends AbastecimentoItem {
+  equipment_id?: string;
   equipment?: { id?: string; code?: string; name?: string };
 }
 
@@ -72,13 +73,12 @@ export function useEquipmentHistorico(equipment?: Equipment | null) {
 
       const abastecimentos: AbastecimentoItem[] = todosAbast
         .filter((a) => {
-          if (a.numero_requisicao_nf && /\[REF:(?!CUP_)[^:]+:(MAQ|APOIO)\]/.test(a.numero_requisicao_nf)) return false;
-          const matchId = equipment.id && a.maquina_id === equipment.id;
+          const matchId = (equipment.id && (a.maquina_id === equipment.id || a.equipment_id === equipment.id));
           const matchCode = (a.equipment?.code && a.equipment.code === equipment.code) ||
                             (a.maquina_codigo && a.maquina_codigo === equipment.code);
           const matchNome = (a.equipment?.name && a.equipment.name === equipment.name) ||
                             (a.maquina_nome && a.maquina_nome === equipment.name);
-          return matchId || matchCode || matchNome;
+          return Boolean(matchId || matchCode || matchNome);
         })
         .map((a) => ({
           ...a,

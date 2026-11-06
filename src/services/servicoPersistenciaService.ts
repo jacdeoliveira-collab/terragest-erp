@@ -1,5 +1,6 @@
 import { sincronizarServicoFinanceiro } from './servicoIntegracaoFinanceira';
 import { vincularAbastecimentosAoServico } from './servicoDbSync';
+import { sincronizarHorimetroEquipamento } from './equipmentHorimetroSync';
 import { gerarUuidV4, isUuidValido } from '../utils/uuid';
 import { executarPersistenciaServico } from './servicoSupabaseExecutor';
 import type { ServicoHorimetro } from '../types/servicoHorimetro.types';
@@ -116,6 +117,7 @@ export async function persistirServicoSupabase(
     const idFinal = resultado.data?.id || updated.id;
     await vincularAbastecimentosAoServico(idFinal, updated.abastecimentos_ids || [], updated.cliente_id, updated.cliente_nome);
     sincronizarServicoFinanceiro(resultado.data || updated).catch(() => {});
+    sincronizarHorimetroEquipamento(resultado.data || updated).catch(() => {});
 
     return { success: true, data: resultado.data || updated };
   } catch (err: unknown) {
