@@ -4,6 +4,7 @@ import { useTenantContext } from '../contexts/TenantContext';
 import { useObraContext } from '../contexts/ObraContext';
 import { obterComprovante } from '../services/comprovanteStorageService';
 import { removerDespesaAbastecimento, ressincronizarDespesaAbastecimento } from '../services/abastecimentoFinanceiroSync';
+import { sincronizarTodosAbastecimentosDeServicos } from '../services/servicoAbastecimentoSync';
 import type { AbastecimentoItem } from '../types/abastecimento.types';
 import { aplicarFiltroTenant, DEFAULT_LEGACY_TENANT } from '../utils/tenantFilter';
 
@@ -35,7 +36,7 @@ export function useAbastecimentos() {
         .order('data', { ascending: false });
 
       query = aplicarFiltroTenant(query, currentTenant);
-      if (obraSelecionada?.id) query = query.eq('obra_id', obraSelecionada.id);
+      if (obraSelecionada?.id) query = query.or(`obra_id.eq.${obraSelecionada.id},obra_id.is.null`);
 
       const { data: responseData, error: responseError } = await query;
       if (responseError) throw new Error(responseError.message);
@@ -45,7 +46,7 @@ export function useAbastecimentos() {
         comboio?: { code: string; name: string };
       }
 
-      const formatados: AbastecimentoItem[] = ((responseData as RawAbast[]) || []).map((item) => {
+      const listaValida: AbastecimentoItem[] = ((responseData as RawAbast[]) || []).map((item) => {
         const matchCupom = item.numero_requisicao_nf?.match(/\[REF:(CUP_[A-Z0-9]+)/);
         const cupomRef = matchCupom ? matchCupom[1] : null;
         let fotoArmazenada: string | undefined = undefined;
@@ -62,11 +63,6 @@ export function useAbastecimentos() {
           comboio_nome: item.comboio?.name || item.comboio_nome,
           foto_comprovante: item.foto_comprovante || fotoArmazenada
         };
-      });
-
-      const listaValida = formatados.filter((item) => {
-        const isSinteticoServico = item.numero_requisicao_nf && /\[REF:(?!CUP_)[^:]+:(MAQ|APOIO)\]/.test(item.numero_requisicao_nf);
-        return !isSinteticoServico;
       });
 
       setData(listaValida);
@@ -131,7 +127,10 @@ export function useAbastecimentos() {
     }
   };
 
-  useEffect(() => { fetchAbastecimentos(); }, [fetchAbastecimentos]);
+  useEffect(() => {
+    fetchAbastecimentos();
+    sincronizarTodosAbastecimentosDeServicos().catch(() => {});
+  }, [fetchAbastecimentos]);
 
   return { data, isLoading, error, refetch: fetchAbastecimentos, atualizarAbastecimento, excluirAbastecimento };
 }
