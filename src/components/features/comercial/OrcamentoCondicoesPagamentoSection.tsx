@@ -23,7 +23,6 @@ export const OrcamentoCondicoesPagamentoSection: React.FC<Props> = ({
 }) => {
   const { contas, isLoading } = useContasBancarias();
 
-  // Seleciona automaticamente a conta padrão se nenhuma tiver sido escolhida ou se for inválida
   useEffect(() => {
     if (contas && contas.length > 0) {
       const existe = contas.some((c) => c.id === contaBancariaId);

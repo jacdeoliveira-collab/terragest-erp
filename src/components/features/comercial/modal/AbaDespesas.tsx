@@ -1,7 +1,6 @@
 import React from 'react';
-import { Fuel, Truck, Camera, X } from 'lucide-react';
-import { CombustivelCardItem } from './CombustivelCardItem';
-import { AbastecimentosVinculadosSelector } from './AbastecimentosVinculadosSelector';
+import { Camera, X } from 'lucide-react';
+import { AbastecimentosHistoricoSection } from './AbastecimentosHistoricoSection';
 import { OperadorRemuneracaoCard } from './OperadorRemuneracaoCard';
 import { PecasLubrificantesCard } from './PecasLubrificantesCard';
 import { LogisticaDespesasCard } from './LogisticaDespesasCard';
@@ -28,37 +27,27 @@ interface AbaDespesasProps {
   abastecimentosIds?: string[]; setAbastecimentosIds?: (ids: string[]) => void;
   uploadingImage: string | null;
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>, fieldName: string, setter: (url: string) => void) => void;
-  maquinaNome?: string; servicoId?: string; operadorNome?: string;
-  horasTrabalhadas?: number; valorHoraOperador: number;
+  maquinaNome?: string; servicoId?: string; clienteId?: string; clienteNome?: string;
+  operadorNome?: string; horasTrabalhadas?: number; valorHoraOperador: number;
 }
 
 export const AbaDespesas: React.FC<AbaDespesasProps> = (props) => {
   return (
     <div className="space-y-4 text-xs text-left">
-      <AbastecimentosVinculadosSelector
-        maquinaNome={props.maquinaNome} servicoId={props.servicoId} abastecimentosIds={props.abastecimentosIds}
-        onAplicar={(mL, mV, aL, aV, foto, ids) => {
-          props.setCombustivelMaquinaLitros(mL); props.setCombustivelMaquinaValor(mV);
-          props.setCombustivelApoioLitros(aL); props.setCombustivelApoioValor(aV);
+      <AbastecimentosHistoricoSection
+        maquinaNome={props.maquinaNome}
+        servicoId={props.servicoId}
+        clienteId={props.clienteId}
+        clienteNome={props.clienteNome}
+        abastecimentosIds={props.abastecimentosIds}
+        setAbastecimentosIds={props.setAbastecimentosIds}
+        onTotaisChange={(mL, mV, aL, aV, foto) => {
+          props.setCombustivelMaquinaLitros(mL);
+          props.setCombustivelMaquinaValor(mV);
+          props.setCombustivelApoioLitros(aL);
+          props.setCombustivelApoioValor(aV);
           if (foto && !props.fotoCupom) props.setFotoCupom(foto);
-          if (ids && props.setAbastecimentosIds) props.setAbastecimentosIds(ids);
         }}
-      />
-
-      <CombustivelCardItem
-        titulo="1. Combustível da Máquina (Diesel S500 / Comum)" icon={Fuel}
-        litros={props.combustivelMaquinaLitros} onChangeLitros={props.setCombustivelMaquinaLitros}
-        valor={props.combustivelMaquinaValor} onChangeValor={props.setCombustivelMaquinaValor}
-        placeholderLitros="0.00" placeholderValor="0.00"
-        containerClass="bg-amber-50/70 border-amber-200" headerTextClass="text-amber-900" iconClass="text-amber-600"
-      />
-
-      <CombustivelCardItem
-        titulo="2. Combustível de Apoio (Caminhonete Diesel S10)" icon={Truck}
-        litros={props.combustivelApoioLitros} onChangeLitros={props.setCombustivelApoioLitros}
-        valor={props.combustivelApoioValor} onChangeValor={props.setCombustivelApoioValor}
-        placeholderLitros="0.00" placeholderValor="0.00"
-        containerClass="bg-blue-50/70 border-blue-200" headerTextClass="text-blue-900" iconClass="text-blue-600"
       />
 
       <div className="p-3 bg-gray-50 border border-gray-200 rounded-xl space-y-2">
@@ -72,7 +61,7 @@ export const AbaDespesas: React.FC<AbaDespesasProps> = (props) => {
           <label className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 border border-dashed border-gray-300 hover:border-amber-500 bg-white rounded-lg cursor-pointer transition-all">
             <Camera className="w-3.5 h-3.5 text-amber-600" />
             <span className="text-[11px] text-gray-600">
-              {props.uploadingImage === 'cupom' ? 'Enviando...' : 'Anexar Cupom Fiscal / Comprovante de Diesel'}
+              {props.uploadingImage === 'cupom' ? 'Enviando...' : 'Anexar Cupom Fiscal / Comprovante Geral de Diesel'}
             </span>
             <input type="file" accept="image/*,application/pdf" disabled={props.uploadingImage !== null} className="hidden" onChange={(e) => props.handleImageUpload(e, 'cupom', props.setFotoCupom)} />
           </label>

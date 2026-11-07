@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useTenantContext } from '../contexts/TenantContext';
 import type { CategoriaCusto } from '../types/manutencao.types';
+import { isUuidValido } from '../utils/uuid';
+
+export { isUuidValido };
 
 const SEEDS_CATEGORIAS_MANUTENCAO = [
   { nome: 'Peças de Reposição & Desgaste', modulo: 'MANUTENCAO', tipo: 'DESPESA' as const },
@@ -10,11 +13,6 @@ const SEEDS_CATEGORIAS_MANUTENCAO = [
   { nome: 'Pneus e Material Rodante', modulo: 'MANUTENCAO', tipo: 'DESPESA' as const },
   { nome: 'Revisão Preventiva Concessionária', modulo: 'MANUTENCAO', tipo: 'DESPESA' as const }
 ];
-
-export function isUuidValido(valor?: string | null): boolean {
-  if (!valor) return false;
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(valor.trim());
-}
 
 export function useCategoriasCustos(modulo: string = 'MANUTENCAO') {
   const { tenantAtivoId } = useTenantContext();

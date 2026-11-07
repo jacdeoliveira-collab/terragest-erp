@@ -94,6 +94,7 @@ export const ServicoModalBody: React.FC<ServicoModalBodyProps> = ({
           abastecimentosIds={state.abastecimentosIds} setAbastecimentosIds={state.setAbastecimentosIds}
           uploadingImage={state.uploadingImage} handleImageUpload={state.handleImageUpload}
           maquinaNome={state.maquinaNome} servicoId={servicoId}
+          clienteId={state.clienteId} clienteNome={state.clienteNome}
           operadorNome={state.operadorNome} horasTrabalhadas={state.horasTrabalhadas}
           valorHoraOperador={state.valorHoraOperador}
         />
