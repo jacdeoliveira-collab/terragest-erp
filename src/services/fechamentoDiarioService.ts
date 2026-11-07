@@ -3,6 +3,8 @@ import { supabase } from '../lib/supabase';
 export interface FechamentoDiarioInput {
   tenantId?: string | null;
   obraId?: string | null;
+  servicoId?: string | null;
+  clienteNome?: string;
   equipmentId: string;
   equipmentName?: string;
   operadorId?: string | null;
@@ -58,8 +60,8 @@ export async function registrarFechamentoDiarioTarde(
       operador_id: input.operadorId || null,
       date: input.data,
       operator_name: input.operadorNome || 'Operador',
-      client_name: input.frenteServico || 'Controle Diário de Máquina',
-      work_location: input.frenteServico || 'Frente Operacional / Deslocamento',
+      client_name: input.clienteNome || input.frenteServico || 'Controle Diário de Máquina',
+      work_location: input.frenteServico || input.clienteNome || 'Frente Operacional / Deslocamento',
       initial_hourmeter: initial,
       final_hourmeter: final,
       horas_produtivas: prod,
@@ -76,10 +78,40 @@ export async function registrarFechamentoDiarioTarde(
     if (insErr) throw new Error(insErr.message);
 
     if (final > 0) {
-      await supabase
-        .from('equipment')
-        .update({ current_hourmeter: final })
-        .eq('id', input.equipmentId);
+      await supabase.from('equipment').update({ current_hourmeter: final }).eq('id', input.equipmentId);
+
+      if (input.servicoId) {
+        const { data: srv } = await supabase
+          .from('servicos_horimetro')
+          .select('id, horimetro_inicial, valor_hora, despesas_total, maquinas_itens')
+          .eq('id', input.servicoId)
+          .maybeSingle();
+
+        if (srv) {
+          const hIni = Number(srv.horimetro_inicial) || initial;
+          const horas = Math.max(0, Number((final - hIni).toFixed(2)));
+          const vHora = Number(srv.valor_hora) || 0;
+          const fatBruto = Number((horas * vHora).toFixed(2));
+          const despTotal = Number(srv.despesas_total) || 0;
+          const lucro = Number((fatBruto - despTotal).toFixed(2));
+          const maqItens = Array.isArray(srv.maquinas_itens) && srv.maquinas_itens.length > 0
+            ? srv.maquinas_itens.map((m: any, idx: number) => idx === 0 ? {
+                ...m, horimetro_final: final, horas_trabalhadas: horas, faturamento_bruto: fatBruto,
+                ...(input.fotoHorimetroUrl ? { foto_horimetro_final: input.fotoHorimetroUrl } : {})
+              } : m)
+            : undefined;
+
+          await supabase.from('servicos_horimetro').update({
+            horimetro_final: final,
+            horas_trabalhadas: horas,
+            faturamento_bruto: fatBruto,
+            lucro_liquido: lucro,
+            ...(input.fotoHorimetroUrl ? { foto_horimetro_final: input.fotoHorimetroUrl } : {}),
+            ...(maqItens ? { maquinas_itens: maqItens } : {}),
+            updated_at: new Date().toISOString()
+          }).eq('id', input.servicoId);
+        }
+      }
     }
 
     return { success: true };

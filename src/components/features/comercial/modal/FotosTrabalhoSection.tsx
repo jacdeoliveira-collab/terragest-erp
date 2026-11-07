@@ -1,12 +1,21 @@
 import React, { useState } from 'react';
 import { Camera, Trash2, Image as ImageIcon, Loader2 } from 'lucide-react';
 import type { FotoTrabalhoItem } from '../../../../types/servicoHorimetro.types';
-import { comprimirImagem } from '../../../../services/comprovanteStorageService';
 import { uploadParaGoogleDrive } from '../../../../services/driveService';
+import { abrirVisualizacaoImagem } from '../../../../utils/visualizadorImagem';
 
 interface FotosTrabalhoSectionProps {
   fotos: FotoTrabalhoItem[];
   onChangeFotos: (fotos: FotoTrabalhoItem[]) => void;
+}
+
+function resolverThumbUrl(url: string): string {
+  if (!url || url.startsWith('idb://') || url.startsWith('ref_')) return '';
+  if (url.includes('drive.google.com')) {
+    const match = url.match(/[-\w]{25,}/);
+    if (match) return `https://drive.google.com/thumbnail?id=${match[0]}&sz=w400`;
+  }
+  return url;
 }
 
 export const FotosTrabalhoSection: React.FC<FotosTrabalhoSectionProps> = ({
@@ -25,27 +34,17 @@ export const FotosTrabalhoSection: React.FC<FotosTrabalhoSectionProps> = ({
 
     setSlotCarregando(index);
     try {
-      const base64 = await comprimirImagem(file, 960, 0.65);
-      const novas = [...slots];
-      novas[index] = {
-        ...novas[index],
-        url: base64,
-        legenda: novas[index].legenda || `Foto ${index + 1} - Execução da Obra`,
-        timestamp: new Date().toLocaleTimeString('pt-BR'),
-      };
-      onChangeFotos(novas.filter((f) => f.url));
-
-      uploadParaGoogleDrive(file, 'frota').then((res) => {
-        if (res.sucesso && res.driveUrl) {
-          const comDrive = [...novas];
-          if (comDrive[index]) {
-            comDrive[index] = { ...comDrive[index], url: res.driveUrl };
-            onChangeFotos(comDrive.filter((f) => f.url));
-          }
-        }
-      }).catch(() => {});
-    } catch (err) {
-      console.warn('Erro ao processar imagem:', err);
+      const res = await uploadParaGoogleDrive(file, 'frota');
+      if (res.sucesso && res.driveUrl) {
+        const novas = [...slots];
+        novas[index] = {
+          ...novas[index],
+          url: res.driveUrl,
+          legenda: novas[index].legenda || `Foto ${index + 1} - Execução da Obra`,
+          timestamp: new Date().toLocaleTimeString('pt-BR'),
+        };
+        onChangeFotos(novas.filter((f) => f.url));
+      }
     } finally {
       setSlotCarregando(null);
     }
@@ -84,24 +83,16 @@ export const FotosTrabalhoSection: React.FC<FotosTrabalhoSectionProps> = ({
         {slots.map((slot, idx) => {
           const temFoto = !!slot.url;
           const estaCarregando = slotCarregando === idx;
+          const thumbUrl = resolverThumbUrl(slot.url);
 
           return (
-            <div
-              key={idx}
-              className="p-3 border border-gray-200 rounded-xl bg-gray-50/60 hover:bg-gray-50 space-y-2 transition-all"
-            >
+            <div key={idx} className="p-3 border border-gray-200 rounded-xl bg-gray-50/60 hover:bg-gray-50 space-y-2 transition-all">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-bold text-gray-700 flex items-center gap-1">
-                  <ImageIcon className="w-3 h-3 text-emerald-600" />
-                  Foto {idx + 1}
+                  <ImageIcon className="w-3 h-3 text-emerald-600" />Foto {idx + 1}
                 </span>
                 {temFoto && !estaCarregando && (
-                  <button
-                    type="button"
-                    onClick={() => handleRemover(idx)}
-                    className="text-rose-500 hover:text-rose-700 p-1 rounded hover:bg-rose-50"
-                    title="Remover Foto"
-                  >
+                  <button type="button" onClick={() => handleRemover(idx)} className="text-rose-500 hover:text-rose-700 p-1 rounded hover:bg-rose-50" title="Remover Foto">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 )}
@@ -110,12 +101,19 @@ export const FotosTrabalhoSection: React.FC<FotosTrabalhoSectionProps> = ({
               {estaCarregando ? (
                 <div className="flex flex-col items-center justify-center h-28 border border-gray-200 rounded-lg bg-white">
                   <Loader2 className="w-6 h-6 text-emerald-600 animate-spin mb-1" />
-                  <span className="text-[11px] text-gray-500 font-medium">Otimizando foto...</span>
+                  <span className="text-[11px] text-gray-500 font-medium">Enviando para o Google Drive...</span>
                 </div>
               ) : temFoto ? (
                 <div className="space-y-2">
-                  <div className="relative h-28 w-full rounded-lg overflow-hidden border border-gray-200 bg-black/5">
-                    <img src={slot.url} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
+                  <div
+                    onClick={() => abrirVisualizacaoImagem(slot.url, slot.legenda || `Foto ${idx + 1}`)}
+                    className="relative h-28 w-full rounded-lg overflow-hidden border border-gray-200 bg-black/5 flex items-center justify-center cursor-pointer"
+                  >
+                    {thumbUrl ? (
+                      <img src={thumbUrl} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-[11px] text-emerald-700 font-bold">Ver Foto Salva</span>
+                    )}
                   </div>
                   <input
                     type="text"
@@ -129,7 +127,7 @@ export const FotosTrabalhoSection: React.FC<FotosTrabalhoSectionProps> = ({
                 <label className="flex flex-col items-center justify-center h-28 border-2 border-dashed border-gray-300 hover:border-emerald-500 rounded-lg cursor-pointer bg-white transition-colors">
                   <Camera className="w-6 h-6 text-gray-400 mb-1" />
                   <span className="text-[11px] font-semibold text-gray-600">Clique para anexar foto</span>
-                  <span className="text-[9px] text-gray-400">JPG, PNG ou foto da câmera</span>
+                  <span className="text-[9px] text-gray-400">Enviada direto para o Google Drive</span>
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => handleUploadSlot(idx, e)} />
                 </label>
               )}

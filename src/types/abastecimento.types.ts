@@ -38,4 +38,8 @@ export type CreateAbastecimentoDTO = Omit<
 > & {
   operador_id?: string;
   servico_id?: string;
+  forma_pagamento?: string;
+  credor_emprestimo?: string;
+  data_emprestimo?: string;
+  data_pagar_emprestimo?: string;
 };

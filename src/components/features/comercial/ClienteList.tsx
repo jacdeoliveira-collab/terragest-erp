@@ -77,11 +77,10 @@ export const ClienteList: React.FC = () => {
             <table className="w-full text-left">
               <thead className="bg-gray-50 text-gray-500 uppercase font-semibold border-b border-gray-200 text-[11px]">
                 <tr>
-                  <th className="p-3.5">Nome / Razão Social</th>
+                  <th className="p-3.5">Nome / Razão Social & Ações</th>
                   <th className="p-3.5">CPF / CNPJ</th>
                   <th className="p-3.5">WhatsApp / Telefone</th>
                   <th className="p-3.5">Endereço / Localização</th>
-                  <th className="p-3.5 text-center">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-gray-700">

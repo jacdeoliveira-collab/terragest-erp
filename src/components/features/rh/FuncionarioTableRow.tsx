@@ -36,15 +36,7 @@ const renderStatusValidade = (dataStr?: string, hojeStr: string = '', limiteStr:
 };
 
 export const FuncionarioTableRow: React.FC<FuncionarioTableRowProps> = ({
-  item,
-  hoje,
-  dataLimite30Dias,
-  onVerPerfil,
-  onVerHistorico,
-  onEditar,
-  onVerCompliance,
-  onConfigurarPin,
-  onInativar
+  item, hoje, dataLimite30Dias, onVerPerfil, onVerHistorico, onEditar, onVerCompliance, onConfigurarPin, onInativar
 }) => {
   const isAtivo = item.status === 'ATIVO';
   const cnhData = item.vencimento_cnh || item.validade_cnh;
@@ -52,91 +44,62 @@ export const FuncionarioTableRow: React.FC<FuncionarioTableRowProps> = ({
 
   return (
     <tr className="hover:bg-gray-50/60 transition-colors text-xs">
-      <td className="p-3 font-semibold text-gray-900">
-        <div>
+      <td className="p-3 font-semibold text-gray-900 min-w-[250px]">
+        <div className="flex flex-wrap items-center gap-1.5">
           {onVerHistorico ? (
             <button
               type="button"
               onClick={() => onVerHistorico(item)}
-              className="text-left font-bold text-gray-900 hover:text-emerald-700 hover:underline cursor-pointer flex items-center gap-1"
+              className="text-left font-bold text-gray-900 hover:text-emerald-700 hover:underline cursor-pointer"
               title="Clique para ver o histórico de produção e máquinas operadas"
             >
-              <span>{item.nome}</span>
+              {item.nome}
             </button>
           ) : (
             <span>{item.nome}</span>
           )}
-          <span className="block text-[10px] text-gray-400 font-mono">
-            CPF: {item.cpf || item.registro_documento || '-'}
+          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${isAtivo ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-600 border-gray-300'}`}>
+            {item.status}
           </span>
         </div>
-      </td>
-      <td className="p-3 text-gray-600">{item.cargo.replace('_', ' ')}</td>
-      <td className="p-3">{renderStatusValidade(cnhData, hoje, dataLimite30Dias)}</td>
-      <td className="p-3">{renderStatusValidade(asoData, hoje, dataLimite30Dias)}</td>
-      <td className="p-3 text-center">
-        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${isAtivo ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-100 text-gray-600 border-gray-300'}`}>
-          {item.status}
+        <span className="block text-[10px] text-gray-400 font-mono mt-0.5">
+          CPF: {item.cpf || item.registro_documento || '-'}
         </span>
-      </td>
-      <td className="p-3 text-center">
-        <div className="flex items-center justify-center gap-1.5">
+
+        <div className="flex items-center flex-wrap gap-1 pt-1.5 mt-1 border-t border-gray-100">
           {onVerHistorico && (
-            <button
-              onClick={() => onVerHistorico(item)}
-              className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-[11px] font-semibold cursor-pointer"
-              title="Histórico de Produção & Horímetros"
-            >
-              <Clock className="w-3 h-3 text-emerald-600" />
-              <span>Produção</span>
+            <button onClick={() => onVerHistorico(item)} className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-[10px] font-bold cursor-pointer">
+              <Clock className="w-3 h-3 text-emerald-600" /><span>Produção</span>
             </button>
           )}
-          <button
-            onClick={() => onVerPerfil(item)}
-            className="inline-flex items-center gap-1 px-2 py-1 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-[11px] font-semibold cursor-pointer"
-            title="Ver Perfil e EPIs"
-          >
-            <Eye className="w-3 h-3 text-slate-500" />
-            <span>Perfil</span>
+          <button onClick={() => onVerPerfil(item)} className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg text-[10px] font-bold cursor-pointer">
+            <Eye className="w-3 h-3 text-slate-500" /><span>Perfil</span>
           </button>
-          <button
-            onClick={() => onEditar(item)}
-            className="inline-flex items-center gap-1 px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-[11px] font-semibold cursor-pointer"
-            title="Editar Colaborador"
-          >
-            <Edit3 className="w-3 h-3 text-amber-600" />
-            <span>Editar</span>
+          <button onClick={() => onEditar(item)} className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-[10px] font-bold cursor-pointer">
+            <Edit3 className="w-3 h-3 text-amber-600" /><span>Editar</span>
           </button>
           {onVerCompliance && (
-            <button
-              onClick={() => onVerCompliance(item)}
-              className="inline-flex items-center gap-1 px-2 py-1 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 rounded-lg text-[11px] font-semibold cursor-pointer"
-              title="Compliance e Anexos (Drive)"
-            >
-              <ShieldCheck className="w-3 h-3 text-emerald-600" />
-              <span>Anexos</span>
+            <button onClick={() => onVerCompliance(item)} className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 rounded-lg text-[10px] font-bold cursor-pointer">
+              <ShieldCheck className="w-3 h-3 text-emerald-600" /><span>Anexos</span>
             </button>
           )}
           {onConfigurarPin && (
-            <button
-              onClick={() => onConfigurarPin(item)}
-              className="inline-flex items-center gap-1 px-2 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-lg text-[11px] font-semibold cursor-pointer"
-              title="Configurar PIN de Assinatura"
-            >
-              <Key className="w-3 h-3 text-purple-600" />
-              <span>PIN</span>
+            <button onClick={() => onConfigurarPin(item)} className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-lg text-[10px] font-bold cursor-pointer">
+              <Key className="w-3 h-3 text-purple-600" /><span>PIN</span>
             </button>
           )}
           <button
             onClick={() => onInativar(item.id, isAtivo ? 'INATIVO' : 'ATIVO')}
-            className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold border cursor-pointer ${isAtivo ? 'bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-200' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200'}`}
-            title={isAtivo ? 'Inativar Colaborador (não deleta)' : 'Reativar Colaborador'}
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border cursor-pointer ${isAtivo ? 'bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-200' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200'}`}
           >
             {isAtivo ? <UserX className="w-3 h-3 text-rose-500" /> : <ShieldCheck className="w-3 h-3 text-emerald-600" />}
             <span>{isAtivo ? 'Inativar' : 'Ativar'}</span>
           </button>
         </div>
       </td>
+      <td className="p-3 text-gray-600">{item.cargo.replace('_', ' ')}</td>
+      <td className="p-3">{renderStatusValidade(cnhData, hoje, dataLimite30Dias)}</td>
+      <td className="p-3">{renderStatusValidade(asoData, hoje, dataLimite30Dias)}</td>
     </tr>
   );
 };

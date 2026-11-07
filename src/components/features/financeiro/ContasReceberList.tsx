@@ -99,8 +99,8 @@ export const ContasReceberList: React.FC<ContasReceberListProps> = ({
           <table className="w-full text-left">
             <thead className="bg-gray-50 text-[10px] text-gray-500 uppercase border-b border-gray-200">
               <tr>
-                <th className="p-3">Cliente / Obra</th><th className="p-3">Mês Ref.</th><th className="p-3">Vencimento</th>
-                <th className="p-3 text-right">Saldo a Receber</th><th className="p-3 text-center">Status</th><th className="p-3 text-center">Ações</th>
+                <th className="p-3">Cliente / Obra / Ações</th><th className="p-3 text-right">Saldo a Receber</th>
+                <th className="p-3">Vencimento</th><th className="p-3">Mês Ref.</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-gray-700">

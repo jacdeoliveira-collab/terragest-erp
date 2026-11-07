@@ -6,9 +6,24 @@ export type CategoriaContaPagar =
   | 'LOCACAO_EQUIPAMENTOS'
   | 'FOLHA_RH'
   | 'ADMINISTRATIVO'
+  | 'EMPRESTIMOS'
   | 'OUTROS';
 
-export type FormaPagamentoDespesa = 'PIX' | 'DINHEIRO' | 'BOLETO' | 'TED' | 'TRANSFERENCIA' | 'CARTAO' | 'OUTRO';
+export type FormaPagamentoDespesa =
+  | 'PIX'
+  | 'DINHEIRO'
+  | 'BOLETO'
+  | 'TED'
+  | 'TRANSFERENCIA'
+  | 'CARTAO'
+  | 'EMPRESTIMO'
+  | 'OUTRO';
+
+export interface DadosEmprestimoPagamento {
+  credorNome: string;
+  dataEmprestimo: string;
+  dataPagamentoPrevista: string;
+}
 
 export interface ContaPagarItem {
   id: string;

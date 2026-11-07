@@ -1,21 +1,18 @@
 import React from 'react';
-import { User, LogOut, Menu } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
+import { Menu } from 'lucide-react';
 import { CentralAlertasBell } from './CentralAlertasBell';
-import { HeaderTenantObraSelectors } from './HeaderTenantObraSelectors';
+import { HeaderModeSwitcher } from './HeaderModeSwitcher';
+import { HeaderUserMenuDropdown } from './HeaderUserMenuDropdown';
 
 interface HeaderProps {
   onOpenMenu?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({ onOpenMenu }) => {
-  const { user, logout } = useAuth();
-  const usuarioNome = user?.email ? user.email.split('@')[0] : 'Operador';
-
   return (
     <header className="h-16 px-3 sm:px-5 lg:px-6 bg-white border-b border-gray-200 flex items-center justify-between shrink-0 shadow-sm gap-2 sm:gap-4">
-      {/* LADO ESQUERDO: BOTÃO HAMBÚRGUER (MOBILE) + SELETORES */}
-      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+      {/* LADO ESQUERDO: BOTÃO HAMBÚRGUER (MOBILE) + LOGO & NOME DO APLICATIVO */}
+      <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
         <button
           type="button"
           onClick={onOpenMenu}
@@ -25,30 +22,26 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMenu }) => {
           <Menu className="w-5 h-5" />
         </button>
 
-        <HeaderTenantObraSelectors />
-      </div>
-
-      {/* LADO DIREITO: ALERTAS, PERFIL & LOGOUT */}
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-        <CentralAlertasBell />
-
-        <div className="flex items-center gap-2 pl-2 sm:pl-3 border-l border-gray-200">
-          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-100 border border-gray-200 flex items-center justify-center text-slate-700 shrink-0">
-            <User className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shadow-sm border border-gray-200 shrink-0">
+            <img src="/logo-icon.png" alt="TerraGest" className="w-full h-full object-contain" />
           </div>
-          <div className="text-xs hidden md:block">
-            <span className="font-semibold text-gray-800 block capitalize truncate max-w-[120px]">{usuarioNome}</span>
-            <span className="text-[10px] text-gray-400 block truncate max-w-[140px]">{user?.email}</span>
+          <div className="truncate">
+            <h1 className="font-bold text-base tracking-tight text-slate-900 flex items-center gap-1">
+              <span>TERRA</span><span className="text-amber-500">GEST</span>
+            </h1>
+            <p className="text-[10px] text-amber-500 font-bold tracking-wider uppercase">
+              ERP Linha Amarela
+            </p>
           </div>
         </div>
+      </div>
 
-        <button
-          onClick={logout}
-          title="Encerrar Sessão"
-          className="p-1.5 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-        >
-          <LogOut className="w-4 h-4" />
-        </button>
+      {/* LADO DIREITO: SELETOR DE MODO, ALERTAS & MENU DO USUÁRIO (EMPRESA, OBRA, MASTER) */}
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <HeaderModeSwitcher />
+        <CentralAlertasBell />
+        <HeaderUserMenuDropdown />
       </div>
     </header>
   );

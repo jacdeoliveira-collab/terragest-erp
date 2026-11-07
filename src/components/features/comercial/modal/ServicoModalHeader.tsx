@@ -40,14 +40,14 @@ export const ServicoModalHeader: React.FC<ServicoModalHeaderProps> = ({
         </button>
       </div>
 
-      <div className="flex items-center border-b border-gray-200 bg-gray-50 px-4 text-xs font-semibold gap-1 overflow-x-auto">
+      <div className="flex flex-wrap items-center border-b border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold gap-1">
         {tabs.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setAba(t.id)}
-            className={`px-3 py-2.5 border-b-2 transition-all cursor-pointer shrink-0 ${
-              aba === t.id ? 'border-emerald-600 text-emerald-700 font-bold' : 'border-transparent text-gray-500 hover:text-gray-800'
+            className={`px-2.5 py-1.5 rounded-lg border transition-all cursor-pointer shrink-0 ${
+              aba === t.id ? 'border-emerald-600 bg-emerald-50 text-emerald-800 font-bold' : 'border-transparent text-gray-500 hover:text-gray-800'
             }`}
           >
             {t.label}

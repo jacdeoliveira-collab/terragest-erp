@@ -1,5 +1,5 @@
 import type { TipoCombustivel } from './abastecimento.types';
-import type { FormaPagamentoDespesa } from './contasPagar.types';
+import type { FormaPagamentoDespesa, DadosEmprestimoPagamento } from './contasPagar.types';
 
 export interface ItemCombustivelCupom {
   maquinaId: string;
@@ -20,6 +20,7 @@ export interface LancarCupomCombustivelDTO {
   statusPagamento: 'PAGO' | 'PENDENTE';
   contaSaida: string;
   contaBancariaId?: string;
+  emprestimo?: DadosEmprestimoPagamento;
   obraId?: string;
   servicoId?: string;
   maquinaPrincipal: ItemCombustivelCupom;

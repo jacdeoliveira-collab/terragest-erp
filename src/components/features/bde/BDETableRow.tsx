@@ -18,13 +18,35 @@ export const BDETableRow: React.FC<BDETableRowProps> = ({ item, equipNome, empre
 
   return (
     <tr className="hover:bg-gray-50/60">
-      <td className="p-3 font-mono font-medium text-gray-900">{item.date}</td>
-      <td className="p-3">
-        <div className="font-bold font-mono text-emerald-700">
-          {equipNome || item.equipment_code || item.equipment_name || item.equipment_id.slice(0, 8)}
+      <td className="p-3 min-w-[210px]">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="font-bold font-mono text-emerald-700">
+            {equipNome || item.equipment_code || item.equipment_name || item.equipment_id.slice(0, 8)}
+          </span>
+          {statusAprov === 'APROVADO' && <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">APROVADO</span>}
+          {statusAprov === 'REJEITADO' && <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-rose-50 text-rose-700 border border-rose-200">REJEITADO</span>}
+          {statusAprov === 'PENDENTE' && <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200">PENDENTE</span>}
         </div>
-        <div className="text-[11px] text-gray-500">{item.operador_nome || item.operator_name}</div>
+        <div className="text-[11px] text-gray-500 mt-0.5">{item.operador_nome || item.operator_name}</div>
+        <div className="pt-1.5 mt-1 border-t border-gray-100">
+          <button
+            type="button"
+            onClick={() => exportBdePdf({
+              bde: item,
+              equipamentoNome: equipNome,
+              operadorNome: item.operador_nome || item.operator_name,
+              empresa,
+              obraNome
+            })}
+            className="inline-flex items-center gap-1 px-2 py-0.5 text-slate-700 hover:text-emerald-700 bg-gray-50 hover:bg-emerald-50 border border-gray-200 hover:border-emerald-300 rounded-lg text-[10px] font-bold cursor-pointer transition-colors"
+            title="Exportar BDE Individual em PDF"
+          >
+            <FileDown className="w-3 h-3 text-emerald-600" />
+            <span>Baixar BDE (PDF)</span>
+          </button>
+        </div>
       </td>
+      <td className="p-3 font-mono font-medium text-gray-900">{item.date}</td>
       <td className="p-3">
         {item.estaca_inicial || item.estaca_final ? (
           <div className="flex items-center gap-1 font-mono text-gray-800">
@@ -44,27 +66,6 @@ export const BDETableRow: React.FC<BDETableRowProps> = ({ item, equipNome, empre
       <td className="p-3 max-w-xs truncate">
         {item.motivo_parada && <span className="font-semibold text-rose-700 mr-1">[{item.motivo_parada}]</span>}
         <span className="text-gray-600">{item.service_description}</span>
-      </td>
-      <td className="p-3 text-center">
-        {statusAprov === 'APROVADO' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">APROVADO</span>}
-        {statusAprov === 'REJEITADO' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">REJEITADO</span>}
-        {statusAprov === 'PENDENTE' && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">PENDENTE</span>}
-      </td>
-      <td className="p-3 text-center">
-        <button
-          onClick={() => exportBdePdf({
-            bde: item,
-            equipamentoNome: equipNome,
-            operadorNome: item.operador_nome || item.operator_name,
-            empresa,
-            obraNome
-          })}
-          className="inline-flex items-center gap-1 px-2 py-1 text-slate-700 hover:text-emerald-700 bg-gray-50 hover:bg-emerald-50 border border-gray-200 hover:border-emerald-300 rounded-lg font-semibold cursor-pointer transition-colors shadow-2xs"
-          title="Exportar BDE Individual em PDF"
-        >
-          <FileDown className="w-3.5 h-3.5 text-emerald-600" />
-          <span>PDF</span>
-        </button>
       </td>
     </tr>
   );

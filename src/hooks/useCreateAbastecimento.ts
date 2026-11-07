@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { isVehicleOrTruck } from '../utils/equipmentMeasurement';
 import { sincronizarDespesa } from '../services/contasPagarSyncHelper';
+import { formatarTagEmprestimo } from '../utils/emprestimoHelper';
 import { useTenantContext } from '../contexts/TenantContext';
 import type { CreateAbastecimentoDTO } from '../types/abastecimento.types';
 
@@ -52,19 +53,29 @@ export function useCreateAbastecimento() {
         throw new Error(insertError.message);
       }
 
-      // Abastecimento avulso em posto (não vinculado a serviço nem comboio interno) -> Contas a Pagar
-      if (!input.servico_id && payload.origem !== 'COMBOIO' && payload.valor_total > 0) {
+      // Abastecimento em posto ou via empréstimo -> Contas a Pagar
+      const isEmp = input.forma_pagamento === 'EMPRESTIMO';
+      if ((isEmp || (!input.servico_id && payload.origem !== 'COMBOIO')) && payload.valor_total > 0) {
         const tenantId = tenantAtivoId || (user.user_metadata?.tenant_id as string | undefined);
+        const tagEmp = isEmp
+          ? `${formatarTagEmprestimo({
+              credorNome: input.credor_emprestimo || 'Credor / Terceiro',
+              dataEmprestimo: input.data_emprestimo || payload.data,
+              dataPagamentoPrevista: input.data_pagar_emprestimo || payload.data
+            })} `
+          : '';
         const fin = await sincronizarDespesa({
           ref: `ABAST_${data.id}`,
           categoria: 'COMBUSTIVEL',
           tenantId,
           obraId: payload.obra_id,
           descricao: `Diesel ${payload.tipo_combustivel || ''}: ${payload.quantidade_litros}L${payload.posto_fornecedor ? ` - ${payload.posto_fornecedor}` : ''}`,
-          fornecedor: payload.posto_fornecedor || 'Posto de Combustível',
+          fornecedor: isEmp ? `${input.credor_emprestimo || 'Terceiro'} (${payload.posto_fornecedor || 'Posto'})` : (payload.posto_fornecedor || 'Posto de Combustível'),
           valor: payload.valor_total,
-          dataVencimento: payload.data,
-          observacoes: `Doc: ${input.numero_requisicao_nf?.trim() || 'S/N'}`
+          dataVencimento: isEmp ? (input.data_pagar_emprestimo || payload.data) : payload.data,
+          formaPagamento: input.forma_pagamento || 'PIX',
+          status: isEmp || input.forma_pagamento === 'BOLETO' ? 'PENDENTE' : 'PAGO',
+          observacoes: `${tagEmp}Doc: ${input.numero_requisicao_nf?.trim() || 'S/N'}`
         });
         if (!fin.ok) console.warn('[Abastecimento] Falha ao lançar no financeiro:', fin.error);
       }

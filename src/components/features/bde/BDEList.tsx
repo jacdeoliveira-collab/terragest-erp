@@ -90,9 +90,9 @@ export const BDEList: React.FC = () => {
           <table className="w-full text-left">
             <thead className="bg-gray-50 text-gray-500 uppercase font-semibold border-b border-gray-200">
               <tr>
-                <th className="p-3">Data</th><th className="p-3">Máquina / Operador</th><th className="p-3">Estaqueamento</th>
+                <th className="p-3">Máquina / Operador / Ações</th><th className="p-3">Data</th><th className="p-3">Estaqueamento</th>
                 <th className="p-3 text-right">Produtivas</th><th className="p-3 text-right">Ociosas / Translado</th>
-                <th className="p-3">Atividades</th><th className="p-3 text-center">Aprovação</th><th className="p-3 text-center">PDF</th>
+                <th className="p-3">Atividades</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-gray-700">

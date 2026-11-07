@@ -1,11 +1,13 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Shield, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTenantContext } from '../../contexts/TenantContext';
+import { useWorkspaceMode } from '../../contexts/WorkspaceModeContext';
 import { isMasterEmail } from '../../services/adminService';
 import { canAccessRoute } from '../../utils/rbac';
 import { menuItems } from './sidebarConfig';
+import { SidebarModeSelector } from './SidebarModeSelector';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -15,6 +17,7 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => {
   const { user, perfil_acesso: authPerfil } = useAuth();
   const { tenantAtivo, isMaster: isMasterTenant } = useTenantContext();
+  const { modoAtivo } = useWorkspaceMode();
 
   const isMaster = Boolean(
     isMasterTenant ||
@@ -35,7 +38,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
     if (perfil === 'OPERACIONAL') {
       return ['/producao', '/bde', '/checklist'].includes(item.to);
     }
-    return isMaster || canAccessRoute(perfil, item.to);
+    const temAcesso = isMaster || canAccessRoute(perfil, item.to);
+    if (!temAcesso) return false;
+    if (!item.modos) return true;
+    return item.modos.includes(modoAtivo);
   });
 
   return (
@@ -69,6 +75,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
         </button>
       </div>
 
+      <SidebarModeSelector />
+
       {/* NAVEGAÇÃO */}
       <nav className="p-3.5 space-y-1 flex-1 overflow-y-auto">
         {visibleMenuItems.map((item) => {
@@ -92,33 +100,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
             </NavLink>
           );
         })}
-
-        {isMaster && perfil !== 'OPERACIONAL' && (
-          <div className="pt-3 mt-3 border-t border-slate-800">
-            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 px-3 block mb-1">
-              Super Admin
-            </span>
-            <NavLink
-              to="/master"
-              onClick={onClose}
-              className={({ isActive }) =>
-                `w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition-all ${
-                  isActive
-                    ? 'bg-amber-600 text-white shadow-md font-semibold'
-                    : 'text-amber-400/90 hover:text-white hover:bg-amber-950/40'
-                }`
-              }
-            >
-              <Shield className="w-4 h-4 shrink-0" />
-              <span className="truncate">Painel Master</span>
-            </NavLink>
-          </div>
-        )}
       </nav>
 
       {/* RODAPÉ DO MENU */}
       <div className="p-4 border-t border-slate-800 text-xs text-slate-500">
-        <p className="font-semibold text-slate-400">TerraGest ERP v2.0</p>
+        <p className="font-semibold text-slate-400">TerraGest ERP v1.0.0</p>
         <p className="text-[11px] mt-0.5">Gestão de Obras e Linha Amarela</p>
       </div>
     </aside>

@@ -90,13 +90,11 @@ export const OrcamentoList: React.FC<OrcamentoListProps> = ({ onIrParaHorimetros
           <table className="w-full text-left">
             <thead className="bg-gray-50 text-gray-500 uppercase font-semibold border-b border-gray-200">
               <tr>
-                <th className="p-3.5">Cliente / Maquinário & Implemento</th>
+                <th className="p-3.5">Cliente / Maquinário & Ações</th>
                 <th className="p-3.5">Operação / Local / Escopo</th>
                 <th className="p-3.5 text-right">R$ / Hora</th>
                 <th className="p-3.5 text-center">Horas / Franquia</th>
                 <th className="p-3.5 text-right">Total / Prancha / Sinal</th>
-                <th className="p-3.5 text-center">Status</th>
-                <th className="p-3.5 text-center">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-gray-700">

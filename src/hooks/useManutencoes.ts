@@ -25,7 +25,7 @@ export function useManutencoes() {
       let queryPlanos = supabase.from('planos_manutencao').select('*').order('created_at', { ascending: false });
       let queryEquips = supabase.from('equipment').select('id, code, name, current_hourmeter, category, type');
       let queryObras = supabase.from('obras').select('id, nome');
-      let queryDocs = supabase.from('equipamento_documentos').select('drive_url, observacoes').ilike('observacoes', '%[MANUT_%');
+      let queryDocs = supabase.from('equipamento_documentos').select('*');
 
       queryPlanos = aplicarFiltroTenant(queryPlanos, currentTenant);
       queryEquips = aplicarFiltroTenant(queryEquips, currentTenant);
@@ -51,10 +51,12 @@ export function useManutencoes() {
       const obrasMap = new Map((obrasRes.data || []).map((ob) => [ob.id, ob.nome]));
       const comprovantesMap = new Map<string, string>();
 
-      (docsRes.data || []).forEach((doc) => {
-        const match = doc.observacoes?.match(/\[MANUT_([a-f0-9-]+)\]/i);
-        if (match?.[1] && doc.drive_url) {
-          comprovantesMap.set(match[1], doc.drive_url);
+      (docsRes.data || []).forEach((doc: any) => {
+        const obs = String(doc.observacoes || doc.descricao || '');
+        const url = String(doc.drive_url || doc.arquivo_url || doc.url || '');
+        const match = obs.match(/\[MANUT_([a-f0-9-]+)\]/i);
+        if (match?.[1] && url) {
+          comprovantesMap.set(match[1], url);
         }
       });
 

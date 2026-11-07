@@ -1,3 +1,5 @@
+import { obterComprovante } from '../../services/comprovanteStorageService';
+
 /**
  * Utilitário para conversão e pré-carregamento robusto de imagens para jsPDF
  */
@@ -6,13 +8,26 @@ export async function prepararImagemParaPdf(urlOrBase64?: string): Promise<strin
   const src = urlOrBase64.trim();
   if (!src) return null;
 
+  // Se for referência local (idb:// ou ref_), busca no IndexedDB sem chamar fetch/Image na rede
+  if (src.startsWith('idb://') || src.startsWith('ref_')) {
+    const localData = await obterComprovante(src);
+    if (localData && (localData.startsWith('data:image/jpeg') || localData.startsWith('data:image/png'))) {
+      return localData;
+    }
+    return null;
+  }
+
   // Se já for data URL em JPEG ou PNG compatível
   if (src.startsWith('data:image/jpeg') || src.startsWith('data:image/png')) {
     return src;
   }
 
+  // Ignora esquemas desconhecidos que não sejam http(s) ou blob
+  if (!src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('blob:')) {
+    return null;
+  }
+
   let targetUrl = src;
-  // Converte links do Google Drive para endpoint de thumbnail/imagem direta
   if (src.includes('drive.google.com')) {
     const match = src.match(/[-\w]{25,}/);
     if (match) {
@@ -48,6 +63,9 @@ export async function prepararImagemParaPdf(urlOrBase64?: string): Promise<strin
 }
 
 async function tentarCarregarViaBlob(url: string): Promise<string | null> {
+  if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('blob:')) {
+    return null;
+  }
   try {
     const res = await fetch(url);
     if (!res.ok) return null;
@@ -63,10 +81,6 @@ async function tentarCarregarViaBlob(url: string): Promise<string | null> {
   }
 }
 
-/**
- * Renderiza uma imagem no PDF preservando estritamente a proporção original (aspect ratio),
- * centralizando horizontal e verticalmente dentro da área delimitada (maxW, maxH).
- */
 export function desenharImagemProporcional(
   doc: any,
   imgBase64: string,
@@ -101,12 +115,10 @@ export function desenharImagemProporcional(
   const formato = imgBase64.includes('image/png') || imgBase64.endsWith('.png') ? 'PNG' : 'JPEG';
   try {
     doc.addImage(imgBase64, formato, renderX, renderY, renderW, renderH);
-  } catch (err) {
+  } catch {
     try {
       doc.addImage(imgBase64, 'JPEG', renderX, renderY, renderW, renderH);
-    } catch (e2) {
-      console.warn('Erro ao renderizar imagem proporcional:', e2);
-    }
+    } catch {}
   }
 
   return { x: renderX, y: renderY, w: renderW, h: renderH };

@@ -41,7 +41,7 @@ export const ServicoRowItem: React.FC<ServicoRowItemProps> = ({
 
   return (
     <tr className={`hover:bg-gray-50/80 transition-all text-xs ${selecionado ? 'bg-emerald-50/50' : ''}`}>
-      <td className="py-3 px-3 text-center">
+      <td className="py-3 px-2.5 text-center align-top pt-4">
         <input
           type="checkbox"
           checked={selecionado}
@@ -49,22 +49,41 @@ export const ServicoRowItem: React.FC<ServicoRowItemProps> = ({
           className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 cursor-pointer accent-emerald-600"
         />
       </td>
-      <td className="py-3 px-4">
-        <button type="button" onClick={() => onVerCliente?.(s.cliente_nome, s.cliente_id)} className="font-bold text-emerald-800 hover:text-emerald-950 hover:underline block text-left cursor-pointer">
-          {s.cliente_nome}
-        </button>
+      <td className="py-3 px-3 min-w-[240px]">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <button type="button" onClick={() => onVerCliente?.(s.cliente_nome, s.cliente_id)} className="font-bold text-emerald-800 hover:text-emerald-950 hover:underline text-left cursor-pointer">
+            {s.cliente_nome}
+          </button>
+          {s.status === 'FINALIZADO' ? (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[9px] font-bold">
+              <CheckCircle className="w-2.5 h-2.5" />Concluído
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[9px] font-bold">
+              <Clock className="w-2.5 h-2.5" />Em Andamento
+            </span>
+          )}
+        </div>
         {(s.descricao_servico || s.obra_nome) && (
-          <span className="text-[10px] text-teal-700 font-semibold block" title={s.descricao_servico || s.obra_nome}>
+          <span className="text-[10px] text-teal-700 font-semibold block mt-0.5" title={s.descricao_servico || s.obra_nome}>
             {s.descricao_servico || s.obra_nome}
           </span>
         )}
-        <span className="text-[10px] text-gray-500 flex items-center gap-1 mt-0.5">
-          <Truck className="w-3 h-3 text-emerald-600" />
+        <span className="text-[10px] text-gray-500 flex flex-wrap items-center gap-1 mt-0.5">
+          <Truck className="w-3 h-3 text-emerald-600 shrink-0" />
           <span>{s.maquina_nome} • </span>
           <button type="button" onClick={() => onVerOperador?.(s.operador_nome, s.operador_id)} className="hover:text-emerald-800 hover:underline font-semibold cursor-pointer">
             {s.operador_nome}
           </button>
         </span>
+        <ServicoAcoesCell
+          servico={s}
+          onEditar={onEditar}
+          onExcluir={onExcluir}
+          onGerarPdf={onGerarPdf}
+          onGerarRelatorioCliente={onGerarRelatorioCliente}
+          onAbrirRecibo={onAbrirRecibo}
+        />
       </td>
       <td className="py-3 px-3 font-mono text-gray-600 text-center">
         {s.data_inicio}
@@ -95,25 +114,6 @@ export const ServicoRowItem: React.FC<ServicoRowItemProps> = ({
         </span>
         <span className="text-[9px] text-gray-400 block font-semibold">Margem: {margem}%</span>
       </td>
-      <td className="py-3 px-3 text-center">
-        {s.status === 'FINALIZADO' ? (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
-            <CheckCircle className="w-2.5 h-2.5" />Concluído
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">
-            <Clock className="w-2.5 h-2.5" />Em Andamento
-          </span>
-        )}
-      </td>
-      <ServicoAcoesCell
-        servico={s}
-        onEditar={onEditar}
-        onExcluir={onExcluir}
-        onGerarPdf={onGerarPdf}
-        onGerarRelatorioCliente={onGerarRelatorioCliente}
-        onAbrirRecibo={onAbrirRecibo}
-      />
     </tr>
   );
 };

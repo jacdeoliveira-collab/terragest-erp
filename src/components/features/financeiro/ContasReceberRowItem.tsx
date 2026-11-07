@@ -38,85 +38,61 @@ export const ContasReceberRowItem: React.FC<Props> = ({
 
   return (
     <tr className={`hover:bg-gray-50/60 transition-colors ${isAtrasado ? 'bg-rose-50/30' : ''}`}>
-      <td className="p-3">
-        <div className="font-bold text-gray-900 text-xs">{item.cliente_nome || 'Cliente'}</div>
-        <div className="text-[11px] text-gray-500 font-medium">
+      <td className="p-3 min-w-[240px]">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="font-bold text-gray-900 text-xs">{item.cliente_nome || 'Cliente'}</span>
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold border ${
+            isPago ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+            isParcial ? 'bg-blue-50 text-blue-700 border-blue-200' :
+            isAtrasado ? 'bg-rose-50 text-rose-700 border-rose-200' :
+            'bg-amber-50 text-amber-700 border-amber-200'
+          }`}>
+            {isPago ? 'PAGO' : isParcial ? 'HAVER PARCIAL' : isAtrasado ? 'EM ATRASO' : 'A VENCER'}
+          </span>
+        </div>
+        <div className="text-[11px] text-gray-500 font-medium mt-0.5">
           {item.obra_nome} • <span className="font-mono text-gray-700">{item.numero_medicao}</span>
         </div>
-      </td>
-      <td className="p-3 font-mono font-medium text-gray-700">{item.competencia}</td>
-      <td className="p-3 font-mono">
-        <div className={isAtrasado ? 'text-rose-600 font-bold flex items-center gap-1' : 'text-gray-700'}>
-          {new Date(item.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}
-          {isAtrasado && <span className="text-[9px] px-1.5 py-0.2 bg-rose-100 text-rose-700 rounded-md font-bold">ATRASADO</span>}
-        </div>
-      </td>
-      <td className="p-3 text-right font-mono">
-        <div className="font-bold text-gray-900 text-xs">{formatBRL(saldo > 0 ? saldo : Number(item.valor_total))}</div>
-        {adiant > 0 && !isPago && <div className="text-[10px] text-emerald-700 font-semibold">Haver pago: {formatBRL(adiant)}</div>}
-        <div className="text-[10px] text-gray-400">Total: {formatBRL(Number(item.valor_total))}</div>
-      </td>
-      <td className="p-3 text-center">
-        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-          isPago ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-          isParcial ? 'bg-blue-50 text-blue-700 border-blue-200' :
-          isAtrasado ? 'bg-rose-50 text-rose-700 border-rose-200' :
-          'bg-amber-50 text-amber-700 border-amber-200'
-        }`}>
-          {isPago ? 'PAGO' : isParcial ? 'HAVER PARCIAL' : isAtrasado ? 'EM ATRASO' : 'A VENCER'}
-        </span>
-      </td>
-      <td className="p-3 text-center">
-        <div className="flex items-center justify-center gap-1.5 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap pt-1.5 mt-1 border-t border-gray-100">
           {!isPago ? (
             <>
+              <button
+                type="button" onClick={() => onAbrirBaixa(item)}
+                className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+              >
+                <CheckCircle2 className="w-3 h-3" /><span>Quitar</span>
+              </button>
+              <button
+                type="button" onClick={() => onAbrirHaver(item)}
+                className="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[10px] font-bold cursor-pointer inline-flex items-center gap-1"
+              >
+                <PlusCircle className="w-3 h-3 text-blue-600" /><span>+ Haver</span>
+              </button>
               {onAbrirAsaas && (
                 <button
                   type="button" onClick={() => onAbrirAsaas(item)}
-                  className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-[11px] font-bold cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                  className="px-2 py-0.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-[10px] font-bold cursor-pointer inline-flex items-center gap-1"
                   title="Emitir Cobrança Bancária (Boleto / PIX QR Code)"
                 >
-                  <QrCode className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>Boleto / PIX</span>
+                  <QrCode className="w-3 h-3 text-indigo-600" /><span>Boleto / PIX</span>
                 </button>
               )}
-              <button
-                type="button" onClick={() => onAbrirHaver(item)}
-                className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[11px] font-bold cursor-pointer inline-flex items-center gap-1 shadow-2xs"
-              >
-                <PlusCircle className="w-3.5 h-3.5 text-blue-600" />
-                <span>+ Haver</span>
-              </button>
-              <button
-                type="button" onClick={() => onAbrirBaixa(item)}
-                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold cursor-pointer inline-flex items-center gap-1 shadow-2xs"
-              >
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Quitar</span>
-              </button>
             </>
           ) : (
             <span className="text-[10px] text-emerald-700 font-mono font-bold flex items-center gap-1 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
               <Check className="w-3 h-3" /> Liquidado
             </span>
           )}
-
           <button
             type="button" onClick={emitirReciboTitulo}
-            className="px-2 py-1 bg-gray-50 hover:bg-emerald-50 text-gray-700 hover:text-emerald-700 border border-gray-200 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+            className="px-2 py-0.5 bg-gray-50 hover:bg-emerald-50 text-gray-700 hover:text-emerald-700 border border-gray-200 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-pointer"
           >
-            <Receipt className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Recibo</span>
+            <Receipt className="w-3 h-3 text-emerald-600" /><span>Recibo</span>
           </button>
-
           {onExcluir && (
             <button
               type="button"
-              onClick={() => {
-                if (window.confirm(`Deseja realmente excluir este lançamento a receber (${item.numero_medicao || item.cliente_nome})?`)) {
-                  onExcluir(item);
-                }
-              }}
+              onClick={() => { if (window.confirm(`Deseja realmente excluir este lançamento a receber (${item.numero_medicao || item.cliente_nome})?`)) onExcluir(item); }}
               className="p-1 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -124,6 +100,18 @@ export const ContasReceberRowItem: React.FC<Props> = ({
           )}
         </div>
       </td>
+      <td className="p-3 text-right font-mono">
+        <div className="font-bold text-gray-900 text-xs">{formatBRL(saldo > 0 ? saldo : Number(item.valor_total))}</div>
+        {adiant > 0 && !isPago && <div className="text-[10px] text-emerald-700 font-semibold">Haver pago: {formatBRL(adiant)}</div>}
+        <div className="text-[10px] text-gray-400">Total: {formatBRL(Number(item.valor_total))}</div>
+      </td>
+      <td className="p-3 font-mono">
+        <div className={isAtrasado ? 'text-rose-600 font-bold flex items-center gap-1' : 'text-gray-700'}>
+          {new Date(item.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}
+          {isAtrasado && <span className="text-[9px] px-1.5 py-0.2 bg-rose-100 text-rose-700 rounded-md font-bold">ATRASADO</span>}
+        </div>
+      </td>
+      <td className="p-3 font-mono font-medium text-gray-700">{item.competencia}</td>
     </tr>
   );
 };

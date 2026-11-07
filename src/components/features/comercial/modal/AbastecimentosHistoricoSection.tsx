@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
-import { Fuel, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Fuel, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useAbastecimentos } from '../../../../hooks/useAbastecimentos';
 import { useTenantContext } from '../../../../contexts/TenantContext';
 import { supabase } from '../../../../lib/supabase';
 import { isVehicleOrTruck } from '../../../../utils/equipmentMeasurement';
+import { sincronizarDespesa, removerDespesaPorRef } from '../../../../services/contasPagarSyncHelper';
+import { formatarTagEmprestimo } from '../../../../utils/emprestimoHelper';
 import { AbastecimentoRapidoForm, type NovoAbastecimentoRapidoDTO } from './AbastecimentoRapidoForm';
 import { AbastecimentosListRows } from './AbastecimentosListRows';
-import { AbastecimentosVinculadosSelector } from './AbastecimentosVinculadosSelector';
 import type { AbastecimentoItem } from '../../../../types/abastecimento.types';
 
 interface Props {
@@ -27,78 +28,99 @@ export const AbastecimentosHistoricoSection: React.FC<Props> = ({
   const { data: todosAbast, refetch } = useAbastecimentos();
   const [salvando, setSalvando] = useState(false);
   const [mensagem, setMensagem] = useState<string | null>(null);
+  const [erroMsg, setErroMsg] = useState<string | null>(null);
 
-  // Filtra itens vinculados a este serviço
+  useEffect(() => { refetch(); }, [refetch]);
+
   const itensVinculados = (todosAbast || []).filter((a) => {
     if (abastecimentosIds.includes(a.id)) return true;
     if (servicoId && (a.servico_id === servicoId || a.numero_requisicao_nf?.includes(servicoId))) return true;
     return false;
   });
 
-  const recalcularTotais = (lista: AbastecimentoItem[], novosIds: string[]) => {
+  const calcularResumo = (lista: AbastecimentoItem[]) => {
     let [mL, mV, aL, aV] = [0, 0, 0, 0];
     let foto: string | undefined;
-
     lista.forEach((ab) => {
       const isApoio = isVehicleOrTruck({ code: ab.maquina_codigo, name: ab.maquina_nome }) || ab.tipo_combustivel === 'DIESEL_S10';
-      const lit = Number(ab.quantidade_litros) || 0;
-      const val = Number(ab.valor_total) || 0;
+      const lit = Number(ab.quantidade_litros) || 0, val = Number(ab.valor_total) || 0;
       if (isApoio) { aL += lit; aV += val; } else { mL += lit; mV += val; }
       if (ab.foto_comprovante && !foto) foto = ab.foto_comprovante;
     });
-
-    onTotaisChange(Number(mL.toFixed(2)), Number(mV.toFixed(2)), Number(aL.toFixed(2)), Number(aV.toFixed(2)), foto);
-    if (setAbastecimentosIds) setAbastecimentosIds(novosIds);
+    return { mLit: Number(mL.toFixed(2)), mVal: Number(mV.toFixed(2)), aLit: Number(aL.toFixed(2)), aVal: Number(aV.toFixed(2)), foto };
   };
 
-  const handleAdicionar = async (dto: NovoAbastecimentoRapidoDTO) => {
+  useEffect(() => {
+    if (itensVinculados.length > 0) {
+      const { mLit, mVal, aLit, aVal, foto } = calcularResumo(itensVinculados);
+      onTotaisChange(mLit, mVal, aLit, aVal, foto);
+    }
+  }, [todosAbast, servicoId]);
+
+  const atualizarServicoTotais = async (lista: AbastecimentoItem[], novosIds: string[]) => {
+    const { mLit, mVal, aLit, aVal, foto } = calcularResumo(lista);
+    onTotaisChange(mLit, mVal, aLit, aVal, foto);
+    if (setAbastecimentosIds) setAbastecimentosIds(novosIds);
+    if (servicoId) {
+      await supabase.from('servicos_horimetro').update({
+        combustivel_maquina_litros: mLit, combustivel_maquina_valor: mVal,
+        combustivel_apoio_litros: aLit, combustivel_apoio_valor: aVal,
+        combustivel_total_valor: Number((mVal + aVal).toFixed(2)), abastecimentos_ids: novosIds
+      }).eq('id', servicoId);
+    }
+  };
+
+  const handleAdicionar = async (dto: NovoAbastecimentoRapidoDTO): Promise<boolean> => {
     try {
-      setSalvando(true);
-      const isMaq = dto.tipo_alvo === 'MAQUINA';
-      const maqPadraoId = '40d4e2f6-bb01-4898-8660-e5646a2d1a08'; // EH-001
-      const apoioPadraoId = '021f824a-4f94-4d4a-9f5c-97a6cc8bf0ee'; // Hilux EQ-3125
+      setSalvando(true); setErroMsg(null);
+      const obraPadrao = 'a1aa1351-5e2e-4b9d-b5b9-3bd7cec521b1';
+      const fotoSegura = dto.foto_comprovante && !dto.foto_comprovante.startsWith('data:') ? dto.foto_comprovante : null;
+      const tagEmp = dto.emprestimo ? `${formatarTagEmprestimo(dto.emprestimo)} ` : '';
+      const refItem = servicoId ? `Cupom [ITEM:${servicoId.slice(0, 8)}:${Date.now().toString(36)}]` : 'Cupom Avulso';
 
       const novoAbast = {
-        tenant_id: tenantAtivoId, obra_id: 'a1aa1351-5e2e-4b9d-b5b9-3bd7cec521b1',
-        maquina_id: isMaq ? maqPadraoId : apoioPadraoId, equipment_id: isMaq ? maqPadraoId : apoioPadraoId,
-        data: dto.data, tipo_combustivel: isMaq ? 'DIESEL_S500' : 'DIESEL_S10',
-        quantidade_litros: dto.quantidade_litros, valor_total: dto.valor_total,
+        tenant_id: tenantAtivoId, obra_id: obraPadrao, maquina_id: dto.maquina_id, equipment_id: dto.maquina_id,
+        data: dto.data, tipo_combustivel: dto.tipo_combustivel, quantidade_litros: dto.quantidade_litros,
+        valor_unitario: dto.valor_unitario, valor_total: dto.valor_total,
         horimetro_momento: dto.horimetro_momento || 0, posto_fornecedor: dto.posto_fornecedor,
-        numero_requisicao_nf: servicoId ? `Cupom [REF:${servicoId}:${isMaq ? 'MAQ' : 'APOIO'}]` : 'Cupom Avulso',
-        foto_comprovante: dto.foto_comprovante || null,
-        servico_id: servicoId || null, cliente_id: clienteId || null, cliente_nome: clienteNome || null, origem: 'POSTO'
+        numero_requisicao_nf: `${tagEmp}${refItem}`,
+        foto_comprovante: fotoSegura, servico_id: servicoId || null, cliente_id: clienteId || null, cliente_nome: clienteNome || null, origem: 'POSTO'
       };
 
       const { data: criado, error } = await supabase.from('abastecimentos').insert([novoAbast]).select().single();
-      if (error || !criado) throw error || new Error('Falha ao cadastrar');
+      if (error || !criado) throw error || new Error('Falha ao gravar abastecimento');
 
-      const novosIds = [...abastecimentosIds, criado.id];
-      const novaLista = [...itensVinculados, criado as AbastecimentoItem];
-      recalcularTotais(novaLista, novosIds);
+      await sincronizarDespesa({
+        ref: `ABAST_${criado.id}`, categoria: 'COMBUSTIVEL', tenantId: tenantAtivoId, obraId: obraPadrao,
+        descricao: `Diesel ${dto.maquina_nome}: ${dto.quantidade_litros}L (${clienteNome || 'Serviço'})`,
+        fornecedor: dto.emprestimo ? `${dto.emprestimo.credorNome} (${dto.posto_fornecedor || 'Posto'})` : (dto.posto_fornecedor || 'Posto'),
+        valor: dto.valor_total, dataVencimento: dto.emprestimo?.dataPagamentoPrevista || dto.data,
+        formaPagamento: dto.forma_pagamento || 'PIX', status: dto.emprestimo || dto.forma_pagamento === 'BOLETO' ? 'PENDENTE' : 'PAGO',
+        observacoes: `${tagEmp}Abastecimento vinculado ao serviço ${clienteNome || ''}`
+      });
+
+      const novosIds = Array.from(new Set([...itensVinculados.map((i) => i.id), criado.id]));
+      await atualizarServicoTotais([...itensVinculados, criado as AbastecimentoItem], novosIds);
       await refetch();
-
-      setMensagem('Abastecimento adicionado com sucesso!');
-      setTimeout(() => setMensagem(null), 3000);
-    } catch (err) {
-      console.error('Erro ao adicionar abastecimento:', err);
-    } finally {
-      setSalvando(false);
-    }
+      setMensagem(`Abastecimento de ${dto.quantidade_litros}L (${dto.maquina_nome}) registrado!`);
+      setTimeout(() => setMensagem(null), 3500);
+      return true;
+    } catch (err: unknown) {
+      setErroMsg(err instanceof Error ? err.message : 'Erro ao gravar abastecimento');
+      return false;
+    } finally { setSalvando(false); }
   };
 
   const handleRemover = async (id: string) => {
     try {
-      setSalvando(true);
-      await supabase.from('abastecimentos').update({ servico_id: null }).eq('id', id);
-      const novosIds = abastecimentosIds.filter((x) => x !== id);
+      setSalvando(true); setErroMsg(null);
+      await Promise.all([supabase.from('abastecimentos').delete().eq('id', id), removerDespesaPorRef(`ABAST_${id}`)]);
       const novaLista = itensVinculados.filter((x) => x.id !== id);
-      recalcularTotais(novaLista, novosIds);
+      await atualizarServicoTotais(novaLista, novaLista.map((x) => x.id));
       await refetch();
-    } catch (err) {
-      console.error('Erro ao desvincular abastecimento:', err);
-    } finally {
-      setSalvando(false);
-    }
+    } catch (err: unknown) {
+      setErroMsg(err instanceof Error ? err.message : 'Erro ao remover abastecimento');
+    } finally { setSalvando(false); }
   };
 
   const totalLitros = itensVinculados.reduce((acc, i) => acc + (Number(i.quantidade_litros) || 0), 0);
@@ -112,31 +134,15 @@ export const AbastecimentosHistoricoSection: React.FC<Props> = ({
           <span>Histórico de Abastecimentos do Serviço ({itensVinculados.length})</span>
         </div>
         <div className="text-right font-mono">
-          <span className="text-gray-600 mr-2">{totalLitros.toFixed(1)} L</span>
+          <span className="text-gray-600 mr-2">{totalLitros.toFixed(2)} L</span>
           <span className="text-amber-900 font-bold">R$ {totalValor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
         </div>
       </div>
 
-      <AbastecimentoRapidoForm onAdicionar={handleAdicionar} carregando={salvando} />
-
-      {mensagem && (
-        <div className="p-2 bg-emerald-100 border border-emerald-300 text-emerald-900 rounded-lg flex items-center gap-1.5 text-[11px] font-semibold">
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
-          <span>{mensagem}</span>
-        </div>
-      )}
-
-      {itensVinculados.length > 0 && (
-        <AbastecimentosListRows itens={itensVinculados} onRemover={handleRemover} carregando={salvando} />
-      )}
-
-      <AbastecimentosVinculadosSelector
-        maquinaNome={maquinaNome} servicoId={servicoId} abastecimentosIds={abastecimentosIds}
-        onAplicar={(mL, mV, aL, aV, foto, ids) => {
-          onTotaisChange(mL, mV, aL, aV, foto);
-          if (ids && setAbastecimentosIds) setAbastecimentosIds(ids);
-        }}
-      />
+      <AbastecimentoRapidoForm maquinaServicoNome={maquinaNome} onAdicionar={handleAdicionar} carregando={salvando} />
+      {erroMsg && (<div className="p-2 bg-rose-100 border border-rose-300 text-rose-900 rounded-lg flex items-center gap-1.5 text-[11px] font-semibold"><AlertCircle className="w-3.5 h-3.5 text-rose-700 shrink-0" /><span>{erroMsg}</span></div>)}
+      {mensagem && (<div className="p-2 bg-emerald-100 border border-emerald-300 text-emerald-900 rounded-lg flex items-center gap-1.5 text-[11px] font-semibold"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-700 shrink-0" /><span>{mensagem}</span></div>)}
+      {itensVinculados.length > 0 && (<AbastecimentosListRows itens={itensVinculados} onRemover={handleRemover} carregando={salvando} />)}
     </div>
   );
 };

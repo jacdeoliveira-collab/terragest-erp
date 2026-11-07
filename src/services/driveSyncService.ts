@@ -18,6 +18,12 @@ export async function sincronizarFotosHorimetroPendentes(): Promise<{ sincroniza
   let sincronizadas = 0;
   if (typeof window === 'undefined') return { sincronizadas: 0 };
 
+  const localToken = localStorage.getItem('terragest_google_drive_token');
+  const tokenTime = localStorage.getItem('terragest_google_drive_token_time');
+  if (!localToken || !tokenTime || Date.now() - Number(tokenTime) > 3000 * 1000) {
+    return { sincronizadas: 0 };
+  }
+
   try {
     const { data: srvs, error } = await supabase
       .from('servicos_horimetro')

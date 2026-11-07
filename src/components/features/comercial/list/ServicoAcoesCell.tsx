@@ -20,44 +20,51 @@ export const ServicoAcoesCell: React.FC<ServicoAcoesCellProps> = ({
   onAbrirRecibo
 }) => {
   return (
-    <td className="py-3 px-4 text-right">
-      <div className="flex items-center justify-end gap-1">
-        <button
-          onClick={() => onGerarRelatorioCliente(s)}
-          title="Relatório Executivo"
-          className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg cursor-pointer"
-        >
-          <FileCheck className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => onAbrirRecibo(s)}
-          title="Emitir Recibo"
-          className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg cursor-pointer"
-        >
-          <Receipt className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => onGerarPdf(s)}
-          title="Boletim PDF"
-          className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer"
-        >
-          <FileDown className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => onEditar(s)}
-          title="Editar"
-          className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer"
-        >
-          <Edit2 className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => onExcluir(s.id, s.cliente_nome)}
-          title="Excluir"
-          className="p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg cursor-pointer"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      </div>
-    </td>
+    <div className="flex flex-wrap items-center gap-1 pt-1.5 mt-1 border-t border-gray-100">
+      <button
+        type="button"
+        onClick={() => onEditar(s)}
+        title="Editar Serviço"
+        className="inline-flex items-center gap-1 px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-lg text-[10px] font-bold cursor-pointer"
+      >
+        <Edit2 className="w-3 h-3 text-amber-700" />
+        <span>Editar</span>
+      </button>
+      <button
+        type="button"
+        onClick={() => onGerarRelatorioCliente(s)}
+        title="Relatório Executivo do Cliente"
+        className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-200 rounded-lg text-[10px] font-bold cursor-pointer"
+      >
+        <FileCheck className="w-3 h-3 text-blue-600" />
+        <span>Relatório</span>
+      </button>
+      <button
+        type="button"
+        onClick={() => onAbrirRecibo(s)}
+        title="Emitir Recibo / Adiantamento"
+        className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-[10px] font-bold cursor-pointer"
+      >
+        <Receipt className="w-3 h-3 text-emerald-600" />
+        <span>Recibo</span>
+      </button>
+      <button
+        type="button"
+        onClick={() => onGerarPdf(s)}
+        title="Boletim PDF"
+        className="inline-flex items-center gap-1 px-2 py-1 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 rounded-lg text-[10px] font-bold cursor-pointer"
+      >
+        <FileDown className="w-3 h-3 text-gray-600" />
+        <span>PDF</span>
+      </button>
+      <button
+        type="button"
+        onClick={() => onExcluir(s.id, s.cliente_nome)}
+        title="Excluir Serviço"
+        className="p-1 text-rose-500 hover:bg-rose-50 border border-transparent hover:border-rose-200 rounded-lg cursor-pointer"
+      >
+        <Trash2 className="w-3.5 h-3.5" />
+      </button>
+    </div>
   );
 };

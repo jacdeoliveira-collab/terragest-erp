@@ -68,12 +68,10 @@ export const ManutencaoList: React.FC = () => {
           <table className="w-full text-left text-xs">
             <thead className="bg-gray-50 text-gray-500 uppercase font-semibold border-b border-gray-200">
               <tr>
-                <th className="p-3.5">Máquina / Veículo</th>
+                <th className="p-3.5">Máquina / Veículo & Ações</th>
                 <th className="p-3.5">Serviço & Obra</th>
-                <th className="p-3.5 text-right">Horímetro / KM</th>
                 <th className="p-3.5 text-right">Valor Total (Peças + MO)</th>
-                <th className="p-3.5 text-center">Status</th>
-                <th className="p-3.5 text-right">Ações</th>
+                <th className="p-3.5 text-right">Horímetro / KM</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-gray-700">
@@ -85,9 +83,30 @@ export const ManutencaoList: React.FC = () => {
 
                 return (
                   <tr key={item.id} className="hover:bg-gray-50/60 transition-colors">
-                    <td className="p-3.5 font-mono font-bold text-emerald-700">
-                      <div>{item.maquina_codigo || item.maquina_nome || '-'}</div>
-                      <div className="text-[10px] font-normal text-gray-400">{item.tipo_manutencao || 'PREVENTIVA'} • {item.data_servico || '-'}</div>
+                    <td className="p-3.5 min-w-[220px]">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="font-mono font-bold text-emerald-700">{item.maquina_codigo || item.maquina_nome || '-'}</span>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-semibold border ${
+                          atrasado ? 'bg-rose-100 text-rose-800 border-rose-300' : proximo ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        }`}>
+                          {atrasado ? <AlertTriangle className="w-2.5 h-2.5 text-rose-600" /> : <CheckCircle className="w-2.5 h-2.5 text-emerald-600" />}
+                          {atrasado ? 'ATRASADA' : proximo ? 'PRÓXIMO' : 'EM DIA'}
+                        </span>
+                      </div>
+                      <div className="text-[10px] font-normal text-gray-400 mt-0.5">{item.tipo_manutencao || 'PREVENTIVA'} • {item.data_servico || '-'}</div>
+                      <div className="flex items-center gap-1.5 pt-1.5 mt-1 border-t border-gray-100">
+                        <button onClick={() => { setEditItem(item); setIsModalOpen(true); }} className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-[10px] font-bold cursor-pointer" title="Editar OS">
+                          <Pencil className="w-3 h-3 text-amber-600" /><span>Editar</span>
+                        </button>
+                        {item.comprovante_url && (
+                          <button onClick={() => abrirVisualizacaoImagem(item.comprovante_url, 'Comprovante OS Manutenção')} className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-[10px] font-bold cursor-pointer" title="Ver Foto / Comprovante">
+                            <Eye className="w-3 h-3 text-emerald-600" /><span>Ver</span>
+                          </button>
+                        )}
+                        <button onClick={() => handleDelete(item.id)} className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer" title="Excluir OS">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                     <td className="p-3.5">
                       <div className="font-medium text-gray-900">{item.tipo_servico_nome}</div>
@@ -97,38 +116,15 @@ export const ManutencaoList: React.FC = () => {
                       </div>
                     </td>
                     <td className="p-3.5 text-right font-mono">
-                      <span className="font-bold text-gray-800">{formatMeasurementValue(item.horimetro_atual_maquina, equipRef)}</span>
-                      <span className="text-gray-400"> / </span>
-                      <span className="font-bold text-amber-700">{formatMeasurementValue(item.horimetro_proxima_troca || item.proximo_horimetro_alvo, equipRef)}</span>
-                    </td>
-                    <td className="p-3.5 text-right font-mono">
                       <span className="font-bold text-emerald-700 text-sm">{total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</span>
                       {((item.valor_pecas || 0) > 0 || (item.valor_mao_obra || 0) > 0) && (
                         <div className="text-[10px] text-gray-400">Pçs: R$ {(item.valor_pecas || 0).toFixed(2)} | MO: R$ {(item.valor_mao_obra || 0).toFixed(2)}</div>
                       )}
                     </td>
-                    <td className="p-3.5 text-center">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold border ${
-                        atrasado ? 'bg-rose-100 text-rose-800 border-rose-300' : proximo ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                      }`}>
-                        {atrasado ? <AlertTriangle className="w-3 h-3 text-rose-600" /> : <CheckCircle className="w-3 h-3 text-emerald-600" />}
-                        {atrasado ? 'ATRASADA' : proximo ? 'PRÓXIMO' : 'EM DIA'}
-                      </span>
-                    </td>
-                    <td className="p-3.5 text-right">
-                      <div className="inline-flex items-center gap-1">
-                        {item.comprovante_url && (
-                          <button onClick={() => abrirVisualizacaoImagem(item.comprovante_url, 'Comprovante OS Manutenção')} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg cursor-pointer" title="Ver Foto / Comprovante">
-                            <Eye className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        <button onClick={() => { setEditItem(item); setIsModalOpen(true); }} className="p-1.5 text-gray-600 hover:bg-gray-100 rounded-lg cursor-pointer" title="Editar OS">
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={() => handleDelete(item.id)} className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer" title="Excluir OS">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                    <td className="p-3.5 text-right font-mono">
+                      <span className="font-bold text-gray-800">{formatMeasurementValue(item.horimetro_atual_maquina, equipRef)}</span>
+                      <span className="text-gray-400"> / </span>
+                      <span className="font-bold text-amber-700">{formatMeasurementValue(item.horimetro_proxima_troca || item.proximo_horimetro_alvo, equipRef)}</span>
                     </td>
                   </tr>
                 );

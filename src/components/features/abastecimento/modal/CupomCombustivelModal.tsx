@@ -66,6 +66,9 @@ export const CupomCombustivelModal: React.FC<CupomCombustivelModalProps> = ({ is
           statusPagamento={form.statusPagamento} setStatusPagamento={form.setStatusPagamento}
           contaSaida={form.contaSaida} setContaSaida={form.setContaSaida}
           contaBancariaId={form.contaBancariaId} setContaBancariaId={form.setContaBancariaId}
+          credorEmprestimo={form.credorEmprestimo} setCredorEmprestimo={form.setCredorEmprestimo}
+          dataEmprestimo={form.dataEmprestimo} setDataEmprestimo={form.setDataEmprestimo}
+          dataPagarEmprestimo={form.dataPagarEmprestimo} setDataPagarEmprestimo={form.setDataPagarEmprestimo}
           obraId={form.obraId} setObraId={form.setObraId}
           servicoId={form.servicoId} setServicoId={form.setServicoId}
           obras={obras} servicos={servicos} fotoCupomUrl={fotoCupomUrl}

@@ -53,12 +53,15 @@ async function getAccessTokenForUpload(forceServiceAccount = false): Promise<str
       const tenantId = activeTenant || userData.user?.user_metadata?.tenant_id || '00000000-0000-0000-0000-000000000001';
       const { data: integ } = await supabase
         .from('tenant_integrations')
-        .select('access_token')
+        .select('access_token, updated_at')
         .eq('tenant_id', tenantId)
         .eq('provider', 'GOOGLE_DRIVE')
         .maybeSingle();
 
-      if (integ?.access_token) return integ.access_token;
+      if (integ?.access_token && integ.updated_at) {
+        const ageMs = Date.now() - new Date(integ.updated_at).getTime();
+        if (ageMs < 3000 * 1000) return integ.access_token;
+      }
     }
   } catch {}
   return getServiceAccountToken();

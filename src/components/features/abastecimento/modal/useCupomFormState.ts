@@ -12,12 +12,16 @@ interface Props {
 }
 
 export function useCupomFormState({ equipments, onSuccess, onClose }: Props) {
-  const [data, setData] = useState(new Date().toISOString().slice(0, 10));
+  const hoje = new Date().toISOString().slice(0, 10);
+  const [data, setData] = useState(hoje);
   const [postoFornecedor, setPostoFornecedor] = useState('');
   const [formaPagamento, setFormaPagamento] = useState<FormaPagamentoDespesa>('PIX');
   const [statusPagamento, setStatusPagamento] = useState<'PAGO' | 'PENDENTE'>('PAGO');
   const [contaSaida, setContaSaida] = useState('');
   const [contaBancariaId, setContaBancariaId] = useState('');
+  const [credorEmprestimo, setCredorEmprestimo] = useState('');
+  const [dataEmprestimo, setDataEmprestimo] = useState(hoje);
+  const [dataPagarEmprestimo, setDataPagarEmprestimo] = useState(hoje);
   const [obraId, setObraId] = useState('');
   const [servicoId, setServicoId] = useState('');
 
@@ -39,7 +43,7 @@ export function useCupomFormState({ equipments, onSuccess, onClose }: Props) {
   const [erro, setErro] = useState<string | null>(null);
 
   const aplicarDadosExtraidos = (dados: DadosCupomExtraidos) => {
-    if (dados.data) setData(dados.data);
+    if (dados.data) { setData(dados.data); setDataEmprestimo(dados.data); }
     if (dados.postoFornecedor) setPostoFornecedor(dados.postoFornecedor);
     if (dados.formaPagamento) setFormaPagamento(dados.formaPagamento);
     if (dados.numeroDocumento) setNumeroDoc(dados.numeroDocumento);
@@ -47,19 +51,11 @@ export function useCupomFormState({ equipments, onSuccess, onClose }: Props) {
     if (dados.itens && dados.itens.length > 1) {
       const itMaq = dados.itens.find((it) => it.tipo === 'DIESEL_S500') || dados.itens[0];
       const itApoio = dados.itens.find((it) => it.tipo === 'DIESEL_S10') || dados.itens[1];
-      setTipoCombMaq(itMaq.tipo);
-      setLitrosMaq(itMaq.litros || 0);
-      setValorMaq(itMaq.valorTotal || 0);
-
-      setIncluirApoio(true);
-      setTipoCombApoio(itApoio.tipo);
-      setLitrosApoio(itApoio.litros || 0);
-      setValorApoio(itApoio.valorTotal || 0);
+      setTipoCombMaq(itMaq.tipo); setLitrosMaq(itMaq.litros || 0); setValorMaq(itMaq.valorTotal || 0);
+      setIncluirApoio(true); setTipoCombApoio(itApoio.tipo); setLitrosApoio(itApoio.litros || 0); setValorApoio(itApoio.valorTotal || 0);
     } else if (dados.itens && dados.itens.length === 1) {
       const it = dados.itens[0];
-      setTipoCombMaq(it.tipo);
-      setLitrosMaq(it.litros || 0);
-      setValorMaq(it.valorTotal || 0);
+      setTipoCombMaq(it.tipo); setLitrosMaq(it.litros || 0); setValorMaq(it.valorTotal || 0);
     } else {
       if (dados.tipoCombustivel) setTipoCombMaq(dados.tipoCombustivel);
       if (dados.litros) setLitrosMaq(dados.litros);
@@ -72,6 +68,11 @@ export function useCupomFormState({ equipments, onSuccess, onClose }: Props) {
       setErro('Selecione a máquina e preencha litros e valor.');
       return;
     }
+    const isEmp = formaPagamento === 'EMPRESTIMO';
+    if (isEmp && (!credorEmprestimo.trim() || !dataPagarEmprestimo)) {
+      setErro('Para pagamento via Empréstimo, informe de quem pegou o valor e quando vai pagar.');
+      return;
+    }
     setSalvando(true);
     setErro(null);
 
@@ -79,8 +80,11 @@ export function useCupomFormState({ equipments, onSuccess, onClose }: Props) {
     const apoioEq = equipments.find((eq) => eq.id === veiculoApoioId);
 
     const res = await processarLancamentoCupom({
-      data, postoFornecedor, formaPagamento, statusPagamento, contaSaida,
-      contaBancariaId: contaBancariaId || undefined,
+      data, postoFornecedor, formaPagamento,
+      statusPagamento: isEmp ? 'PENDENTE' : statusPagamento,
+      contaSaida: isEmp ? `Empréstimo: ${credorEmprestimo.trim()}` : contaSaida,
+      contaBancariaId: isEmp || contaBancariaId === 'EMPRESTIMO' ? undefined : (contaBancariaId || undefined),
+      emprestimo: isEmp ? { credorNome: credorEmprestimo.trim(), dataEmprestimo: dataEmprestimo || data, dataPagamentoPrevista: dataPagarEmprestimo } : undefined,
       numeroNfCupom: numeroDoc || undefined,
       obraId: obraId || undefined, servicoId: servicoId || undefined,
       fotoCupomUrl: fotoCupomUrl || undefined,
@@ -90,24 +94,20 @@ export function useCupomFormState({ equipments, onSuccess, onClose }: Props) {
       },
       veiculoApoio: incluirApoio && veiculoApoioId ? {
         maquinaId: veiculoApoioId, maquinaNome: apoioEq ? `${apoioEq.code} - ${apoioEq.name}` : undefined,
-        horimetro: kmApoio,
-        tipoCombustivel: tipoCombApoio, quantidadeLitros: litrosApoio, valorTotal: valorApoio
+        horimetro: kmApoio, tipoCombustivel: tipoCombApoio, quantidadeLitros: litrosApoio, valorTotal: valorApoio
       } : undefined
     });
 
     setSalvando(false);
-    if (res.success) {
-      onSuccess();
-      onClose();
-    } else {
-      setErro(res.error || 'Erro ao lançar cupom');
-    }
+    if (res.success) { onSuccess(); onClose(); }
+    else setErro(res.error || 'Erro ao lançar cupom');
   };
 
   return {
     data, setData, postoFornecedor, setPostoFornecedor, formaPagamento, setFormaPagamento,
-    statusPagamento, setStatusPagamento, contaSaida, setContaSaida, contaBancariaId, setContaBancariaId, obraId, setObraId,
-    servicoId, setServicoId, maquinaId, setMaquinaId, horimetro, setHorimetro,
+    statusPagamento, setStatusPagamento, contaSaida, setContaSaida, contaBancariaId, setContaBancariaId,
+    credorEmprestimo, setCredorEmprestimo, dataEmprestimo, setDataEmprestimo, dataPagarEmprestimo, setDataPagarEmprestimo,
+    obraId, setObraId, servicoId, setServicoId, maquinaId, setMaquinaId, horimetro, setHorimetro,
     tipoCombMaq, setTipoCombMaq, litrosMaq, setLitrosMaq, valorMaq, setValorMaq,
     incluirApoio, setIncluirApoio, veiculoApoioId, setVeiculoApoioId, kmApoio, setKmApoio,
     tipoCombApoio, setTipoCombApoio, litrosApoio, setLitrosApoio, valorApoio, setValorApoio,

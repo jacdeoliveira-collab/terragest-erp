@@ -7,6 +7,7 @@ import { DashboardCards } from '../components/features/dashboard/DashboardCards'
 import { DashboardBalanco } from '../components/features/dashboard/DashboardBalanco';
 import { EficienciaChart } from '../components/features/dashboard/EficienciaChart';
 import { GraficoHoras } from '../components/dashboard/GraficoHoras';
+import { WorkspaceModeHubBanner } from '../components/features/dashboard/WorkspaceModeHubBanner';
 import { exportDashboardPDF } from '../services/exportDashboardPdf';
 
 export const Dashboard: React.FC = () => {
@@ -61,6 +62,9 @@ export const Dashboard: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Hub de Modos Operacionais */}
+      <WorkspaceModeHubBanner />
 
       {/* 4 Grandes Cards de KPIs */}
       <DashboardCards metrics={globalMetrics} loading={loadingGlobal} />

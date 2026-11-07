@@ -1,31 +1,43 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { isMasterEmail } from '../services/adminService';
 import type { AuthContextType, AuthUser, PerfilAcesso } from '../types/auth.types';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 async function fetchUserTenantData(user: User): Promise<{ perfil: PerfilAcesso; tenantId: string | null }> {
+  const metaPerfil = user.user_metadata?.perfil_acesso as PerfilAcesso | undefined;
+  const metaTenant = (user.user_metadata?.tenant_id as string | undefined) || null;
+
+  if (isMasterEmail(user.email)) {
+    return { perfil: 'ADMIN', tenantId: metaTenant };
+  }
+
+  if (metaPerfil && metaTenant) {
+    return { perfil: metaPerfil, tenantId: metaTenant };
+  }
+
   try {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('tenant_users')
       .select('perfil_acesso, tenant_id')
       .eq('user_id', user.id)
       .limit(1)
       .maybeSingle();
 
-    if (data) {
+    if (!error && data) {
       return {
-        perfil: (data.perfil_acesso as PerfilAcesso) || 'ADMIN',
-        tenantId: data.tenant_id || null
+        perfil: (data.perfil_acesso as PerfilAcesso) || metaPerfil || 'ADMIN',
+        tenantId: data.tenant_id || metaTenant
       };
     }
   } catch {
-    // fallback
+    // fallback silencioso para user_metadata
   }
   return {
-    perfil: (user.user_metadata?.perfil_acesso as PerfilAcesso) || 'ADMIN',
-    tenantId: user.user_metadata?.tenant_id || null
+    perfil: metaPerfil || 'ADMIN',
+    tenantId: metaTenant
   };
 }
 
@@ -116,18 +128,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const limparErro = useCallback(() => setError(null), []);
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        session,
-        perfil_acesso: perfilAcesso,
-        loading,
-        error,
-        login,
-        logout,
-        limparErro
-      }}
-    >
+    <AuthContext.Provider value={{ user, session, perfil_acesso: perfilAcesso, loading, error, login, logout, limparErro }}>
       {children}
     </AuthContext.Provider>
   );
@@ -135,8 +136,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuthContext = (): AuthContextType => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuthContext deve ser utilizado dentro de um AuthProvider');
-  }
+  if (!context) throw new Error('useAuthContext deve ser utilizado dentro de um AuthProvider');
   return context;
 };

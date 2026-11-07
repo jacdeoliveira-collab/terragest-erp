@@ -2,37 +2,123 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  background-color: #f8fafc;
-  color: #0f172a;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+:root {
+  --app-font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
-/* Garante legibilidade nítida e contraste em todos os campos de formulário */
-input, select, textarea {
-  color: #0f172a !important;
+body, button, input, select, textarea { font-family: var(--app-font-family); }
+body { margin: 0; min-height: 100vh; background-color: #f8fafc; color: #0f172a; }
+input, select, textarea, option, optgroup { color: #0f172a !important; }
+option, optgroup { background-color: #ffffff !important; }
+
+/* =========================================================
+   MODO ESCURO (html.theme-dark)
+   ========================================================= */
+html.theme-dark { color-scheme: dark; }
+
+html.theme-dark body, html.theme-dark .app-shell-root {
+  background-color: #0b1120 !important;
+  color: #f1f5f9 !important;
 }
 
-/* Scroll horizontal suave e nativo para menus no mobile */
-.scroll-touch-x {
-  overflow-x: auto !important;
-  -webkit-overflow-scrolling: touch !important;
-  touch-action: pan-x !important;
-  scroll-behavior: smooth;
-  scrollbar-width: thin;
+html.theme-dark header,
+html.theme-dark .bg-white,
+html.theme-dark [class*="bg-white/7"],
+html.theme-dark [class*="bg-white/8"],
+html.theme-dark [class*="bg-white/9"] {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
 }
 
-.scroll-touch-x::-webkit-scrollbar {
-  height: 4px;
+html.theme-dark div:has(> img[src*="logo"]) { background-color: #ffffff !important; }
+
+html.theme-dark thead,
+html.theme-dark [class*="bg-gray-50"]:not(select):not(input),
+html.theme-dark [class*="bg-slate-50"]:not(select):not(input),
+html.theme-dark [class*="bg-gray-100"]:not(select):not(input),
+html.theme-dark [class*="bg-slate-100"]:not(select):not(input) {
+  background-color: #0f172a !important;
+  color: #e2e8f0 !important;
 }
 
-.scroll-touch-x::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 4px;
+html.theme-dark [class*="bg-gray-200"], html.theme-dark [class*="bg-slate-200"] {
+  background-color: #334155 !important;
+  color: #f8fafc !important;
 }
 
-input::placeholder, textarea::placeholder {
-  color: #94a3b8;
+html.theme-dark tbody tr { background-color: #1e293b !important; }
+html.theme-dark tbody tr:hover { background-color: #26354d !important; }
+
+html.theme-dark [class*="bg-emerald-50"]:not(select):not(input),
+html.theme-dark [class*="bg-emerald-100"]:not(select):not(input),
+html.theme-dark [class*="bg-teal-50"]:not(select):not(input),
+html.theme-dark [class*="bg-teal-100"]:not(select):not(input) {
+  background-color: #0d2821 !important;
+  border-color: #059669 !important;
+  color: #6ee7b7 !important;
 }
+
+html.theme-dark [class*="bg-amber-50"]:not(select):not(input),
+html.theme-dark [class*="bg-amber-100"]:not(select):not(input),
+html.theme-dark [class*="bg-yellow-50"]:not(select):not(input),
+html.theme-dark [class*="bg-orange-50"]:not(select):not(input),
+html.theme-dark [class*="bg-orange-100"]:not(select):not(input) {
+  background-color: #292112 !important;
+  border-color: #d97706 !important;
+  color: #fcd34d !important;
+}
+
+html.theme-dark [class*="bg-rose-50"]:not(select):not(input),
+html.theme-dark [class*="bg-rose-100"]:not(select):not(input),
+html.theme-dark [class*="bg-red-50"]:not(select):not(input),
+html.theme-dark [class*="bg-red-100"]:not(select):not(input) {
+  background-color: #2c141d !important;
+  border-color: #e11d48 !important;
+  color: #fda4af !important;
+}
+
+html.theme-dark [class*="bg-blue-50"]:not(select):not(input),
+html.theme-dark [class*="bg-blue-100"]:not(select):not(input),
+html.theme-dark [class*="bg-indigo-50"]:not(select):not(input),
+html.theme-dark [class*="bg-purple-50"]:not(select):not(input),
+html.theme-dark [class*="bg-purple-100"]:not(select):not(input) {
+  background-color: #13233f !important;
+  border-color: #2563eb !important;
+  color: #93c5fd !important;
+}
+
+html.theme-dark .text-gray-900, html.theme-dark .text-slate-900,
+html.theme-dark .text-gray-800, html.theme-dark .text-slate-800 { color: #f8fafc !important; }
+
+html.theme-dark .text-gray-700, html.theme-dark .text-slate-700,
+html.theme-dark .text-gray-600, html.theme-dark .text-slate-600,
+html.theme-dark .text-gray-500, html.theme-dark .text-slate-500,
+html.theme-dark .text-gray-400 { color: #cbd5e1 !important; }
+
+html.theme-dark .text-emerald-700, html.theme-dark .text-emerald-800,
+html.theme-dark .text-emerald-900, html.theme-dark .text-teal-700, html.theme-dark .text-teal-800 { color: #34d399 !important; }
+
+html.theme-dark .text-amber-700, html.theme-dark .text-amber-800,
+html.theme-dark .text-amber-900, html.theme-dark .text-orange-700, html.theme-dark .text-orange-800 { color: #fbbf24 !important; }
+
+html.theme-dark .text-rose-600, html.theme-dark .text-rose-700,
+html.theme-dark .text-rose-800, html.theme-dark .text-red-600, html.theme-dark .text-red-700, html.theme-dark .text-red-800 { color: #fb7185 !important; }
+
+html.theme-dark [class*="border-gray-"], html.theme-dark [class*="border-slate-"],
+html.theme-dark [class*="divide-gray-"] > :not([hidden]) ~ :not([hidden]) { border-color: #334155 !important; }
+
+html.theme-dark input, html.theme-dark select, html.theme-dark textarea,
+html.theme-dark input[class*="bg-"], html.theme-dark select[class*="bg-"], html.theme-dark textarea[class*="bg-"],
+html.theme-dark option, html.theme-dark optgroup {
+  background-color: #0f172a !important; color: #f8fafc !important; border-color: #475569 !important;
+}
+
+/* MODO SOL FORTE (html.theme-solar) & SCROLL MOBILE */
+html.theme-solar body, html.theme-solar .app-shell-root { background-color: #ffffff !important; color: #000000 !important; }
+html.theme-solar .text-gray-500, html.theme-solar .text-gray-600, html.theme-solar .text-gray-700,
+html.theme-solar .text-slate-500, html.theme-solar .text-slate-600, html.theme-solar .text-slate-700 { color: #000000 !important; font-weight: 600 !important; }
+html.theme-solar .border-gray-200, html.theme-solar .border-slate-200, html.theme-solar input, html.theme-solar select, html.theme-solar textarea { border-color: #0f172a !important; border-width: 1.5px !important; }
+.scroll-touch-x { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; touch-action: pan-x !important; scroll-behavior: smooth; scrollbar-width: thin; }
+.scroll-touch-x::-webkit-scrollbar { height: 4px; }
+.scroll-touch-x::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+input::placeholder, textarea::placeholder { color: #94a3b8; }

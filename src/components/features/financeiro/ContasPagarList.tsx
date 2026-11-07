@@ -1,7 +1,7 @@
 import React from 'react';
-import { Plus, Check, AlertTriangle, CheckCircle2, Pencil } from 'lucide-react';
+import { Plus, Check, AlertTriangle, CheckCircle2, Pencil, HandCoins } from 'lucide-react';
+import { extrairInfoEmprestimo } from '../../../utils/emprestimoHelper';
 import type { ContaPagarItem } from '../../../types/contasPagar.types';
-
 import { ContasPagarKpiCards } from './ContasPagarKpiCards';
 
 interface ContasPagarListProps {
@@ -40,13 +40,10 @@ export const ContasPagarList: React.FC<ContasPagarListProps> = ({
     <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden text-left text-xs">
       <div className="p-5 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-base font-bold text-gray-900">Contas a Pagar (Gestão de Passivos)</h2>
-          <p className="text-gray-500 mt-0.5">Controle de passivos com fornecedores de diesel, peças, manutenções e locações</p>
+          <h2 className="text-base font-bold text-gray-900">Contas a Pagar (Gestão de Passivos & Empréstimos)</h2>
+          <p className="text-gray-500 mt-0.5">Controle de passivos com fornecedores de diesel, óleo, peças, manutenções e empréstimos</p>
         </div>
-        <button
-          onClick={onAbrirNova}
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold shadow-sm cursor-pointer"
-        >
+        <button onClick={onAbrirNova} className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold shadow-sm cursor-pointer">
           <Plus className="w-4 h-4" /><span>Nova Conta a Pagar</span>
         </button>
       </div>
@@ -57,7 +54,6 @@ export const ContasPagarList: React.FC<ContasPagarListProps> = ({
         </div>
       )}
 
-      {/* KPI Cards Interativos */}
       <ContasPagarKpiCards
         totalAPagarAberto={totalAPagarAberto}
         totalPagoMes={totalPagoMes}
@@ -76,28 +72,50 @@ export const ContasPagarList: React.FC<ContasPagarListProps> = ({
           <table className="w-full text-left">
             <thead className="bg-gray-50 text-[10px] text-gray-500 uppercase border-b border-gray-200">
               <tr>
-                <th className="p-3">Descrição / Fornecedor</th>
+                <th className="p-3">Descrição / Fornecedor / Ações</th>
+                <th className="p-3">Quando Pagar (Venc.)</th>
+                <th className="p-3 text-right">Valor</th>
                 <th className="p-3">Categoria</th>
                 <th className="p-3">Centro de Custo</th>
-                <th className="p-3">Vencimento</th>
-                <th className="p-3 text-right">Valor</th>
-                <th className="p-3 text-center">Status</th>
-                <th className="p-3 text-center">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-gray-700">
               {listaFiltrada.map((item) => {
                 const isAtrasado = item.status === 'PENDENTE' && item.data_vencimento < hoje;
                 const isPago = item.status === 'PAGO';
+                const emp = extrairInfoEmprestimo(item);
 
                 return (
                   <tr key={item.id} className={`hover:bg-gray-50/60 transition-colors ${isAtrasado ? 'bg-rose-50/30' : ''}`}>
-                    <td className="p-3">
-                      <div className="font-bold text-gray-900">{item.descricao}</div>
+                    <td className="p-3 min-w-[230px]">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="font-bold text-gray-900">{item.descricao}</span>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold border ${
+                          isPago ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : isAtrasado ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-amber-50 text-amber-700 border-amber-200'
+                        }`}>
+                          {isPago ? 'PAGO' : isAtrasado ? 'EM ATRASO' : 'PENDENTE'}
+                        </span>
+                      </div>
                       <div className="text-[11px] text-gray-500">{item.fornecedor}</div>
+                      {emp.isEmprestimo && (
+                        <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold">
+                          <HandCoins className="w-3 h-3 text-amber-700" />
+                          Empréstimo de: {emp.credorNome} {emp.dataEmprestimo ? `• Pegou em ${new Date(emp.dataEmprestimo + 'T00:00:00').toLocaleDateString('pt-BR')}` : ''}
+                        </span>
+                      )}
+                      <div className="flex items-center gap-1.5 pt-1.5 mt-1 border-t border-gray-100">
+                        {!isPago ? (
+                          <button onClick={() => onAbrirBaixa(item)} className="px-2.5 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[10px] font-bold cursor-pointer shadow-xs inline-flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /><span>Pagar</span>
+                          </button>
+                        ) : (
+                          <span className="text-[10px] text-emerald-700 font-mono flex items-center gap-0.5"><Check className="w-3 h-3" /> Pago</span>
+                        )}
+                        <button onClick={() => onAbrirEditar(item)} title="Alterar Despesa / Empréstimo" className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-50 hover:bg-amber-50 text-gray-700 hover:text-amber-800 border border-gray-200 rounded-lg text-[10px] font-bold cursor-pointer">
+                          <Pencil className="w-3 h-3" /><span>Editar</span>
+                        </button>
+                      </div>
                     </td>
-                    <td className="p-3 font-semibold text-gray-600">{item.categoria.replace('_', ' ')}</td>
-                    <td className="p-3 text-gray-700">{item.obra_nome || <span className="text-gray-400 italic">Geral / Administrativo</span>}</td>
                     <td className="p-3 font-mono">
                       <div className={isAtrasado ? 'text-rose-600 font-bold flex items-center gap-1' : 'text-gray-700'}>
                         {new Date(item.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}
@@ -105,36 +123,8 @@ export const ContasPagarList: React.FC<ContasPagarListProps> = ({
                       </div>
                     </td>
                     <td className="p-3 text-right font-mono font-bold text-gray-900">{formatBRL(Number(item.valor))}</td>
-                    <td className="p-3 text-center">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                        isPago ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : isAtrasado ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-amber-50 text-amber-700 border-amber-200'
-                      }`}>
-                        {isPago ? 'PAGO' : isAtrasado ? 'EM ATRASO' : 'PENDENTE'}
-                      </span>
-                    </td>
-                    <td className="p-3 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <button
-                          onClick={() => onAbrirEditar(item)}
-                          title="Alterar Despesa / Centro de Custo"
-                          className="p-1 text-gray-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg cursor-pointer transition-colors"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        {!isPago ? (
-                          <button
-                            onClick={() => onAbrirBaixa(item)}
-                            className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold cursor-pointer shadow-xs inline-flex items-center gap-1"
-                          >
-                            <CheckCircle2 className="w-3 h-3" /><span>Pagar</span>
-                          </button>
-                        ) : (
-                          <span className="text-[10px] text-emerald-700 font-mono flex items-center gap-0.5">
-                            <Check className="w-3 h-3" /> Pago
-                          </span>
-                        )}
-                      </div>
-                    </td>
+                    <td className="p-3 font-semibold text-gray-600">{item.categoria.replace('_', ' ')}</td>
+                    <td className="p-3 text-gray-700">{item.obra_nome || <span className="text-gray-400 italic">Geral / Administrativo</span>}</td>
                   </tr>
                 );
               })}
@@ -145,4 +135,3 @@ export const ContasPagarList: React.FC<ContasPagarListProps> = ({
     </div>
   );
 };
-

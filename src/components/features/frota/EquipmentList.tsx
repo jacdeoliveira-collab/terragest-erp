@@ -85,14 +85,11 @@ export const EquipmentList: React.FC = () => {
             <table className="w-full text-left">
               <thead className="bg-gray-50 text-gray-500 uppercase font-semibold border-b border-gray-200 text-[11px]">
                 <tr>
-                  <th className="p-3.5">Código / Tipo</th>
-                  <th className="p-3.5">Identificação & Placa</th>
-                  <th className="p-3.5 text-center">Regime de Posse</th>
+                  <th className="p-3.5">Identificação / Código & Ações</th>
                   <th className="p-3.5 text-right">Horímetro / KM</th>
+                  <th className="p-3.5 text-center">Regime de Posse</th>
                   <th className="p-3.5 text-center">Laudo ART / NR-12</th>
                   <th className="p-3.5 text-center">Documento</th>
-                  <th className="p-3.5 text-center">Status</th>
-                  <th className="p-3.5 text-right">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 text-gray-700">

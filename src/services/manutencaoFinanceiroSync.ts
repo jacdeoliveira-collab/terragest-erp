@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { sincronizarDespesa, removerDespesaPorRef } from './contasPagarSyncHelper';
+import { extrairInfoEmprestimo, formatarTagEmprestimo } from '../utils/emprestimoHelper';
 
 interface ManutencaoRow {
   id: string;
@@ -29,17 +30,10 @@ export function extrairMetadadosTipoServico(rawTipo?: string): {
   if (!rawTipo) return { tipoManutencao: 'PREVENTIVA' };
   const partes = rawTipo.split('|').map((s) => s.trim());
   const isCorretiva = partes[0]?.toUpperCase().includes('CORRETIVA');
-  const mec = partes[1] || undefined;
-  return {
-    tipoManutencao: isCorretiva ? 'CORRETIVA' : 'PREVENTIVA',
-    responsavelMecanico: mec
-  };
+  return { tipoManutencao: isCorretiva ? 'CORRETIVA' : 'PREVENTIVA', responsavelMecanico: partes[1] || undefined };
 }
 
-export function codificarTipoServicoBanco(
-  tipoManutencao?: string,
-  responsavelMecanico?: string | null
-): string {
+export function codificarTipoServicoBanco(tipoManutencao?: string, responsavelMecanico?: string | null): string {
   const tipo = tipoManutencao === 'CORRETIVA' ? 'CORRETIVA' : 'PREVENTIVA';
   const mec = responsavelMecanico?.trim();
   return (mec ? `${tipo}|${mec}` : tipo).slice(0, 145);
@@ -58,28 +52,17 @@ export async function sincronizarManutencaoFinanceiro(m: ManutencaoRow): Promise
   if (m.comprovante_url && maqId && m.comprovante_url.startsWith('http')) {
     const tagDoc = `[MANUT_${m.id}]`;
     const { data: docExist } = await supabase
-      .from('equipamento_documentos')
-      .select('id')
-      .eq('equipamento_id', maqId)
-      .ilike('observacoes', `%${tagDoc}%`)
-      .maybeSingle();
+      .from('equipamento_documentos').select('id').eq('equipamento_id', maqId).ilike('observacoes', `%${tagDoc}%`).maybeSingle();
 
     const docPayload = {
-      tenant_id: m.tenant_id || null,
-      equipamento_id: maqId,
-      nome: `Comprovante OS: ${servico}`.slice(0, 190),
-      tipo: 'LAUDO_MANUTENCAO',
+      tenant_id: m.tenant_id || null, equipamento_id: maqId,
+      nome: `Comprovante OS: ${servico}`.slice(0, 190), tipo: 'LAUDO_MANUTENCAO',
       orgao_emissor: mecanico ? mecanico.slice(0, 110) : 'Oficina / Manutenção',
-      data_validade: venc,
-      drive_url: m.comprovante_url.trim(),
+      data_validade: venc, drive_url: m.comprovante_url.trim(),
       observacoes: `${tagDoc} Peças: R$ ${pecas.toFixed(2)} | MO: R$ ${maoObra.toFixed(2)}`
     };
-
-    if (docExist?.id) {
-      await supabase.from('equipamento_documentos').update(docPayload).eq('id', docExist.id);
-    } else {
-      await supabase.from('equipamento_documentos').insert([docPayload]);
-    }
+    if (docExist?.id) await supabase.from('equipamento_documentos').update(docPayload).eq('id', docExist.id);
+    else await supabase.from('equipamento_documentos').insert([docPayload]);
   }
 
   if (pecas <= 0 && maoObra <= 0) return;
@@ -90,40 +73,37 @@ export async function sincronizarManutencaoFinanceiro(m: ManutencaoRow): Promise
     if (eq) maquina = `${eq.code} - ${eq.name}`;
   }
 
+  const infoEmp = extrairInfoEmprestimo({
+    observacoes: m.forma_pagamento || '',
+    forma_pagamento: m.forma_pagamento?.startsWith('EMPRESTIMO') ? 'EMPRESTIMO' : m.forma_pagamento || undefined
+  });
+  const isEmp = infoEmp.isEmprestimo || m.conta_bancaria_id === 'EMPRESTIMO';
+  const tagEmp = isEmp
+    ? `${formatarTagEmprestimo({ credorNome: infoEmp.credorNome, dataEmprestimo: infoEmp.dataEmprestimo || venc, dataPagamentoPrevista: infoEmp.dataPagamentoPrevista || venc })} `
+    : '';
+
   const tipoLabel = tipoManut === 'CORRETIVA' ? 'Corretiva' : 'Preventiva';
-  const fornecedor = mecanico || 'Oficina / Fornecedor de peças';
-  const obsFoto = m.comprovante_url && m.comprovante_url.startsWith('http') ? `[FOTO:${m.comprovante_url}]` : undefined;
+  const fornBase = mecanico || 'Oficina / Fornecedor de peças';
+  const fornecedor = isEmp ? `${infoEmp.credorNome} (${fornBase})`.slice(0, 80) : fornBase;
+  const obsFoto = m.comprovante_url && m.comprovante_url.startsWith('http') ? `[FOTO:${m.comprovante_url}]` : '';
+
   const base = {
-    tenantId: m.tenant_id,
-    obraId: m.obra_id,
-    fornecedor,
-    dataVencimento: venc,
-    status: m.status_pagamento_os || 'PAGO',
-    formaPagamento: m.forma_pagamento || 'PIX',
-    contaBancariaId: m.conta_bancaria_id || null,
-    observacoes: obsFoto
+    tenantId: m.tenant_id, obraId: m.obra_id, fornecedor,
+    dataVencimento: isEmp ? (infoEmp.dataPagamentoPrevista || venc) : venc,
+    status: (isEmp ? 'PENDENTE' : (m.status_pagamento_os || 'PAGO')) as 'PAGO' | 'PENDENTE',
+    formaPagamento: isEmp ? 'EMPRESTIMO' : (m.forma_pagamento || 'PIX'),
+    contaBancariaId: isEmp ? null : (m.conta_bancaria_id || null),
+    observacoes: `${tagEmp}${obsFoto}`.trim() || undefined
   };
 
   if (pecas > 0) {
-    await sincronizarDespesa({
-      ...base,
-      ref: `MANUT_${m.id}:PECAS`,
-      categoria: 'PECAS_MANUTENCAO',
-      descricao: `Peças ${tipoLabel}: ${servico}${maquina ? ` (${maquina})` : ''}`,
-      valor: pecas
-    });
+    await sincronizarDespesa({ ...base, ref: `MANUT_${m.id}:PECAS`, categoria: 'PECAS_MANUTENCAO', descricao: `Peças ${tipoLabel}: ${servico}${maquina ? ` (${maquina})` : ''}`, valor: pecas });
   } else {
     await removerDespesaPorRef(`MANUT_${m.id}:PECAS`);
   }
 
   if (maoObra > 0) {
-    await sincronizarDespesa({
-      ...base,
-      ref: `MANUT_${m.id}:MO`,
-      categoria: 'OUTROS',
-      descricao: `Mão de obra ${tipoLabel}: ${servico}${maquina ? ` (${maquina})` : ''}`,
-      valor: maoObra
-    });
+    await sincronizarDespesa({ ...base, ref: `MANUT_${m.id}:MO`, categoria: 'OUTROS', descricao: `Mão de obra ${tipoLabel}: ${servico}${maquina ? ` (${maquina})` : ''}`, valor: maoObra });
   } else {
     await removerDespesaPorRef(`MANUT_${m.id}:MO`);
   }

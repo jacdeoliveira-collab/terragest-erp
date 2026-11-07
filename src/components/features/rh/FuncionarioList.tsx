@@ -94,8 +94,7 @@ export const FuncionarioList: React.FC = () => {
           <table className="w-full text-left text-xs">
             <thead className="bg-gray-50 text-gray-500 uppercase font-semibold border-b border-gray-200">
               <tr>
-                <th className="p-3.5">Colaborador</th><th className="p-3.5">Função</th><th className="p-3.5">Validade CNH</th><th className="p-3.5">Validade ASO</th>
-                <th className="p-3.5 text-center">Status</th><th className="p-3.5 text-center">Ações</th>
+                <th className="p-3.5">Colaborador & Ações</th><th className="p-3.5">Função</th><th className="p-3.5">Validade CNH</th><th className="p-3.5">Validade ASO</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-gray-700">

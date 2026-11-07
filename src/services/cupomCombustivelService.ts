@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 import { salvarComprovante } from './comprovanteStorageService';
 import type { LancarCupomCombustivelDTO } from '../types/cupomCombustivel.types';
 import { aplicarFiltroTenant, DEFAULT_LEGACY_TENANT } from '../utils/tenantFilter';
+import { formatarTagEmprestimo } from '../utils/emprestimoHelper';
 
 export async function processarLancamentoCupom(dto: LancarCupomCombustivelDTO): Promise<{ success: boolean; cupomId?: string; error?: string }> {
   try {
@@ -30,7 +31,8 @@ export async function processarLancamentoCupom(dto: LancarCupomCombustivelDTO): 
 
     const descPagar = `Diesel Posto: ${dto.postoFornecedor || 'Posto'} (${dto.maquinaPrincipal.maquinaNome || 'Máq'}${dto.veiculoApoio?.maquinaNome ? ' + ' + dto.veiculoApoio.maquinaNome : ''})`.slice(0, 150);
     const tagFoto = fotoLinkSeguro ? `[FOTO:${fotoLinkSeguro}] ` : '';
-    const obsDespesa = `[REF:${cupomId}] ${tagFoto}Conta: ${dto.contaSaida} | Litros: ${totalLitros}L | Doc: ${dto.numeroNfCupom || 'Cupom'}${srv ? ` | Cliente: ${srv.cliente_nome}` : ''}`;
+    const tagEmp = dto.emprestimo ? `${formatarTagEmprestimo(dto.emprestimo)} ` : '';
+    const obsDespesa = `${tagEmp}[REF:${cupomId}] ${tagFoto}Conta: ${dto.contaSaida} | Litros: ${totalLitros}L | Doc: ${dto.numeroNfCupom || 'Cupom'}${srv ? ` | Cliente: ${srv.cliente_nome}` : ''}`;
 
     let existCupId: string | null = null;
     if (dto.numeroNfCupom) {
@@ -39,12 +41,18 @@ export async function processarLancamentoCupom(dto: LancarCupomCombustivelDTO): 
       if (existCup) existCupId = existCup.id;
     }
 
+    const fornFinal = dto.emprestimo
+      ? `${dto.emprestimo.credorNome} (${dto.postoFornecedor || 'Posto'})`.slice(0, 80)
+      : (dto.postoFornecedor || 'Posto').slice(0, 80);
+    const vencFinal = dto.emprestimo?.dataPagamentoPrevista || dto.data;
+    const statusFinal = dto.emprestimo ? 'PENDENTE' : dto.statusPagamento;
+
     const payloadPagar = {
       tenant_id: tenantId, obra_id: dto.obraId || srv?.obra_id || null, descricao: descPagar,
-      fornecedor: (dto.postoFornecedor || 'Posto').slice(0, 80), categoria: 'COMBUSTIVEL',
-      valor: totalValor, data_vencimento: dto.data, data_pagamento: dto.statusPagamento === 'PAGO' ? dto.data : null,
-      forma_pagamento: dto.formaPagamento, conta_bancaria_id: dto.contaBancariaId || null,
-      status: dto.statusPagamento, observacoes: obsDespesa
+      fornecedor: fornFinal, categoria: 'COMBUSTIVEL',
+      valor: totalValor, data_vencimento: vencFinal, data_pagamento: statusFinal === 'PAGO' ? dto.data : null,
+      forma_pagamento: dto.formaPagamento, conta_bancaria_id: dto.emprestimo ? null : (dto.contaBancariaId || null),
+      status: statusFinal, observacoes: obsDespesa
     };
 
     if (existCupId) await supabase.from('contas_pagar').update(payloadPagar).eq('id', existCupId);
@@ -97,14 +105,13 @@ export async function processarLancamentoCupom(dto: LancarCupomCombustivelDTO): 
       const novosIds = Array.from(new Set([...(srv.abastecimentos_ids || []), ...(idMaq ? [idMaq] : []), ...(idApoio ? [idApoio] : [])]));
       const nLitros = Number(srv.combustivel_maquina_litros || 0) + litrosMaq;
       const nValor = Number(srv.combustivel_maquina_valor || 0) + valorMaq;
-      const nTotLitros = nLitros + Number(srv.combustivel_apoio_litros || 0) + litrosApoio;
       const nTotComb = nValor + Number(srv.combustivel_apoio_valor || 0) + valorApoio;
       const nDesp = nTotComb + Number(srv.despesa_operador || 0) + Number(srv.despesa_apoio || 0) + Number(srv.despesa_manutencao || 0);
       const agora = new Date().toISOString();
 
       const payloadServ = {
         combustivel_maquina_litros: nLitros, combustivel_maquina_valor: nValor,
-        combustivel_total_litros: nTotLitros, combustivel_total_valor: nTotComb,
+        combustivel_total_valor: nTotComb,
         despesas_total: nDesp, lucro_liquido: Number(srv.faturamento_bruto || 0) - nDesp,
         abastecimentos_ids: novosIds, foto_cupom_combustivel: fotoLinkSeguro || srv.foto_cupom_combustivel,
         updated_at: agora

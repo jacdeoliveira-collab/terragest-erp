@@ -68,8 +68,8 @@ export const AsaasIntegrationCard: React.FC<Props> = ({ tenantId, onDesconectar,
     e.target.value = '';
   };
 
-  const handleSalvar = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSalvar = async (e?: React.MouseEvent | React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!isAdmin) return;
     setLoading(true); setFeedback(null);
     const res = await validarEConectarAsaas(apiKey, environment, chavePix, tipoChavePix, webhookToken, tenantId, provider, clientId, { nomeBancoCustom, agenciaCustom, contaCustom, apiBaseUrlCustom });
@@ -125,7 +125,7 @@ export const AsaasIntegrationCard: React.FC<Props> = ({ tenantId, onDesconectar,
       {!isAdmin ? (
         <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 flex items-center gap-2"><Lock className="w-4 h-4" /><span>Apenas Administradores podem visualizar, editar ou remover a planilha bancária.</span></div>
       ) : (
-        <form onSubmit={handleSalvar} className="space-y-3">
+        <div className="space-y-3">
           <AsaasPlanilhaTable
             provider={provider} setProvider={setProvider} nomeBancoCustom={nomeBancoCustom} setNomeBancoCustom={setNomeBancoCustom}
             agenciaCustom={agenciaCustom} setAgenciaCustom={setAgenciaCustom} contaCustom={contaCustom} setContaCustom={setContaCustom}
@@ -137,12 +137,12 @@ export const AsaasIntegrationCard: React.FC<Props> = ({ tenantId, onDesconectar,
             {(config?.apiKey || config?.chavePix || config?.nomeBancoCustom) && onDesconectar && (
               <button type="button" onClick={async () => { await onDesconectar(); setApiKey(''); setClientId(''); setWebhookToken(''); setChavePix(''); setNomeBancoCustom(''); setSaldo(null); setConfig(null); }} className="inline-flex items-center gap-1 px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl font-bold cursor-pointer"><Unlink className="w-3.5 h-3.5" /><span>Limpar Planilha</span></button>
             )}
-            <button type="submit" disabled={loading} className="inline-flex items-center gap-1.5 py-2 px-5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl font-bold shadow-xs cursor-pointer">
+            <button type="button" onClick={handleSalvar} disabled={loading} className="inline-flex items-center gap-1.5 py-2 px-5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl font-bold shadow-xs cursor-pointer">
               {loading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
               <span>{loading ? 'Validando e Salvando...' : 'Salvar Planilha Bancária no Supabase'}</span>
             </button>
           </div>
-        </form>
+        </div>
       )}
     </div>
   );

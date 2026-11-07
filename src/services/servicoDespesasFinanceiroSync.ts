@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { extrairInfoEmprestimo, formatarTagEmprestimo, removerTagEmprestimo } from '../utils/emprestimoHelper';
 import type { ServicoHorimetro, DespesaItemServico } from '../types/servicoHorimetro.types';
 
 function mapCategoriaFinanceira(cat: string): string {
@@ -17,19 +18,33 @@ async function sincronizarItemDespesa(
   obraId: string | null,
   tenantId: string
 ): Promise<void> {
+  const infoEmp = extrairInfoEmprestimo({ observacoes: item.fornecedor, forma_pagamento: item.forma_pagamento });
+  const fornLimpo = removerTagEmprestimo(item.fornecedor) || 'Fornecedor Local';
+  const isEmp = infoEmp.isEmprestimo;
+  const tagEmp = isEmp
+    ? `${formatarTagEmprestimo({
+        credorNome: infoEmp.credorNome,
+        dataEmprestimo: infoEmp.dataEmprestimo || item.data || servico.data_inicio,
+        dataPagamentoPrevista: infoEmp.dataPagamentoPrevista || item.data || servico.data_inicio,
+      })} `
+    : '';
+
+  const vencimento = isEmp ? (infoEmp.dataPagamentoPrevista || item.data || servico.data_inicio) : (item.data || servico.data_inicio);
+  const statusFinal = isEmp ? 'PENDENTE' : (item.status_pagamento || 'PAGO');
+
   const payload = {
     tenant_id: tenantId,
     obra_id: obraId,
-    descricao: `${item.descricao || 'Despesa'} - ${servico.maquina_nome} (${servico.cliente_nome})`,
-    fornecedor: item.fornecedor || 'Fornecedor Local',
+    descricao: `${item.descricao || 'Despesa'} - ${servico.maquina_nome} (${servico.cliente_nome})`.slice(0, 150),
+    fornecedor: isEmp ? `${infoEmp.credorNome} (${fornLimpo})`.slice(0, 80) : fornLimpo.slice(0, 80),
     categoria: mapCategoriaFinanceira(item.categoria),
     valor: Number(item.valor || 0),
-    data_vencimento: item.data || servico.data_inicio,
-    data_pagamento: item.status_pagamento === 'PAGO' ? (item.data || servico.data_inicio) : null,
+    data_vencimento: vencimento,
+    data_pagamento: statusFinal === 'PAGO' ? (item.data || servico.data_inicio) : null,
     forma_pagamento: item.forma_pagamento || servico.forma_pagamento || 'PIX',
-    conta_bancaria_id: servico.conta_bancaria_id || null,
-    status: item.status_pagamento || 'PAGO',
-    observacoes: `[REF:${servico.id}] [DESP_ITEM:${item.id}] Comprovante: ${item.comprovante_url || 'Nenhum'}`
+    conta_bancaria_id: isEmp ? null : (servico.conta_bancaria_id || null),
+    status: statusFinal,
+    observacoes: `${tagEmp}[REF:${servico.id}] [DESP_ITEM:${item.id}] Comprovante: ${item.comprovante_url || 'Nenhum'}`
   };
 
   const { data: exist } = await supabase
