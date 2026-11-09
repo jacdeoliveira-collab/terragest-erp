@@ -27,6 +27,7 @@ export const PecasManutencaoHistoricoSection: React.FC<Props> = ({
   const [itens, setItens] = useState<DespesaItemServico[]>(initialItens);
   const [carregando, setCarregando] = useState(false);
   const [excluindoId, setExcluindoId] = useState<string | null>(null);
+  const [itemEmEdicao, setItemEmEdicao] = useState<DespesaItemServico | null>(null);
 
   useEffect(() => {
     if (!servicoId) {
@@ -69,36 +70,47 @@ export const PecasManutencaoHistoricoSection: React.FC<Props> = ({
     carregarDoBanco();
   }, [servicoId]);
 
+  const recalcularEAtualizar = async (novaLista: DespesaItemServico[]) => {
+    setItens(novaLista);
+    const soma = Number(novaLista.reduce((acc, i) => acc + (Number(i.valor) || 0), 0).toFixed(2));
+    onTotalChange(soma, novaLista);
+    if (servicoId) {
+      await supabase.from('servicos_horimetro').update({ despesa_manutencao: soma }).eq('id', servicoId);
+    }
+  };
+
   const handleAdicionar = async (novoDTO: Omit<DespesaItemServico, 'id'>) => {
     const novoItem: DespesaItemServico = {
       ...novoDTO,
       id: `manut_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`
     };
-    const novaLista = [...itens, novoItem];
-    setItens(novaLista);
-    const soma = Number(novaLista.reduce((acc, i) => acc + (Number(i.valor) || 0), 0).toFixed(2));
-    onTotalChange(soma, novaLista);
-
+    await recalcularEAtualizar([...itens, novoItem]);
     if (servicoId) {
       await salvarItemManutencaoCompleto({
         item: novoItem, servicoId, clienteNome, maquinaId, maquinaNome, obraId: obraId || null, tenantId: tenantAtivoId
       });
-      await supabase.from('servicos_horimetro').update({ despesa_manutencao: soma }).eq('id', servicoId);
+    }
+  };
+
+  const handleSalvarEdicao = async (id: string, updates: Omit<DespesaItemServico, 'id'>) => {
+    const editado: DespesaItemServico = { ...updates, id };
+    const novaLista = itens.map((i) => (i.id === id ? editado : i));
+    await recalcularEAtualizar(novaLista);
+    setItemEmEdicao(null);
+    if (servicoId) {
+      await salvarItemManutencaoCompleto({
+        item: editado, servicoId, clienteNome, maquinaId, maquinaNome, obraId: obraId || null, tenantId: tenantAtivoId
+      });
     }
   };
 
   const handleExcluir = async (id: string) => {
     setExcluindoId(id);
+    if (itemEmEdicao?.id === id) setItemEmEdicao(null);
     try {
       const novaLista = itens.filter((i) => i.id !== id);
-      setItens(novaLista);
-      const soma = Number(novaLista.reduce((acc, i) => acc + (Number(i.valor) || 0), 0).toFixed(2));
-      onTotalChange(soma, novaLista);
-
-      if (servicoId) {
-        await excluirItemManutencaoCompleto(id, servicoId);
-        await supabase.from('servicos_horimetro').update({ despesa_manutencao: soma }).eq('id', servicoId);
-      }
+      await recalcularEAtualizar(novaLista);
+      if (servicoId) await excluirItemManutencaoCompleto(id, servicoId);
     } finally {
       setExcluindoId(null);
     }
@@ -120,8 +132,21 @@ export const PecasManutencaoHistoricoSection: React.FC<Props> = ({
         </span>
       </div>
 
-      <PecasManutencaoForm dataPadrao={dataPadrao} onAdicionar={handleAdicionar} disabled={carregando} />
-      <PecasManutencaoListRows itens={itens} onExcluir={handleExcluir} excluindoId={excluindoId} />
+      <PecasManutencaoForm
+        dataPadrao={dataPadrao}
+        onAdicionar={handleAdicionar}
+        itemEmEdicao={itemEmEdicao}
+        onSalvarEdicao={handleSalvarEdicao}
+        onCancelarEdicao={() => setItemEmEdicao(null)}
+        disabled={carregando}
+      />
+      <PecasManutencaoListRows
+        itens={itens}
+        onEditar={(it) => setItemEmEdicao(it)}
+        onExcluir={handleExcluir}
+        excluindoId={excluindoId}
+        editandoId={itemEmEdicao?.id}
+      />
     </div>
   );
 };

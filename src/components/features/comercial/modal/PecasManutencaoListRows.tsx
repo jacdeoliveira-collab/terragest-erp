@@ -1,16 +1,18 @@
 import React from 'react';
-import { Trash2, ExternalLink, FileText, CheckCircle2, Clock } from 'lucide-react';
+import { Trash2, Pencil, ExternalLink, FileText, CheckCircle2, Clock } from 'lucide-react';
 import { abrirVisualizacaoImagem } from '../../../../utils/visualizadorImagem';
 import { removerTagEmprestimo } from '../../../../utils/emprestimoHelper';
 import type { DespesaItemServico } from '../../../../types/servicoHorimetro.types';
 
 interface Props {
   itens: DespesaItemServico[];
+  onEditar?: (item: DespesaItemServico) => void;
   onExcluir: (id: string) => Promise<void> | void;
   excluindoId?: string | null;
+  editandoId?: string | null;
 }
 
-export const PecasManutencaoListRows: React.FC<Props> = ({ itens, onExcluir, excluindoId }) => {
+export const PecasManutencaoListRows: React.FC<Props> = ({ itens, onEditar, onExcluir, excluindoId, editandoId }) => {
   if (itens.length === 0) {
     return (
       <div className="p-3 text-center text-xs text-gray-500 bg-orange-50/30 border border-dashed border-orange-200 rounded-xl">
@@ -30,8 +32,16 @@ export const PecasManutencaoListRows: React.FC<Props> = ({ itens, onExcluir, exc
       {itens.map((it) => {
         const fornLimpo = removerTagEmprestimo(it.fornecedor);
         const isPago = it.status_pagamento === 'PAGO';
+        const isEditando = editandoId === it.id;
         return (
-          <div key={it.id} className="flex items-center justify-between p-2 bg-white border border-orange-200/80 rounded-xl text-xs hover:border-orange-300 transition-all">
+          <div
+            key={it.id}
+            className={`flex items-center justify-between p-2 rounded-xl text-xs transition-all ${
+              isEditando
+                ? 'bg-amber-50 border-2 border-amber-400 shadow-xs'
+                : 'bg-white border border-orange-200/80 hover:border-orange-300'
+            }`}
+          >
             <div className="flex-1 min-w-0 pr-2">
               <div className="flex items-center gap-2">
                 <span className="font-mono text-[11px] font-bold text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded">
@@ -59,10 +69,24 @@ export const PecasManutencaoListRows: React.FC<Props> = ({ itens, onExcluir, exc
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="font-mono font-bold text-sm text-orange-950">
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="font-mono font-bold text-sm text-orange-950 mr-1">
                 R$ {Number(it.valor || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </span>
+              {onEditar && (
+                <button
+                  type="button"
+                  onClick={() => onEditar(it)}
+                  className={`p-1.5 rounded-lg cursor-pointer transition-colors ${
+                    isEditando
+                      ? 'bg-amber-200 text-amber-900 font-bold'
+                      : 'text-gray-500 hover:text-amber-700 hover:bg-amber-100/70'
+                  }`}
+                  title="Editar despesa"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+              )}
               <button
                 type="button"
                 disabled={excluindoId === it.id}

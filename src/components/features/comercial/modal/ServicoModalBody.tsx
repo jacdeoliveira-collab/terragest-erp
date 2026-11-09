@@ -112,6 +112,7 @@ export const ServicoModalBody: React.FC<ServicoModalBodyProps> = ({
           faturamentoBruto={state.faturamentoBruto}
           adiantamentosHistorico={state.adiantamentosHistorico}
           onAdicionarAdiantamento={state.adicionarAdiantamento}
+          onAtualizarAdiantamento={state.atualizarAdiantamento}
           onRemoverAdiantamento={state.removerAdiantamento}
           onSalvarSinal={state.handleSalvarSinal}
           pagamento={state}

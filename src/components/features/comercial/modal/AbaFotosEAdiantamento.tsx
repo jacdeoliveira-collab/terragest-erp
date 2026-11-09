@@ -25,6 +25,7 @@ interface AbaFotosEAdiantamentoProps {
   faturamentoBruto: number;
   adiantamentosHistorico: AdiantamentoItem[];
   onAdicionarAdiantamento: (item: Omit<AdiantamentoItem, 'id'>) => void;
+  onAtualizarAdiantamento?: (id: string, item: Partial<AdiantamentoItem>) => void;
   onRemoverAdiantamento: (id: string) => void;
   onSalvarSinal?: () => Promise<boolean>;
   pagamento: PagamentoProps;
@@ -33,7 +34,7 @@ interface AbaFotosEAdiantamentoProps {
 export const AbaFotosEAdiantamento: React.FC<AbaFotosEAdiantamentoProps> = ({
   clienteNome, clienteDocumento, clienteTelefone, descricaoServico,
   faturamentoBruto, adiantamentosHistorico, onAdicionarAdiantamento,
-  onRemoverAdiantamento, onSalvarSinal, pagamento
+  onAtualizarAdiantamento, onRemoverAdiantamento, onSalvarSinal, pagamento
 }) => {
   const totalRecebido = Number(adiantamentosHistorico.reduce((acc, i) => acc + (Number(i.valor) || 0), 0).toFixed(2));
   const saldoRestante = Number(Math.max(0, faturamentoBruto - totalRecebido).toFixed(2));
@@ -52,6 +53,7 @@ export const AbaFotosEAdiantamento: React.FC<AbaFotosEAdiantamentoProps> = ({
         clienteNome={clienteNome} clienteDocumento={clienteDocumento} clienteTelefone={clienteTelefone}
         descricaoServico={descricaoServico} faturamentoBruto={faturamentoBruto}
         adiantamentos={adiantamentosHistorico} onAdicionar={onAdicionarAdiantamento}
+        onAtualizar={onAtualizarAdiantamento}
         onRemover={onRemoverAdiantamento} onSalvarSinal={onSalvarSinal}
       />
 

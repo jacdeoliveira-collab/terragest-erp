@@ -85,6 +85,10 @@ export function useServicoDespesasState(servicoParaEditar?: ServicoHorimetro | n
     setAdiantamentosHistorico((prev) => prev.filter((i) => i.id !== id));
   };
 
+  const atualizarAdiantamento = (id: string, updates: Partial<AdiantamentoItem>) => {
+    setAdiantamentosHistorico((prev) => prev.map((i) => (i.id === id ? { ...i, ...updates } : i)));
+  };
+
   const getDespesasItensMontados = (dataRef: string): DespesaItemServico[] => {
     const itens: DespesaItemServico[] = [];
     if (despesasItensManutencao.length > 0) {
@@ -124,7 +128,7 @@ export function useServicoDespesasState(servicoParaEditar?: ServicoHorimetro | n
     fornecedorApoio, setFornecedorApoio, formaPagamentoApoio, setFormaPagamentoApoio,
     statusPagamentoApoio, setStatusPagamentoApoio, fotoCupomApoio, setFotoCupomApoio,
     abastecimentosIds, setAbastecimentosIds, adiantamentosHistorico, setAdiantamentosHistorico,
-    adicionarAdiantamento, removerAdiantamento, valorAdiantamento, dataAdiantamento,
+    adicionarAdiantamento, atualizarAdiantamento, removerAdiantamento, valorAdiantamento, dataAdiantamento,
     formaPagamentoAdiantamento, fotosTrabalho, setFotosTrabalho, observacoes, setObservacoes,
     getDespesasItensMontados
   };
