@@ -116,8 +116,9 @@ export async function persistirServicoSupabase(
 
     const idFinal = resultado.data?.id || updated.id;
     await vincularAbastecimentosAoServico(idFinal, updated.abastecimentos_ids || [], updated.cliente_id, updated.cliente_nome);
-    sincronizarServicoFinanceiro(resultado.data || updated).catch(() => {});
-    sincronizarHorimetroEquipamento(resultado.data || updated).catch(() => {});
+    const servicoSincronizado = { ...updated, ...(resultado.data || {}), despesas_itens: updated.despesas_itens };
+    sincronizarServicoFinanceiro(servicoSincronizado).catch(() => {});
+    sincronizarHorimetroEquipamento(servicoSincronizado).catch(() => {});
 
     return { success: true, data: resultado.data || updated };
   } catch (err: unknown) {

@@ -42,6 +42,11 @@ export function deduplicarContasPagar(
 
     for (let i = 0; i < retidos.length; i++) {
       const r = retidos[i];
+      const itemManutId = item.observacoes?.match(/\[DESP_MANUT:([^\]]+)\]/)?.[1];
+      const rManutId = r.observacoes?.match(/\[DESP_MANUT:([^\]]+)\]/)?.[1];
+      if (itemManutId && rManutId && itemManutId !== rManutId) {
+        continue; // Itens separados da planilha de peças/manutenção: NUNCA duplicar
+      }
       const rRef = extrairTagRef(r.observacoes);
       const rDesc = normalizarTexto(r.descricao);
       const rForn = normalizarTexto(r.fornecedor);
@@ -51,13 +56,8 @@ export function deduplicarContasPagar(
         rForn.includes('posto de combustível / cupom fiscal') &&
         rDesc.startsWith('diesel máq/apoio');
 
-      // 1. Mesmo REF e mesma categoria (exceto itens distintos da planilha [DESP_MANUT:id])
+      // 1. Mesmo REF e mesma categoria
       if (refTag && rRef && refTag === rRef && item.categoria === r.categoria) {
-        const itemManutId = item.observacoes?.match(/\[DESP_MANUT:([^\]]+)\]/)?.[1];
-        const rManutId = r.observacoes?.match(/\[DESP_MANUT:([^\]]+)\]/)?.[1];
-        if (itemManutId && rManutId && itemManutId !== rManutId) {
-          continue; // Itens separados da planilha de peças/manutenção! NÃO são duplicados!
-        }
         duplicadoIdx = i;
         break;
       }
