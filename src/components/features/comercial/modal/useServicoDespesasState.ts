@@ -1,18 +1,12 @@
 import { useState, useEffect } from 'react';
 import type { ServicoHorimetro, FotoTrabalhoItem, AdiantamentoItem, DespesaItemServico } from '../../../../types/servicoHorimetro.types';
 
-function parseInitialAdiantamentos(servico?: ServicoHorimetro | null): AdiantamentoItem[] {
-  if (servico?.adiantamentos_historico && Array.isArray(servico.adiantamentos_historico) && servico.adiantamentos_historico.length > 0) {
-    return servico.adiantamentos_historico;
+function parseInitialAdiantamentos(s?: ServicoHorimetro | null): AdiantamentoItem[] {
+  if (s?.adiantamentos_historico && Array.isArray(s.adiantamentos_historico) && s.adiantamentos_historico.length > 0) {
+    return s.adiantamentos_historico;
   }
-  if (servico?.valor_adiantamento && Number(servico.valor_adiantamento) > 0) {
-    return [{
-      id: 'ad_init_1',
-      valor: Number(servico.valor_adiantamento),
-      data: servico.data_adiantamento || new Date().toISOString().slice(0, 10),
-      forma_pagamento: servico.forma_pagamento_adiantamento || 'PIX',
-      observacao: 'Sinal / Entrada'
-    }];
+  if (s?.valor_adiantamento && Number(s.valor_adiantamento) > 0) {
+    return [{ id: 'ad_init_1', valor: Number(s.valor_adiantamento), data: s.data_adiantamento || new Date().toISOString().slice(0, 10), forma_pagamento: s.forma_pagamento_adiantamento || 'PIX', observacao: 'Sinal / Entrada' }];
   }
   return [];
 }
@@ -25,7 +19,6 @@ export function useServicoDespesasState(servicoParaEditar?: ServicoHorimetro | n
   const [fotoCupom, setFotoCupom] = useState<string | undefined>(servicoParaEditar?.foto_cupom_combustivel);
   const [despesaOperador, setDespesaOperador] = useState<number>(servicoParaEditar?.despesa_operador || 0);
 
-  // Peças, Lubrificantes & Manutenção
   const itemM = servicoParaEditar?.despesas_itens?.find((d) => d.categoria === 'PECAS_LUBRIFICANTES');
   const [despesaManutencao, setDespesaManutencao] = useState<number>(servicoParaEditar?.despesa_manutencao || itemM?.valor || 0);
   const [descricaoManutencao, setDescricaoManutencao] = useState<string>(itemM?.descricao || '');
@@ -33,8 +26,8 @@ export function useServicoDespesasState(servicoParaEditar?: ServicoHorimetro | n
   const [formaPagamentoManutencao, setFormaPagamentoManutencao] = useState<string>(itemM?.forma_pagamento || 'PIX');
   const [statusPagamentoManutencao, setStatusPagamentoManutencao] = useState<'PAGO' | 'PENDENTE'>(itemM?.status_pagamento || 'PAGO');
   const [fotoCupomManutencao, setFotoCupomManutencao] = useState<string | undefined>(itemM?.comprovante_url);
+  const [despesasItensManutencao, setDespesasItensManutencao] = useState<DespesaItemServico[]>(() => (servicoParaEditar?.despesas_itens || []).filter((d) => d.categoria === 'PECAS_LUBRIFICANTES'));
 
-  // Logística, Frete Prancha & Apoio
   const itemA = servicoParaEditar?.despesas_itens?.find((d) => d.categoria === 'LOGISTICA_APOIO');
   const [despesaApoio, setDespesaApoio] = useState<number>(servicoParaEditar?.despesa_apoio || itemA?.valor || 0);
   const [descricaoApoio, setDescricaoApoio] = useState<string>(itemA?.descricao || '');
@@ -63,6 +56,7 @@ export function useServicoDespesasState(servicoParaEditar?: ServicoHorimetro | n
     setFormaPagamentoManutencao(m?.forma_pagamento || 'PIX');
     setStatusPagamentoManutencao(m?.status_pagamento || 'PAGO');
     setFotoCupomManutencao(m?.comprovante_url);
+    setDespesasItensManutencao((servicoParaEditar?.despesas_itens || []).filter((d) => d.categoria === 'PECAS_LUBRIFICANTES'));
 
     const a = servicoParaEditar?.despesas_itens?.find((d) => d.categoria === 'LOGISTICA_APOIO');
     setDespesaApoio(servicoParaEditar?.despesa_apoio || a?.valor || 0);
@@ -93,29 +87,25 @@ export function useServicoDespesasState(servicoParaEditar?: ServicoHorimetro | n
 
   const getDespesasItensMontados = (dataRef: string): DespesaItemServico[] => {
     const itens: DespesaItemServico[] = [];
-    if (despesaManutencao > 0) {
+    if (despesasItensManutencao.length > 0) {
+      itens.push(...despesasItensManutencao);
+    } else if (despesaManutencao > 0) {
       itens.push({
-        id: 'desp_manut_principal',
-        categoria: 'PECAS_LUBRIFICANTES',
+        id: 'desp_manut_principal', categoria: 'PECAS_LUBRIFICANTES',
         descricao: descricaoManutencao || 'Peças, Lubrificantes & Manutenção',
         fornecedor: fornecedorManutencao || 'Auto Peças / Distribuidora',
-        valor: Number(despesaManutencao),
-        data: dataRef,
-        forma_pagamento: formaPagamentoManutencao,
-        status_pagamento: statusPagamentoManutencao,
+        valor: Number(despesaManutencao), data: dataRef,
+        forma_pagamento: formaPagamentoManutencao, status_pagamento: statusPagamentoManutencao,
         comprovante_url: fotoCupomManutencao
       });
     }
     if (despesaApoio > 0) {
       itens.push({
-        id: 'desp_apoio_principal',
-        categoria: 'LOGISTICA_APOIO',
+        id: 'desp_apoio_principal', categoria: 'LOGISTICA_APOIO',
         descricao: descricaoApoio || 'Logística / Frete Prancha e Apoio',
         fornecedor: fornecedorApoio || 'Transporte / Logística',
-        valor: Number(despesaApoio),
-        data: dataRef,
-        forma_pagamento: formaPagamentoApoio,
-        status_pagamento: statusPagamentoApoio,
+        valor: Number(despesaApoio), data: dataRef,
+        forma_pagamento: formaPagamentoApoio, status_pagamento: statusPagamentoApoio,
         comprovante_url: fotoCupomApoio
       });
     }
@@ -123,14 +113,13 @@ export function useServicoDespesasState(servicoParaEditar?: ServicoHorimetro | n
   };
 
   return {
-    combustivelMaquinaLitros, setCombustivelMaquinaLitros,
-    combustivelMaquinaValor, setCombustivelMaquinaValor,
-    combustivelApoioLitros, setCombustivelApoioLitros,
-    combustivelApoioValor, setCombustivelApoioValor,
+    combustivelMaquinaLitros, setCombustivelMaquinaLitros, combustivelMaquinaValor, setCombustivelMaquinaValor,
+    combustivelApoioLitros, setCombustivelApoioLitros, combustivelApoioValor, setCombustivelApoioValor,
     fotoCupom, setFotoCupom, despesaOperador, setDespesaOperador,
     despesaManutencao, setDespesaManutencao, descricaoManutencao, setDescricaoManutencao,
     fornecedorManutencao, setFornecedorManutencao, formaPagamentoManutencao, setFormaPagamentoManutencao,
     statusPagamentoManutencao, setStatusPagamentoManutencao, fotoCupomManutencao, setFotoCupomManutencao,
+    despesasItensManutencao, setDespesasItensManutencao,
     despesaApoio, setDespesaApoio, descricaoApoio, setDescricaoApoio,
     fornecedorApoio, setFornecedorApoio, formaPagamentoApoio, setFormaPagamentoApoio,
     statusPagamentoApoio, setStatusPagamentoApoio, fotoCupomApoio, setFotoCupomApoio,

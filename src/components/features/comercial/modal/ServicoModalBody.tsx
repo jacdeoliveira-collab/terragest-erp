@@ -93,8 +93,11 @@ export const ServicoModalBody: React.FC<ServicoModalBodyProps> = ({
           fotoCupomManutencao={state.fotoCupomManutencao} setFotoCupomManutencao={state.setFotoCupomManutencao}
           abastecimentosIds={state.abastecimentosIds} setAbastecimentosIds={state.setAbastecimentosIds}
           uploadingImage={state.uploadingImage} handleImageUpload={state.handleImageUpload}
-          maquinaNome={state.maquinaNome} servicoId={servicoId}
+          maquinaNome={state.maquinaNome} maquinaId={state.maquinasItens[0]?.maquina_id}
+          servicoId={servicoId} obraId={state.obraId} dataPadrao={state.dataInicio}
           clienteId={state.clienteId} clienteNome={state.clienteNome}
+          despesasItensManutencao={state.despesasItensManutencao}
+          setDespesasItensManutencao={state.setDespesasItensManutencao}
           operadorNome={state.operadorNome} horasTrabalhadas={state.horasTrabalhadas}
           valorHoraOperador={state.valorHoraOperador}
         />

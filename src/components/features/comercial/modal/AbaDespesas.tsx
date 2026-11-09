@@ -2,8 +2,9 @@ import React from 'react';
 import { Camera, X } from 'lucide-react';
 import { AbastecimentosHistoricoSection } from './AbastecimentosHistoricoSection';
 import { OperadorRemuneracaoCard } from './OperadorRemuneracaoCard';
-import { PecasLubrificantesCard } from './PecasLubrificantesCard';
+import { PecasManutencaoHistoricoSection } from './PecasManutencaoHistoricoSection';
 import { LogisticaDespesasCard } from './LogisticaDespesasCard';
+import type { DespesaItemServico } from '../../../../types/servicoHorimetro.types';
 
 interface AbaDespesasProps {
   combustivelMaquinaLitros: number; setCombustivelMaquinaLitros: (v: number) => void;
@@ -24,10 +25,13 @@ interface AbaDespesasProps {
   formaPagamentoManutencao: string; setFormaPagamentoManutencao: (v: string) => void;
   statusPagamentoManutencao: 'PAGO' | 'PENDENTE'; setStatusPagamentoManutencao: (v: 'PAGO' | 'PENDENTE') => void;
   fotoCupomManutencao?: string; setFotoCupomManutencao: (v: string | undefined) => void;
+  despesasItensManutencao?: DespesaItemServico[];
+  setDespesasItensManutencao?: (itens: DespesaItemServico[]) => void;
   abastecimentosIds?: string[]; setAbastecimentosIds?: (ids: string[]) => void;
   uploadingImage: string | null;
   handleImageUpload: (e: React.ChangeEvent<HTMLInputElement>, fieldName: string, setter: (url: string) => void) => void;
-  maquinaNome?: string; servicoId?: string; clienteId?: string; clienteNome?: string;
+  maquinaNome?: string; maquinaId?: string; servicoId?: string; clienteId?: string; clienteNome?: string;
+  obraId?: string; dataPadrao?: string;
   operadorNome?: string; horasTrabalhadas?: number; valorHoraOperador: number;
 }
 
@@ -79,16 +83,21 @@ export const AbaDespesas: React.FC<AbaDespesasProps> = (props) => {
         setDespesaOperador={props.setDespesaOperador}
       />
 
-      <PecasLubrificantesCard
-        valor={props.despesaManutencao} onChangeValor={props.setDespesaManutencao}
-        descricao={props.descricaoManutencao} onChangeDescricao={props.setDescricaoManutencao}
-        fornecedor={props.fornecedorManutencao} onChangeFornecedor={props.setFornecedorManutencao}
-        formaPagamento={props.formaPagamentoManutencao} onChangeFormaPagamento={props.setFormaPagamentoManutencao}
-        statusPagamento={props.statusPagamentoManutencao} onChangeStatusPagamento={props.setStatusPagamentoManutencao}
-        comprovanteUrl={props.fotoCupomManutencao}
-        onUploadComprovante={(e) => props.handleImageUpload(e, 'cupom_manut', props.setFotoCupomManutencao)}
-        onRemoverComprovante={() => props.setFotoCupomManutencao(undefined)}
-        uploading={props.uploadingImage === 'cupom_manut'}
+      <PecasManutencaoHistoricoSection
+        servicoId={props.servicoId}
+        clienteNome={props.clienteNome}
+        maquinaId={props.maquinaId}
+        maquinaNome={props.maquinaNome}
+        obraId={props.obraId}
+        dataPadrao={props.dataPadrao}
+        initialTotal={props.despesaManutencao}
+        initialItens={props.despesasItensManutencao}
+        onTotalChange={(total, itens) => {
+          props.setDespesaManutencao(total);
+          if (props.setDespesasItensManutencao) {
+            props.setDespesasItensManutencao(itens);
+          }
+        }}
       />
 
       <LogisticaDespesasCard
