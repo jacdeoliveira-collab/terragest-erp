@@ -1,5 +1,5 @@
 import React from 'react';
-import { DollarSign, Calendar, CreditCard, Landmark, FileText, Printer, User } from 'lucide-react';
+import { DollarSign, Calendar, CreditCard, Landmark, FileText, Printer, User, Camera, X } from 'lucide-react';
 import { Modal } from '../../../ui/Modal';
 import { useLancarValeFormState } from './useLancarValeFormState';
 import type { Funcionario } from '../../../../types/rh.types';
@@ -16,6 +16,7 @@ export const LancarValeModal: React.FC<Props> = ({ isOpen, onClose, funcionarioI
     colaboradores, colaboradorId, setColaboradorId, setColaboradorNome,
     valor, setValor, data, setData, forma, onFormaChange,
     contaId, onContaChange, contas, motivo, setMotivo,
+    comprovanteUrl, setComprovanteUrl, uploadingComp, handleUploadComprovante,
     salvando, erro, handleSalvar
   } = useLancarValeFormState(funcionarioInicial, onSuccess, onClose);
 
@@ -23,7 +24,7 @@ export const LancarValeModal: React.FC<Props> = ({ isOpen, onClose, funcionarioI
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Lançar Haver / Vale de Colaborador (RH)" maxWidth="md">
-      <div className="space-y-3.5 text-xs text-left">
+      <div className="space-y-3 text-xs text-left">
         {erro && <div className="p-2.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg">{erro}</div>}
 
         <div>
@@ -92,17 +93,33 @@ export const LancarValeModal: React.FC<Props> = ({ isOpen, onClose, funcionarioI
           </label>
           <input
             type="text" value={motivo} onChange={(e) => setMotivo(e.target.value)}
-            placeholder="Ex: Adiantamento semanal, despesa em campo ou haver direto"
+            placeholder="Ex: Adiantamento semanal, Pix conta Teresinha ou haver direto"
             className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl text-gray-900"
           />
         </div>
 
-        <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+        <div className="flex items-center justify-between p-2.5 bg-gray-50 border border-dashed border-gray-300 rounded-xl">
+          <span className="font-semibold text-gray-700">Comprovante (PIX / Recibo Assinado)</span>
+          <div className="flex items-center gap-1.5">
+            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-emerald-50 border border-gray-300 rounded-lg font-semibold text-gray-700 cursor-pointer">
+              <Camera className="w-3.5 h-3.5 text-emerald-600" />
+              <span>{uploadingComp ? 'Enviando...' : comprovanteUrl ? 'Comprovante Anexado ✓' : 'Anexar Arquivo'}</span>
+              <input type="file" accept="image/*,application/pdf" onChange={(e) => handleUploadComprovante(e.target.files?.[0])} className="hidden" />
+            </label>
+            {comprovanteUrl && (
+              <button type="button" onClick={() => setComprovanteUrl('')} className="p-1 text-rose-500 hover:bg-rose-50 rounded">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
           <button type="button" onClick={onClose} className="px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold cursor-pointer">Cancelar</button>
-          <button type="button" disabled={salvando} onClick={() => handleSalvar(false)} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold cursor-pointer">
+          <button type="button" disabled={salvando || uploadingComp} onClick={() => handleSalvar(false)} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold cursor-pointer">
             {salvando ? 'Gravando...' : 'Salvar Vale'}
           </button>
-          <button type="button" disabled={salvando} onClick={() => handleSalvar(true)} className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold cursor-pointer">
+          <button type="button" disabled={salvando || uploadingComp} onClick={() => handleSalvar(true)} className="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold cursor-pointer">
             <Printer className="w-3.5 h-3.5" /><span>Salvar & Emitir Recibo PDF</span>
           </button>
         </div>

@@ -66,7 +66,7 @@ export const ValesListTab: React.FC = () => {
 
       <ValesCardsResumo vales={valesFiltrados} />
 
-      <ValesTable vales={valesFiltrados} onExcluir={excluir} />
+      <ValesTable vales={valesFiltrados} onExcluir={excluir} onReload={refetch} />
 
       <LancarValeModal
         isOpen={modalNovoAberto}

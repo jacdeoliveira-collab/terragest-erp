@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useTenantContext } from '../contexts/TenantContext';
+import { mapContaPagarToVale } from '../services/valeRhService';
 import type { ServicoHorimetro } from '../types/servicoHorimetro.types';
+import type { ValeColaboradorItem } from '../types/valeRh.types';
 
 export interface OperadorHistoricoData {
   totalHoras: number;
@@ -10,6 +12,7 @@ export interface OperadorHistoricoData {
   saldoPagar: number;
   qtdServicos: number;
   servicos: ServicoHorimetro[];
+  vales: ValeColaboradorItem[];
 }
 
 const INICIAL: OperadorHistoricoData = {
@@ -18,7 +21,8 @@ const INICIAL: OperadorHistoricoData = {
   totalVales: 0,
   saldoPagar: 0,
   qtdServicos: 0,
-  servicos: []
+  servicos: [],
+  vales: []
 };
 
 export function useOperadorHistorico(operadorNome?: string, operadorId?: string) {
@@ -38,27 +42,50 @@ export function useOperadorHistorico(operadorNome?: string, operadorId?: string)
       setIsLoading(true);
       setError(null);
 
-      let q = supabase
+      let qSrv = supabase
         .from('servicos_horimetro')
         .select('*')
         .order('data_inicio', { ascending: false });
 
       if (operadorId) {
-        q = q.or(`operador_id.eq.${operadorId},operador_nome.ilike.%${nomeLimpo}%`);
+        qSrv = qSrv.or(`operador_id.eq.${operadorId},operador_nome.ilike.%${nomeLimpo}%`);
       } else {
-        q = q.ilike('operador_nome', `%${nomeLimpo}%`);
+        qSrv = qSrv.ilike('operador_nome', `%${nomeLimpo}%`);
       }
+      if (tenantAtivoId) qSrv = qSrv.eq('tenant_id', tenantAtivoId);
 
-      if (tenantAtivoId) q = q.eq('tenant_id', tenantAtivoId);
+      let qVales = supabase
+        .from('contas_pagar')
+        .select('*, contas_bancarias(nome_conta)')
+        .eq('categoria', 'FOLHA_RH')
+        .order('data_pagamento', { ascending: false });
 
-      const res = await q;
-      if (res.error) console.warn('Aviso servicos_horimetro operador:', res.error.message);
+      if (operadorId && nomeLimpo) {
+        qVales = qVales.or(`fornecedor.ilike.%${nomeLimpo}%,observacoes.ilike.%[COLAB_ID:${operadorId}]%`);
+      } else if (operadorId) {
+        qVales = qVales.ilike('observacoes', `%[COLAB_ID:${operadorId}]%`);
+      } else {
+        qVales = qVales.ilike('fornecedor', `%${nomeLimpo}%`);
+      }
+      if (tenantAtivoId) qVales = qVales.eq('tenant_id', tenantAtivoId);
 
-      const servicos: ServicoHorimetro[] = res.data || [];
+      const [resSrv, resVales] = await Promise.all([qSrv, qVales]);
+      if (resSrv.error) console.warn('Aviso servicos_horimetro operador:', resSrv.error.message);
+
+      const servicos: ServicoHorimetro[] = resSrv.data || [];
+      const rawVales = resVales.data || [];
+
+      const vales: ValeColaboradorItem[] = rawVales
+        .filter((cp: any) => {
+          const obs = cp.observacoes || '';
+          const desc = cp.descricao || '';
+          return obs.includes('[VALE_RH]') || desc.toLowerCase().includes('vale');
+        })
+        .map((cp: any) => mapContaPagarToVale(cp, operadorId, nomeLimpo));
 
       let totHoras = 0;
       let totGanho = 0;
-      let totVales = 0;
+      let totValesServicos = 0;
 
       servicos.forEach((s) => {
         const h = Number(s.horas_trabalhadas) || 0;
@@ -68,18 +95,21 @@ export function useOperadorHistorico(operadorNome?: string, operadorId?: string)
 
         totHoras += h;
         totGanho += ganhoServico;
-        totVales += vale;
+        totValesServicos += vale;
       });
 
-      const saldo = Math.max(0, Number((totGanho - totVales).toFixed(2)));
+      const totValesRh = vales.reduce((acc, v) => acc + v.valor, 0);
+      const totValesConsolidado = Number((totValesServicos + totValesRh).toFixed(2));
+      const saldo = Math.max(0, Number((totGanho - totValesConsolidado).toFixed(2)));
 
       setData({
         totalHoras: Number(totHoras.toFixed(1)),
         totalGanho: Number(totGanho.toFixed(2)),
-        totalVales: Number(totVales.toFixed(2)),
+        totalVales: totValesConsolidado,
         saldoPagar: saldo,
         qtdServicos: servicos.length,
-        servicos
+        servicos,
+        vales
       });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Falha ao carregar histórico do operador');

@@ -35,6 +35,11 @@ export const FuncionarioHistoricoModal: React.FC<Props> = ({ isOpen, onClose, fu
 
   if (!funcionario) return null;
 
+  const handleExcluirVale = async (id: string) => {
+    await excluirValeColaborador(id);
+    refetch();
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Ficha Operacional & Financeira: ${funcionario.nome}`} maxWidth="4xl">
       <div className="space-y-3.5">
@@ -82,18 +87,26 @@ export const FuncionarioHistoricoModal: React.FC<Props> = ({ isOpen, onClose, fu
         </div>
 
         {subTab === 'financeiro' && (
-          <FuncionarioRemuneracaoTable remuneracoes={remuneracoesExibidas} operadorNome={funcionario.nome} onQuitarItem={(it) => setItemParaQuitar(it)} />
+          <div className="space-y-3">
+            {data.vales.length > 0 && (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+                    <Receipt className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Adiantamentos & Vales Registrados ({data.vales.length})</span>
+                  </h4>
+                  <span className="text-[11px] font-mono font-bold text-blue-800">
+                    Total Já Pago / Vales: R$ {data.totalPago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <ValesTable vales={data.vales} onExcluir={handleExcluirVale} onReload={refetch} />
+              </div>
+            )}
+            <FuncionarioRemuneracaoTable remuneracoes={remuneracoesExibidas} operadorNome={funcionario.nome} onQuitarItem={(it) => setItemParaQuitar(it)} />
+          </div>
         )}
         {subTab === 'vales' && (
-          <div className="space-y-3">
-            <ValesTable
-              vales={data.vales}
-              onExcluir={async (id) => {
-                await excluirValeColaborador(id);
-                refetch();
-              }}
-            />
-          </div>
+          <ValesTable vales={data.vales} onExcluir={handleExcluirVale} onReload={refetch} />
         )}
         {subTab === 'producao' && (
           <div className="space-y-3">

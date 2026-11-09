@@ -36,7 +36,9 @@ export const OperadorHistoricoCards: React.FC<Props> = ({ data }) => {
         <div className="text-base font-black text-purple-900 font-mono mt-0.5">
           R$ {data.totalVales.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
         </div>
-        <span className="text-[10px] text-purple-600">Total já adiantado</span>
+        <span className="text-[10px] text-purple-600">
+          {data.vales.length > 0 ? `${data.vales.length} adiantamento(s) registrado(s)` : 'Total já adiantado'}
+        </span>
       </div>
 
       <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-xl">

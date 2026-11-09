@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useTenantContext } from '../contexts/TenantContext';
+import { mapContaPagarToVale } from '../services/valeRhService';
 import type { Funcionario } from '../types/rh.types';
 import type { ServicoHorimetro } from '../types/servicoHorimetro.types';
 import type { DailyBulletin } from '../types/bde.types';
@@ -47,19 +48,9 @@ export function useFuncionarioHistorico(funcionario?: Funcionario | null) {
         return obs.includes('[VALE_RH]') || desc.toLowerCase().includes('vale');
       });
 
-      const vales: ValeColaboradorItem[] = valesReais.map((cp: any) => ({
-        id: cp.id,
-        colaboradorId: funcionario.id,
-        colaboradorNome: cp.favorecido_nome || cp.fornecedor || funcionario.nome,
-        valor: Number(cp.valor) || 0,
-        data: cp.data_pagamento || cp.data_vencimento || '',
-        formaPagamento: cp.forma_pagamento || 'PIX',
-        contaBancariaId: cp.conta_bancaria_id,
-        contaBancariaNome: cp.contas_bancarias?.nome_conta || 'Caixa Geral',
-        observacao: cp.observacoes?.replace(/\[VALE_RH\]/g, '')?.replace(/\[COLAB_ID:[^\]]+\]/g, '')?.trim() || cp.descricao,
-        status: cp.status === 'PAGO' ? 'PAGO' : 'PENDENTE',
-        created_at: cp.created_at
-      }));
+      const vales: ValeColaboradorItem[] = valesReais.map((cp: any) =>
+        mapContaPagarToVale(cp, funcionario.id, funcionario.nome)
+      );
 
       let totalHorasServicos = 0, totalGanhos = 0, totalPago = 0, totalSaldoAberto = 0, qtdQuitados = 0;
       const mapaMaquinas: Record<string, { totalHoras: number; totalTrabalhos: number }> = {};

@@ -96,9 +96,9 @@ export async function registrarFechamentoDiarioTarde(
           const lucro = Number((fatBruto - despTotal).toFixed(2));
           const maqItens = Array.isArray(srv.maquinas_itens) && srv.maquinas_itens.length > 0
             ? srv.maquinas_itens.map((m: any, idx: number) => idx === 0 ? {
-                ...m, horimetro_final: final, horas_trabalhadas: horas, faturamento_bruto: fatBruto,
-                ...(input.fotoHorimetroUrl ? { foto_horimetro_final: input.fotoHorimetroUrl } : {})
-              } : m)
+              ...m, horimetro_final: final, horas_trabalhadas: horas, faturamento_bruto: fatBruto,
+              ...(input.fotoHorimetroUrl ? { foto_horimetro_final: input.fotoHorimetroUrl } : {})
+            } : m)
             : undefined;
 
           await supabase.from('servicos_horimetro').update({

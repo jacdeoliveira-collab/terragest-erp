@@ -3,6 +3,8 @@ import { useFuncionarios } from '../../../../hooks/useFuncionarios';
 import { useFormaContaSync } from '../../../../hooks/useFormaContaSync';
 import { useTenantContext } from '../../../../contexts/TenantContext';
 import { lancarValeColaborador } from '../../../../services/valeRhService';
+import { uploadParaGoogleDrive } from '../../../../services/driveService';
+import { comprimirImagem, salvarComprovante } from '../../../../services/comprovanteStorageService';
 import { gerarReciboValeRhPDF } from '../../../../utils/reciboValeRhPdf';
 import type { Funcionario } from '../../../../types/rh.types';
 
@@ -16,6 +18,8 @@ export function useLancarValeFormState(funcionarioInicial?: Funcionario | null, 
   const [forma, setForma] = useState<string>('Dinheiro');
   const [contaId, setContaId] = useState<string>('');
   const [motivo, setMotivo] = useState<string>('');
+  const [comprovanteUrl, setComprovanteUrl] = useState<string>('');
+  const [uploadingComp, setUploadingComp] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -37,6 +41,24 @@ export function useLancarValeFormState(funcionarioInicial?: Funcionario | null, 
 
   const colabSel = colaboradores.find((c) => c.id === colaboradorId) || funcionarioInicial;
 
+  const handleUploadComprovante = async (file?: File) => {
+    if (!file) return;
+    try {
+      setUploadingComp(true);
+      const upDrive = await uploadParaGoogleDrive(file, 'rh');
+      if (upDrive.sucesso && upDrive.driveUrl) {
+        setComprovanteUrl(upDrive.driveUrl);
+      } else {
+        const chave = `idb://vale_${Date.now()}`;
+        const b64 = await comprimirImagem(file);
+        await salvarComprovante(chave, b64);
+        setComprovanteUrl(chave);
+      }
+    } finally {
+      setUploadingComp(false);
+    }
+  };
+
   const handleSalvar = async (imprimir: boolean) => {
     const v = parseFloat(valor);
     if (!v || v <= 0) { setErro('Informe um valor válido maior que zero.'); return; }
@@ -53,7 +75,8 @@ export function useLancarValeFormState(funcionarioInicial?: Funcionario | null, 
         data,
         formaPagamento: forma,
         contaBancariaId: contaId || null,
-        observacao: motivo.trim() || undefined
+        observacao: motivo.trim() || undefined,
+        comprovanteUrl: comprovanteUrl || undefined
       });
 
       if (!res.success) throw new Error(res.error || 'Erro ao registrar');
@@ -70,6 +93,7 @@ export function useLancarValeFormState(funcionarioInicial?: Funcionario | null, 
         });
       }
 
+      setValor(''); setMotivo(''); setComprovanteUrl('');
       onSuccess?.();
       onClose?.();
     } catch (err: unknown) {
@@ -83,7 +107,7 @@ export function useLancarValeFormState(funcionarioInicial?: Funcionario | null, 
     colaboradores, colaboradorId, setColaboradorId, colaboradorNome, setColaboradorNome,
     valor, setValor, data, setData, forma, onFormaChange,
     contaId, onContaChange, contas, motivo, setMotivo,
+    comprovanteUrl, setComprovanteUrl, uploadingComp, handleUploadComprovante,
     salvando, erro, handleSalvar
   };
 }
-

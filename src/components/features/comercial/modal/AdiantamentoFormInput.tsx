@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Camera, X, Tag } from 'lucide-react';
 import { useFormaContaSync } from '../../../../hooks/useFormaContaSync';
-import { comprimirImagem } from '../../../../services/comprovanteStorageService';
+import { comprimirImagem, salvarComprovante } from '../../../../services/comprovanteStorageService';
+import { uploadParaGoogleDrive } from '../../../../services/driveService';
 import type { AdiantamentoItem } from '../../../../types/servicoHorimetro.types';
 
 interface Props {
@@ -30,12 +31,15 @@ export const AdiantamentoFormInput: React.FC<Props> = ({ onAdicionar, isFirst })
     if (!file) return;
     try {
       setCarregandoFoto(true);
-      const b64 = await comprimirImagem(file);
-      setComprovante(b64);
-    } catch {
-      const r = new FileReader();
-      r.onload = () => typeof r.result === 'string' && setComprovante(r.result);
-      r.readAsDataURL(file);
+      const upDrive = await uploadParaGoogleDrive(file, 'frota');
+      if (upDrive.sucesso && upDrive.driveUrl) {
+        setComprovante(upDrive.driveUrl);
+      } else {
+        const chave = `idb://adiant_${Date.now()}`;
+        const b64 = await comprimirImagem(file);
+        await salvarComprovante(chave, b64);
+        setComprovante(chave);
+      }
     } finally {
       setCarregandoFoto(false);
     }

@@ -10,6 +10,7 @@ export interface ValeColaboradorItem {
   contaBancariaId?: string;
   contaBancariaNome?: string;
   observacao?: string;
+  comprovanteUrl?: string;
   status: 'PAGO' | 'PENDENTE';
   created_at?: string;
 }
@@ -22,7 +23,7 @@ export interface LancarValePayload {
   formaPagamento: string;
   contaBancariaId?: string | null;
   observacao?: string;
+  comprovanteUrl?: string;
   tenantId?: string | null;
   obraId?: string | null;
 }
-
