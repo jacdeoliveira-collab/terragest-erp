@@ -8,7 +8,6 @@ export async function prepararImagemParaPdf(urlOrBase64?: string): Promise<strin
   const src = urlOrBase64.trim();
   if (!src) return null;
 
-  // Se for referência local (idb:// ou ref_), busca no IndexedDB sem chamar fetch/Image na rede
   if (src.startsWith('idb://') || src.startsWith('ref_')) {
     const localData = await obterComprovante(src);
     if (localData && (localData.startsWith('data:image/jpeg') || localData.startsWith('data:image/png'))) {
@@ -17,12 +16,10 @@ export async function prepararImagemParaPdf(urlOrBase64?: string): Promise<strin
     return null;
   }
 
-  // Se já for data URL em JPEG ou PNG compatível
   if (src.startsWith('data:image/jpeg') || src.startsWith('data:image/png')) {
     return src;
   }
 
-  // Ignora esquemas desconhecidos que não sejam http(s) ou blob
   if (!src.startsWith('http://') && !src.startsWith('https://') && !src.startsWith('blob:')) {
     return null;
   }
@@ -64,6 +61,9 @@ export async function prepararImagemParaPdf(urlOrBase64?: string): Promise<strin
 
 async function tentarCarregarViaBlob(url: string): Promise<string | null> {
   if (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('blob:')) {
+    return null;
+  }
+  if (url.includes('drive.google.com') || url.includes('googleusercontent.com')) {
     return null;
   }
   try {

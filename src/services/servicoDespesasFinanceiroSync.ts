@@ -49,6 +49,19 @@ export async function sincronizarDespesasDetalhadasServico(servico: ServicoHorim
   const contaBancariaId = servico.conta_bancaria_id || null;
   const formaPag = servico.forma_pagamento || 'PIX';
 
+  const { data: existingDetalhados } = await supabase
+    .from('contas_pagar')
+    .select('id')
+    .ilike('observacoes', `%[REF:${servico.id}]%`)
+    .ilike('observacoes', '%[DESP_MANUT:%')
+    .limit(1);
+
+  if (existingDetalhados && existingDetalhados.length > 0) {
+    await supabase.from('contas_pagar').delete()
+      .ilike('observacoes', `%[REF:${servico.id}]%`)
+      .ilike('observacoes', '%[CAT:MANUTENCAO]%');
+  }
+
   if (itens.length > 0) {
     for (const item of itens) {
       if (item.valor > 0) await sincronizarItemDespesa(item, servico, obraId, tenantId);
@@ -56,7 +69,7 @@ export async function sincronizarDespesasDetalhadasServico(servico: ServicoHorim
     return;
   }
 
-  if (Number(servico.despesa_manutencao || 0) > 0) {
+  if (Number(servico.despesa_manutencao || 0) > 0 && (!existingDetalhados || existingDetalhados.length === 0)) {
     const payloadManut = {
       tenant_id: tenantId, obra_id: obraId,
       descricao: `Peças, Lubrificantes & Manutenção - ${servico.maquina_nome} (${servico.cliente_nome})`,

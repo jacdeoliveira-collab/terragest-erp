@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Wrench } from 'lucide-react';
+import { Table } from 'lucide-react';
 import { supabase } from '../../../../lib/supabase';
 import { useTenantContext } from '../../../../contexts/TenantContext';
 import { PecasManutencaoForm } from './PecasManutencaoForm';
@@ -34,17 +34,18 @@ export const PecasManutencaoHistoricoSection: React.FC<Props> = ({
       if (initialItens.length > 0) setItens(initialItens);
       return;
     }
-    const carregarDoBanco = async () => {
+    const carregar = async () => {
       setCarregando(true);
       const { data: cps } = await supabase
-        .from('contas_pagar')
-        .select('*')
+        .from('contas_pagar').select('*')
         .eq('categoria', 'PECAS_MANUTENCAO')
         .ilike('observacoes', `%[REF:${servicoId}]%`)
         .order('data_vencimento', { ascending: true });
 
       if (cps && cps.length > 0) {
-        const mapeados: DespesaItemServico[] = cps.map((c) => {
+        const temItensDetalhados = cps.some((c) => c.observacoes?.includes('[DESP_MANUT:'));
+        const filtrados = temItensDetalhados ? cps.filter((c) => !c.observacoes?.includes('[CAT:MANUTENCAO]')) : cps;
+        const mapeados: DespesaItemServico[] = filtrados.map((c) => {
           const matchId = c.observacoes?.match(/\[DESP_MANUT:([^\]]+)\]/);
           const matchComp = c.observacoes?.match(/Comprovante:\s*([^\s|]+)/);
           return {
@@ -67,7 +68,7 @@ export const PecasManutencaoHistoricoSection: React.FC<Props> = ({
       }
       setCarregando(false);
     };
-    carregarDoBanco();
+    carregar();
   }, [servicoId]);
 
   const recalcularEAtualizar = async (novaLista: DespesaItemServico[]) => {
@@ -122,9 +123,9 @@ export const PecasManutencaoHistoricoSection: React.FC<Props> = ({
     <div className="p-3.5 bg-orange-50/60 border border-orange-200/90 rounded-2xl space-y-3 text-left">
       <div className="flex items-center justify-between border-b border-orange-200/70 pb-2">
         <div className="flex items-center gap-2">
-          <Wrench className="w-4 h-4 text-orange-600" />
+          <Table className="w-4 h-4 text-orange-600" />
           <span className="font-bold text-gray-900 text-xs">
-            3. Peças, Lubrificantes & Manutenção do Serviço ({itens.length})
+            3. Planilha de Peças, Lubrificantes & Manutenção ({itens.length})
           </span>
         </div>
         <span className="text-[11px] font-bold text-orange-950 bg-orange-100/90 px-2.5 py-0.5 rounded-full font-mono">
@@ -133,19 +134,13 @@ export const PecasManutencaoHistoricoSection: React.FC<Props> = ({
       </div>
 
       <PecasManutencaoForm
-        dataPadrao={dataPadrao}
-        onAdicionar={handleAdicionar}
-        itemEmEdicao={itemEmEdicao}
-        onSalvarEdicao={handleSalvarEdicao}
-        onCancelarEdicao={() => setItemEmEdicao(null)}
-        disabled={carregando}
+        dataPadrao={dataPadrao} onAdicionar={handleAdicionar}
+        itemEmEdicao={itemEmEdicao} onSalvarEdicao={handleSalvarEdicao}
+        onCancelarEdicao={() => setItemEmEdicao(null)} disabled={carregando}
       />
       <PecasManutencaoListRows
-        itens={itens}
-        onEditar={(it) => setItemEmEdicao(it)}
-        onExcluir={handleExcluir}
-        excluindoId={excluindoId}
-        editandoId={itemEmEdicao?.id}
+        itens={itens} onEditar={(it) => setItemEmEdicao(it)}
+        onExcluir={handleExcluir} excluindoId={excluindoId} editandoId={itemEmEdicao?.id}
       />
     </div>
   );

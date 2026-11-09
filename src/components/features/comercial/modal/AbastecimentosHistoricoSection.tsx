@@ -4,10 +4,10 @@ import { useAbastecimentos } from '../../../../hooks/useAbastecimentos';
 import { useTenantContext } from '../../../../contexts/TenantContext';
 import { supabase } from '../../../../lib/supabase';
 import { isVehicleOrTruck } from '../../../../utils/equipmentMeasurement';
-import { sincronizarDespesa, removerDespesaPorRef } from '../../../../services/contasPagarSyncHelper';
-import { formatarTagEmprestimo } from '../../../../utils/emprestimoHelper';
+import { removerDespesaPorRef } from '../../../../services/contasPagarSyncHelper';
 import { AbastecimentoRapidoForm, type NovoAbastecimentoRapidoDTO } from './AbastecimentoRapidoForm';
 import { AbastecimentosListRows } from './AbastecimentosListRows';
+import { criarAbastecimentoDb, atualizarAbastecimentoDb } from './abastecimentoHistoricoHelper';
 import type { AbastecimentoItem } from '../../../../types/abastecimento.types';
 
 interface Props {
@@ -25,7 +25,6 @@ export const AbastecimentosHistoricoSection: React.FC<Props> = ({
   const [mensagem, setMensagem] = useState<string | null>(null);
   const [erroMsg, setErroMsg] = useState<string | null>(null);
   const [itemEmEdicao, setItemEmEdicao] = useState<AbastecimentoItem | null>(null);
-
   useEffect(() => { refetch(); }, [refetch]);
 
   const itensVinculados = (todosAbast || []).filter((a) =>
@@ -33,8 +32,7 @@ export const AbastecimentosHistoricoSection: React.FC<Props> = ({
   );
 
   const calcularResumo = (lista: AbastecimentoItem[]) => {
-    let [mL, mV, aL, aV] = [0, 0, 0, 0];
-    let foto: string | undefined;
+    let [mL, mV, aL, aV] = [0, 0, 0, 0]; let foto: string | undefined;
     lista.forEach((ab) => {
       const isApoio = isVehicleOrTruck({ code: ab.maquina_codigo, name: ab.maquina_nome }) || ab.tipo_combustivel === 'DIESEL_S10';
       const lit = Number(ab.quantidade_litros) || 0, val = Number(ab.valor_total) || 0;
@@ -67,60 +65,21 @@ export const AbastecimentosHistoricoSection: React.FC<Props> = ({
   const handleAdicionar = async (dto: NovoAbastecimentoRapidoDTO): Promise<boolean> => {
     try {
       setSalvando(true); setErroMsg(null);
-      const obraPadrao = 'a1aa1351-5e2e-4b9d-b5b9-3bd7cec521b1';
-      const fotoSegura = dto.foto_comprovante && !dto.foto_comprovante.startsWith('data:') ? dto.foto_comprovante : null;
-      const tagEmp = dto.emprestimo ? `${formatarTagEmprestimo(dto.emprestimo)} ` : '';
-      const refItem = servicoId ? `Cupom [ITEM:${servicoId.slice(0, 8)}:${Date.now().toString(36)}]` : 'Cupom Avulso';
-
-      const novoAbast = {
-        tenant_id: tenantAtivoId, obra_id: obraPadrao, maquina_id: dto.maquina_id, equipment_id: dto.maquina_id,
-        data: dto.data, tipo_combustivel: dto.tipo_combustivel, quantidade_litros: dto.quantidade_litros,
-        valor_unitario: dto.valor_unitario, valor_total: dto.valor_total, horimetro_momento: dto.horimetro_momento || 0,
-        posto_fornecedor: dto.posto_fornecedor, numero_requisicao_nf: `${tagEmp}${refItem}`, foto_comprovante: fotoSegura,
-        servico_id: servicoId || null, cliente_id: clienteId || null, cliente_nome: clienteNome || null, origem: 'POSTO'
-      };
-      const { data: criado, error } = await supabase.from('abastecimentos').insert([novoAbast]).select().single();
-      if (error || !criado) throw error || new Error('Falha ao gravar abastecimento');
-
-      await sincronizarDespesa({
-        ref: `ABAST_${criado.id}`, categoria: 'COMBUSTIVEL', tenantId: tenantAtivoId, obraId: obraPadrao,
-        descricao: `Diesel ${dto.maquina_nome}: ${dto.quantidade_litros}L (${clienteNome || 'Serviço'})`,
-        fornecedor: dto.emprestimo ? `${dto.emprestimo.credorNome} (${dto.posto_fornecedor || 'Posto'})` : (dto.posto_fornecedor || 'Posto'),
-        valor: dto.valor_total, dataVencimento: dto.emprestimo?.dataPagamentoPrevista || dto.data,
-        formaPagamento: dto.forma_pagamento || 'PIX', status: dto.emprestimo || dto.forma_pagamento === 'BOLETO' ? 'PENDENTE' : 'PAGO',
-        observacoes: `${tagEmp}Abastecimento vinculado ao serviço ${clienteNome || ''}`
-      });
-
+      const criado = await criarAbastecimentoDb(dto, servicoId, clienteId, clienteNome, tenantAtivoId);
       const novosIds = Array.from(new Set([...itensVinculados.map((i) => i.id), criado.id]));
-      await atualizarServicoTotais([...itensVinculados, criado as AbastecimentoItem], novosIds);
+      await atualizarServicoTotais([...itensVinculados, criado], novosIds);
       await refetch();
       setMensagem(`Abastecimento de ${dto.quantidade_litros}L registrado!`);
       setTimeout(() => setMensagem(null), 3000);
       return true;
-    } catch (err: unknown) {
-      setErroMsg(err instanceof Error ? err.message : 'Erro ao gravar abastecimento'); return false;
-    } finally { setSalvando(false); }
+    } catch (err: unknown) { setErroMsg(err instanceof Error ? err.message : 'Erro ao gravar'); return false; }
+    finally { setSalvando(false); }
   };
 
   const handleSalvarEdicao = async (id: string, dto: NovoAbastecimentoRapidoDTO): Promise<boolean> => {
     try {
       setSalvando(true); setErroMsg(null);
-      const obraPadrao = 'a1aa1351-5e2e-4b9d-b5b9-3bd7cec521b1';
-      const fotoSegura = dto.foto_comprovante && !dto.foto_comprovante.startsWith('data:') ? dto.foto_comprovante : null;
-      await supabase.from('abastecimentos').update({
-        maquina_id: dto.maquina_id, equipment_id: dto.maquina_id, data: dto.data,
-        tipo_combustivel: dto.tipo_combustivel, quantidade_litros: dto.quantidade_litros,
-        valor_unitario: dto.valor_unitario, valor_total: dto.valor_total,
-        horimetro_momento: dto.horimetro_momento || 0, posto_fornecedor: dto.posto_fornecedor,
-        foto_comprovante: fotoSegura
-      }).eq('id', id);
-
-      await sincronizarDespesa({
-        ref: `ABAST_${id}`, categoria: 'COMBUSTIVEL', tenantId: tenantAtivoId, obraId: obraPadrao,
-        descricao: `Diesel ${dto.maquina_nome}: ${dto.quantidade_litros}L (${clienteNome || 'Serviço'})`,
-        fornecedor: dto.posto_fornecedor || 'Posto', valor: dto.valor_total, dataVencimento: dto.data,
-        formaPagamento: dto.forma_pagamento || 'PIX', status: 'PAGO'
-      });
+      await atualizarAbastecimentoDb(id, dto, clienteNome, tenantAtivoId);
       setItemEmEdicao(null);
       await refetch();
       setMensagem('Abastecimento atualizado com sucesso!');
@@ -148,8 +107,7 @@ export const AbastecimentosHistoricoSection: React.FC<Props> = ({
     <div className="p-3.5 bg-amber-50/60 border border-amber-300 rounded-xl space-y-3 text-left text-xs">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 font-bold text-gray-800 uppercase tracking-wider">
-          <Fuel className="w-4 h-4 text-amber-600" />
-          <span>Histórico de Abastecimentos ({itensVinculados.length})</span>
+          <Fuel className="w-4 h-4 text-amber-600" /><span>Histórico de Abastecimentos ({itensVinculados.length})</span>
         </div>
         <div className="text-right font-mono">
           <span className="text-gray-600 mr-2">{totalLitros.toFixed(2)} L</span>

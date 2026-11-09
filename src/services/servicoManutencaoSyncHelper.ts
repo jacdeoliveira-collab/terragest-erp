@@ -49,7 +49,7 @@ export async function salvarItemManutencaoCompleto(p: SincronizarManutencaoParam
   }
 
   if (maquinaId && item.valor > 0) {
-    const metaTipo = `CORRETIVA|${fornLimpo}`.slice(0, 140);
+    const metaTipo = `${item.descricao?.toLowerCase().includes('óleo') || item.descricao?.toLowerCase().includes('oleo') ? 'PREVENTIVA' : 'CORRETIVA'}|${fornLimpo}`.slice(0, 140);
     const planoPayload = {
       tenant_id: tenantId || '00000000-0000-0000-0000-000000000001',
       equipment_id: maquinaId,
@@ -64,22 +64,49 @@ export async function salvarItemManutencaoCompleto(p: SincronizarManutencaoParam
     };
 
     const { data: existPlano } = await supabase
-      .from('planos_manutencao')
-      .select('id')
+      .from('planos_manutencao').select('id')
       .eq('equipment_id', maquinaId)
       .eq('data_ultima_execucao', item.data)
-      .eq('servico', item.descricao)
+      .ilike('servico', `%${item.descricao?.slice(0, 20)}%`)
       .maybeSingle();
 
-    if (existPlano?.id) {
-      await supabase.from('planos_manutencao').update(planoPayload).eq('id', existPlano.id);
+    let planoId = existPlano?.id;
+    if (planoId) {
+      await supabase.from('planos_manutencao').update(planoPayload).eq('id', planoId);
     } else {
-      await supabase.from('planos_manutencao').insert([planoPayload]);
+      const { data: insPlano } = await supabase.from('planos_manutencao').insert([planoPayload]).select('id').maybeSingle();
+      planoId = insPlano?.id;
+    }
+
+    if (planoId && item.comprovante_url) {
+      const docPayload = {
+        tenant_id: tenantId || '00000000-0000-0000-0000-000000000001',
+        equipamento_id: maquinaId,
+        tipo: 'OUTROS',
+        descricao: `Comprovante Manutenção [MANUT_${planoId}]: ${item.descricao}`,
+        drive_url: item.comprovante_url,
+        observacoes: `[MANUT_${planoId}] [REF:${servicoId || ''}]`
+      };
+      const { data: existDoc } = await supabase.from('equipamento_documentos').select('id').ilike('observacoes', `%[MANUT_${planoId}]%`).maybeSingle();
+      if (existDoc?.id) await supabase.from('equipamento_documentos').update(docPayload).eq('id', existDoc.id);
+      else await supabase.from('equipamento_documentos').insert([docPayload]);
     }
   }
 }
 
 export async function excluirItemManutencaoCompleto(itemId: string, _servicoId?: string): Promise<void> {
   const itemTag = `[DESP_MANUT:${itemId}]`;
+  const { data: cp } = await supabase.from('contas_pagar').select('descricao, valor, data_vencimento').ilike('observacoes', `%${itemTag}%`).maybeSingle();
   await supabase.from('contas_pagar').delete().ilike('observacoes', `%${itemTag}%`);
+
+  if (cp) {
+    const nomeLimpo = (cp.descricao?.split(' - ')[0] || '').trim();
+    if (nomeLimpo) {
+      const { data: plano } = await supabase.from('planos_manutencao').select('id').eq('data_ultima_execucao', cp.data_vencimento).ilike('servico', `%${nomeLimpo.slice(0, 20)}%`).maybeSingle();
+      if (plano?.id) {
+        await supabase.from('planos_manutencao').delete().eq('id', plano.id);
+        await supabase.from('equipamento_documentos').delete().ilike('observacoes', `%[MANUT_${plano.id}]%`);
+      }
+    }
+  }
 }

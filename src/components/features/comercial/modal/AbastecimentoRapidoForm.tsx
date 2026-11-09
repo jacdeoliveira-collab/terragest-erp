@@ -26,20 +26,11 @@ export const AbastecimentoRapidoForm: React.FC<Props> = ({
 }) => {
   const hoje = new Date().toISOString().slice(0, 10);
   const { data: equipments } = useEquipments({ onlyActives: true });
-  const [maquinaId, setMaquinaId] = useState('');
-  const [tipoComb, setTipoComb] = useState<TipoCombustivel>('DIESEL_S500');
-  const [litros, setLitros] = useState('');
-  const [precoLitro, setPrecoLitro] = useState('');
-  const [valor, setValor] = useState('');
-  const [data, setData] = useState(hoje);
-  const [horimetro, setHorimetro] = useState('');
-  const [posto, setPosto] = useState('Posto de Combustível / Cupom Fiscal');
-  const [formaPag, setFormaPag] = useState('PIX');
-  const [credorNome, setCredorNome] = useState('');
-  const [dataEmp, setDataEmp] = useState(hoje);
-  const [dataPagar, setDataPagar] = useState(hoje);
-  const [comprovante, setComprovante] = useState<string | undefined>();
-  const [uploading, setUploading] = useState(false);
+  const [maquinaId, setMaquinaId] = useState(''); const [tipoComb, setTipoComb] = useState<TipoCombustivel>('DIESEL_S500');
+  const [litros, setLitros] = useState(''); const [precoLitro, setPrecoLitro] = useState(''); const [valor, setValor] = useState('');
+  const [data, setData] = useState(hoje); const [horimetro, setHorimetro] = useState(''); const [posto, setPosto] = useState('Posto de Combustível / Cupom Fiscal');
+  const [formaPag, setFormaPag] = useState('PIX'); const [credorNome, setCredorNome] = useState(''); const [dataEmp, setDataEmp] = useState(hoje); const [dataPagar, setDataPagar] = useState(hoje);
+  const [comprovante, setComprovante] = useState<string | undefined>(); const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (itemEmEdicao) {
