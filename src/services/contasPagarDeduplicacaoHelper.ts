@@ -51,8 +51,13 @@ export function deduplicarContasPagar(
         rForn.includes('posto de combustível / cupom fiscal') &&
         rDesc.startsWith('diesel máq/apoio');
 
-      // 1. Mesmo REF e mesma categoria
+      // 1. Mesmo REF e mesma categoria (exceto itens distintos da planilha [DESP_MANUT:id])
       if (refTag && rRef && refTag === rRef && item.categoria === r.categoria) {
+        const itemManutId = item.observacoes?.match(/\[DESP_MANUT:([^\]]+)\]/)?.[1];
+        const rManutId = r.observacoes?.match(/\[DESP_MANUT:([^\]]+)\]/)?.[1];
+        if (itemManutId && rManutId && itemManutId !== rManutId) {
+          continue; // Itens separados da planilha de peças/manutenção! NÃO são duplicados!
+        }
         duplicadoIdx = i;
         break;
       }
@@ -93,7 +98,6 @@ export function deduplicarContasPagar(
 
     if (duplicadoIdx >= 0) {
       const existente = retidos[duplicadoIdx];
-      // Decide qual manter
       const substituir = deveSubstituir(existente, item);
       if (substituir) {
         if (existente.id) idsParaExcluir.push(existente.id);
@@ -110,7 +114,6 @@ export function deduplicarContasPagar(
 }
 
 function deveSubstituir(existente: ContaPagarItem, novo: ContaPagarItem): boolean {
-  // Se o existente for registro sombra de serviço e o novo for cupom de posto real, substituir
   const existForn = normalizarTexto(existente.fornecedor);
   const novoForn = normalizarTexto(novo.fornecedor);
   const existIsSombra = existForn.includes('posto de combustível / cupom fiscal');
@@ -118,16 +121,10 @@ function deveSubstituir(existente: ContaPagarItem, novo: ContaPagarItem): boolea
 
   if (existIsSombra && !novoIsSombra) return true;
   if (!existIsSombra && novoIsSombra) return false;
-
-  // Preferir registro PAGO sobre PENDENTE
   if (novo.status === 'PAGO' && existente.status !== 'PAGO') return true;
   if (existente.status === 'PAGO' && novo.status !== 'PAGO') return false;
-
-  // Preferir registro com obra_id sobre registro sem obra_id (Geral)
   if (novo.obra_id && !existente.obra_id) return true;
   if (!novo.obra_id && existente.obra_id) return false;
-
-  // Preferir vencimento mais recente para folha de pagamento
   if (novo.categoria === 'FOLHA_RH' && novo.data_vencimento > existente.data_vencimento) return true;
 
   return false;

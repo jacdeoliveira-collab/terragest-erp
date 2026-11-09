@@ -4,6 +4,7 @@ import { EmprestimoFieldsBox } from '../../../common/EmprestimoFieldsBox';
 import { formatarTagEmprestimo, extrairInfoEmprestimo, removerTagEmprestimo } from '../../../../utils/emprestimoHelper';
 import { abrirVisualizacaoImagem } from '../../../../utils/visualizadorImagem';
 import { uploadParaGoogleDrive } from '../../../../services/driveService';
+import { comprimirImagem, salvarComprovante } from '../../../../services/comprovanteStorageService';
 import type { DespesaItemServico } from '../../../../types/servicoHorimetro.types';
 
 interface Props {
@@ -17,17 +18,12 @@ export const PecasManutencaoForm: React.FC<Props> = ({
 }) => {
   const hoje = new Date().toISOString().slice(0, 10);
   const [data, setData] = useState(dataPadrao || hoje);
-  const [descricao, setDescricao] = useState('');
-  const [fornecedor, setFornecedor] = useState('');
-  const [valor, setValor] = useState<number | ''>('');
-  const [formaPagamento, setFormaPagamento] = useState('PIX');
+  const [descricao, setDescricao] = useState(''); const [fornecedor, setFornecedor] = useState('');
+  const [valor, setValor] = useState<number | ''>(''); const [formaPagamento, setFormaPagamento] = useState('PIX');
   const [statusPagamento, setStatusPagamento] = useState<'PAGO' | 'PENDENTE'>('PAGO');
-  const [comprovanteUrl, setComprovanteUrl] = useState<string>('');
-  const [uploading, setUploading] = useState(false);
-  const [isEmp, setIsEmp] = useState(false);
-  const [empCredor, setEmpCredor] = useState('');
-  const [empDtPegou, setEmpDtPegou] = useState(hoje);
-  const [empDtPagar, setEmpDtPagar] = useState(hoje);
+  const [comprovanteUrl, setComprovanteUrl] = useState<string>(''); const [uploading, setUploading] = useState(false);
+  const [isEmp, setIsEmp] = useState(false); const [empCredor, setEmpCredor] = useState('');
+  const [empDtPegou, setEmpDtPegou] = useState(hoje); const [empDtPagar, setEmpDtPagar] = useState(hoje);
 
   useEffect(() => {
     if (itemEmEdicao) {
@@ -41,9 +37,7 @@ export const PecasManutencaoForm: React.FC<Props> = ({
       const emp = extrairInfoEmprestimo({ observacoes: itemEmEdicao.fornecedor, forma_pagamento: itemEmEdicao.forma_pagamento });
       setIsEmp(emp.isEmprestimo);
       if (emp.isEmprestimo) {
-        setEmpCredor(emp.credorNome || '');
-        setEmpDtPegou(emp.dataEmprestimo || hoje);
-        setEmpDtPagar(emp.dataPagamentoPrevista || hoje);
+        setEmpCredor(emp.credorNome || ''); setEmpDtPegou(emp.dataEmprestimo || hoje); setEmpDtPagar(emp.dataPagamentoPrevista || hoje);
       }
     } else {
       setDescricao(''); setValor(''); setComprovanteUrl(''); setIsEmp(false);
@@ -55,8 +49,13 @@ export const PecasManutencaoForm: React.FC<Props> = ({
     if (!file) return;
     setUploading(true);
     try {
+      const b64 = await comprimirImagem(file, 1200, 0.7);
+      const chave = `idb://manut_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      await salvarComprovante(chave, b64);
+      setComprovanteUrl(chave);
       const res = await uploadParaGoogleDrive(file, 'frota');
       if (res.sucesso && res.driveUrl) setComprovanteUrl(res.driveUrl);
+    } catch {
     } finally { setUploading(false); }
   };
 
@@ -84,9 +83,7 @@ export const PecasManutencaoForm: React.FC<Props> = ({
       {itemEmEdicao && (
         <div className="flex items-center justify-between pb-1 border-b border-amber-200 text-amber-900 font-bold">
           <span>✏️ Editando Despesa: {itemEmEdicao.descricao}</span>
-          <button type="button" onClick={onCancelarEdicao} className="text-gray-500 hover:text-gray-800 text-[11px] font-medium flex items-center gap-1 cursor-pointer">
-            <RotateCcw className="w-3 h-3" /> Cancelar Edição
-          </button>
+          <button type="button" onClick={onCancelarEdicao} className="text-gray-500 hover:text-gray-800 text-[11px] font-medium flex items-center gap-1 cursor-pointer"><RotateCcw className="w-3 h-3" /> Cancelar Edição</button>
         </div>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
@@ -126,13 +123,13 @@ export const PecasManutencaoForm: React.FC<Props> = ({
         <div className="flex items-center gap-2">
           {comprovanteUrl ? (
             <div className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-300 rounded-lg text-[11px] text-emerald-800 font-medium">
-              <FileText className="w-3.5 h-3.5 text-emerald-600" /><span>Comprovante anexado</span>
+              <FileText className="w-3.5 h-3.5 text-emerald-600" /><span>Comprovante anexado ✓</span>
               <button type="button" onClick={() => abrirVisualizacaoImagem(comprovanteUrl, 'Comprovante')} className="text-emerald-700 hover:underline"><ExternalLink className="w-3 h-3 inline ml-1" /></button>
               <button type="button" onClick={() => setComprovanteUrl('')} className="text-rose-500 hover:bg-rose-100 p-0.5 rounded"><X className="w-3 h-3" /></button>
             </div>
           ) : (
             <label className="flex items-center gap-1.5 px-2.5 py-1 border border-dashed border-orange-300 hover:border-orange-500 bg-white rounded-lg cursor-pointer text-[11px] text-orange-800 font-semibold transition-all">
-              <Camera className="w-3.5 h-3.5 text-orange-600" /><span>{uploading ? 'Enviando...' : 'Anexar Comprovante (Drive)'}</span>
+              <Camera className="w-3.5 h-3.5 text-orange-600" /><span>{uploading ? 'Enviando comprovante...' : 'Anexar Comprovante (Drive)'}</span>
               <input type="file" accept="image/*,application/pdf" disabled={uploading} className="hidden" onChange={handleUpload} />
             </label>
           )}

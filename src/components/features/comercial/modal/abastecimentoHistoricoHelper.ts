@@ -60,3 +60,4 @@ export async function atualizarAbastecimentoDb(
     formaPagamento: dto.forma_pagamento || 'PIX', status: 'PAGO'
   });
 }
+
