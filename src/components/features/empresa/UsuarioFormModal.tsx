@@ -47,7 +47,12 @@ export const UsuarioFormModal: React.FC<UsuarioFormModalProps> = ({
       setSuccessMsg(`Usuário ${email} criado e vinculado com perfil ${perfil}!`);
       setTimeout(() => { onSuccess?.(); onClose(); }, 1200);
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Falha na comunicação com o banco');
+      const msg = err instanceof Error ? err.message : 'Falha na comunicação com o banco';
+      if (msg.includes('criar_usuario_tenant') || msg.includes('schema cache')) {
+        setErrorMsg('Execute a migração 53 no SQL Editor do Supabase para ativar a criação via app.');
+      } else {
+        setErrorMsg(msg);
+      }
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Users, UserPlus, Shield, RefreshCw } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
+import { useTenantContext } from '../../../contexts/TenantContext';
 import { UsuarioFormModal } from './UsuarioFormModal';
 import type { PerfilAcesso } from '../../../types/auth.types';
 
@@ -23,18 +24,20 @@ const BADGE_COLORS: Record<PerfilAcesso, string> = {
 };
 
 export const EmpresaUsuariosTab: React.FC<{ tenantId?: string }> = ({ tenantId }) => {
+  const { tenantAtivoId } = useTenantContext();
   const [usuarios, setUsuarios] = useState<TenantUserRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
 
   const fetchUsuarios = useCallback(async () => {
-    if (!tenantId) return;
+    const tid = tenantId || tenantAtivoId;
+    if (!tid) return;
     setLoading(true);
     try {
       const { data } = await supabase
         .from('tenant_users')
-        .select('id, user_id, role, perfil_acesso, created_at')
-        .eq('tenant_id', tenantId)
+        .select('id, user_id, role, perfil_acesso, created_at, email')
+        .eq('tenant_id', tid)
         .order('created_at', { ascending: false });
 
       setUsuarios((data || []) as TenantUserRecord[]);
@@ -98,8 +101,10 @@ export const EmpresaUsuariosTab: React.FC<{ tenantId?: string }> = ({ tenantId }
               return (
                 <div key={u.id} className="p-3.5 flex items-center justify-between hover:bg-gray-50/60 transition-colors">
                   <div className="space-y-0.5">
-                    <p className="font-semibold text-gray-900 font-mono text-[11px]">{u.user_id}</p>
-                    <p className="text-[10px] text-gray-400">Papel: {u.role || 'membro'}</p>
+                    <p className="font-semibold text-gray-900 text-xs">{u.email || u.user_id}</p>
+                    <p className="text-[10px] text-gray-400 font-mono">
+                      {u.email ? `ID: ${u.user_id.slice(0, 8)}... | ` : ''}Papel: {u.role || 'membro'}
+                    </p>
                   </div>
                   <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${badgeClass}`}>
                     {perfil}
@@ -114,7 +119,7 @@ export const EmpresaUsuariosTab: React.FC<{ tenantId?: string }> = ({ tenantId }
       <UsuarioFormModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        tenantId={tenantId}
+        tenantId={tenantId || tenantAtivoId || undefined}
         onSuccess={fetchUsuarios}
       />
     </div>
