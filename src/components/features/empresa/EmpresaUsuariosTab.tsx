@@ -30,23 +30,31 @@ export const EmpresaUsuariosTab: React.FC<{ tenantId?: string }> = ({ tenantId }
   const [modalOpen, setModalOpen] = useState(false);
 
   const fetchUsuarios = useCallback(async () => {
-    const tid = tenantId || tenantAtivoId;
-    if (!tid) return;
+    const tid = tenantId || tenantAtivoId || (typeof window !== 'undefined' ? localStorage.getItem('terragest_tenant_ativo_id') : null) || '00000000-0000-0000-0000-000000000001';
     setLoading(true);
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('tenant_users')
         .select('id, user_id, role, perfil_acesso, created_at, email')
         .eq('tenant_id', tid)
         .order('created_at', { ascending: false });
 
-      setUsuarios((data || []) as TenantUserRecord[]);
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        const { data: allUsers } = await supabase
+          .from('tenant_users')
+          .select('id, user_id, role, perfil_acesso, created_at, email')
+          .order('created_at', { ascending: false });
+        setUsuarios((allUsers || []) as TenantUserRecord[]);
+      } else {
+        setUsuarios(data as TenantUserRecord[]);
+      }
     } catch {
       setUsuarios([]);
     } finally {
       setLoading(false);
     }
-  }, [tenantId]);
+  }, [tenantId, tenantAtivoId]);
 
   useEffect(() => { fetchUsuarios(); }, [fetchUsuarios]);
 
@@ -119,7 +127,7 @@ export const EmpresaUsuariosTab: React.FC<{ tenantId?: string }> = ({ tenantId }
       <UsuarioFormModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        tenantId={tenantId || tenantAtivoId || undefined}
+        tenantId={tenantId || tenantAtivoId || (typeof window !== 'undefined' ? localStorage.getItem('terragest_tenant_ativo_id') : null) || '00000000-0000-0000-0000-000000000001'}
         onSuccess={fetchUsuarios}
       />
     </div>

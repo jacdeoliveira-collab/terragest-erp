@@ -49,8 +49,8 @@ export const EmpresaConfigForm: React.FC<EmpresaConfigFormProps> = ({
     setAssinaturaUrl(empresa.assinatura_digital_url || null);
   }, [empresa]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     await onSave({
       razao_social: razaoSocial, cnpj, inscricao_estadual: inscricaoEstadual,
       inscricao_municipal: inscricaoMunicipal, cnae, contato_telefone: telefone,
@@ -68,7 +68,7 @@ export const EmpresaConfigForm: React.FC<EmpresaConfigFormProps> = ({
   ];
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden text-left">
+    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden text-left">
       <div className="p-5 pb-3 border-b border-gray-100 flex items-center gap-3">
         <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
           <Building2 className="w-5 h-5" />
@@ -136,11 +136,11 @@ export const EmpresaConfigForm: React.FC<EmpresaConfigFormProps> = ({
       {activeTab !== 'integracoes' && activeTab !== 'usuarios' && (
         <div className="flex items-center justify-between p-4 px-6 bg-gray-50 border-t border-gray-100">
           <span className="text-[11px] text-gray-500">Alterações salvas refletem imediatamente nos relatórios e boletins (PDF)</span>
-          <button type="submit" disabled={isSaving} className="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-semibold shadow-sm cursor-pointer transition-all">
+          <button type="button" onClick={handleSubmit} disabled={isSaving} className="inline-flex items-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-xl text-xs font-semibold shadow-sm cursor-pointer transition-all">
             <Save className="w-4 h-4" /><span>{isSaving ? 'Salvando...' : 'Salvar Configurações'}</span>
           </button>
         </div>
       )}
-    </form>
+    </div>
   );
 };

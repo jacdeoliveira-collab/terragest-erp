@@ -33,11 +33,12 @@ export const UsuarioFormModal: React.FC<UsuarioFormModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!tenantId) return setErrorMsg('Identificador da empresa não encontrado.');
+    e.stopPropagation();
+    const tid = tenantId || (typeof window !== 'undefined' ? localStorage.getItem('terragest_tenant_ativo_id') : null) || '00000000-0000-0000-0000-000000000001';
     setLoading(true); setErrorMsg(null); setSuccessMsg(null);
     try {
       const { data, error } = await supabase.rpc('criar_usuario_tenant', {
-        p_tenant_id: tenantId,
+        p_tenant_id: tid,
         p_email: email.trim().toLowerCase(),
         p_password: password,
         p_perfil_acesso: perfil
