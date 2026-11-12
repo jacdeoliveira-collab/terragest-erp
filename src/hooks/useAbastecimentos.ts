@@ -4,7 +4,7 @@ import { useTenantContext } from '../contexts/TenantContext';
 import { useObraContext } from '../contexts/ObraContext';
 import { obterComprovante } from '../services/comprovanteStorageService';
 import { removerDespesaAbastecimento, ressincronizarDespesaAbastecimento } from '../services/abastecimentoFinanceiroSync';
-import { sincronizarTodosAbastecimentosDeServicos } from '../services/servicoAbastecimentoSync';
+import { desvincularAbastecimentoDeServicos } from '../services/servicoAbastecimentoCleanup';
 import type { AbastecimentoItem } from '../types/abastecimento.types';
 import { aplicarFiltroTenant, DEFAULT_LEGACY_TENANT } from '../utils/tenantFilter';
 
@@ -113,9 +113,13 @@ export function useAbastecimentos() {
 
   const excluirAbastecimento = async (id: string) => {
     try {
+      const alvo = data.find((item) => item.id === id);
       const { error: err } = await supabase.from('abastecimentos').delete().eq('id', id);
       if (err) throw err;
-      await removerDespesaAbastecimento(id);
+      await Promise.all([
+        removerDespesaAbastecimento(id),
+        desvincularAbastecimentoDeServicos(id, alvo?.servico_id)
+      ]);
       setData((prev) => {
         const novo = prev.filter((item) => item.id !== id);
         if (typeof window !== 'undefined') localStorage.setItem(getStorageKey(activeTenant), JSON.stringify(novo));
@@ -129,7 +133,6 @@ export function useAbastecimentos() {
 
   useEffect(() => {
     fetchAbastecimentos();
-    sincronizarTodosAbastecimentosDeServicos().catch(() => {});
   }, [fetchAbastecimentos]);
 
   return { data, isLoading, error, refetch: fetchAbastecimentos, atualizarAbastecimento, excluirAbastecimento };

@@ -24,6 +24,7 @@ export const AbastecimentoTable: React.FC<AbastecimentoTableProps> = ({
             <th className="p-3.5">Máquina / Veículo & Ações</th>
             <th className="p-3.5">Data</th>
             <th className="p-3.5 text-right">Litros</th>
+            <th className="p-3.5 text-right">Valor / Litro</th>
             <th className="p-3.5 text-right">Custo Total</th>
             <th className="p-3.5">Combustível</th>
             <th className="p-3.5 text-right">Horímetro / KM</th>
@@ -32,6 +33,8 @@ export const AbastecimentoTable: React.FC<AbastecimentoTableProps> = ({
         <tbody className="divide-y divide-gray-100 text-gray-700">
           {data.map((item: AbastecimentoItem) => {
             const shortId = item.id.length > 8 ? item.id.slice(0, 8).toUpperCase() : item.id.toUpperCase();
+            const litros = Number(item.quantidade_litros) || 0;
+            const unitario = Number(item.valor_unitario) > 0 ? Number(item.valor_unitario) : (litros > 0 ? Number(item.valor_total) / litros : 0);
             return (
               <tr
                 key={item.id}
@@ -77,7 +80,8 @@ export const AbastecimentoTable: React.FC<AbastecimentoTableProps> = ({
                   </div>
                 </td>
                 <td className="p-3.5 font-mono font-medium text-gray-900">{item.data}</td>
-                <td className="p-3.5 text-right font-mono font-bold text-emerald-800">{Number(item.quantidade_litros).toFixed(1)} L</td>
+                <td className="p-3.5 text-right font-mono font-bold text-emerald-800">{litros.toFixed(1)} L</td>
+                <td className="p-3.5 text-right font-mono text-gray-600">{unitario > 0 ? `R$ ${unitario.toFixed(2)}/L` : '-'}</td>
                 <td className="p-3.5 text-right font-mono font-bold text-gray-900">R$ {Number(item.valor_total).toFixed(2)}</td>
                 <td className="p-3.5 text-gray-600">{item.tipo_combustivel.replace('_', ' ')}</td>
                 <td className="p-3.5 text-right font-mono text-gray-600">

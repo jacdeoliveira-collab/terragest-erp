@@ -26,11 +26,12 @@ export async function autoSincronizarServicosEAbastecimentos(
 
     // Abastecimentos desta máquina e dos apoios vinculados
     const abastsDaMaquina = abastecimentos.filter((ab) => {
+      if (ab.servico_id && ab.servico_id !== s.id) return false;
       const c = (ab.maquina_codigo || '').toUpperCase();
       const n = (ab.maquina_nome || '').toUpperCase();
 
       // Se vinculado por ID
-      if (ab.numero_requisicao_nf?.includes(s.id)) return true;
+      if (ab.servico_id === s.id || ab.numero_requisicao_nf?.includes(s.id)) return true;
 
       // Se é da máquina principal
       if (codigoMaq && (c.includes(codigoMaq) || n.includes(codigoMaq))) {
