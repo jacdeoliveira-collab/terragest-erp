@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { CheckCircle2, Copy, ExternalLink, Loader2, QrCode, RefreshCw, X } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import type { PlanoCatalogoItem } from '../../../utils/planosCatalogo';
+import { obterConfigAsaas } from '../../../services/asaasApiClient';
 
 interface Props {
   plano: PlanoCatalogoItem;
@@ -32,6 +33,7 @@ export const PlanoCheckoutModal: React.FC<Props> = ({ plano, tenantId, onClose, 
       try {
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData.session?.access_token;
+        const localAsaas = await obterConfigAsaas(tenantId);
         const res = await fetch('/api/saas-checkout', {
           method: 'POST',
           headers: {
@@ -42,7 +44,9 @@ export const PlanoCheckoutModal: React.FC<Props> = ({ plano, tenantId, onClose, 
             action: 'criar',
             plano: plano.id,
             valor: plano.preco,
-            tenantId
+            tenantId,
+            clientApiKey: localAsaas?.apiKey || undefined,
+            clientEnvironment: localAsaas?.environment || undefined
           })
         });
         const data = await res.json();

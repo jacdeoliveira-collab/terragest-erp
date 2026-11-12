@@ -28,15 +28,34 @@ export default async function handler(req, res) {
     global: { headers: authHeader ? { Authorization: authHeader } : {} }
   });
 
-  const { action, plano, valor, tenantId, assinaturaId, paymentId } = req.body || {};
+  const { action, plano, valor, tenantId, assinaturaId, paymentId, clientApiKey, clientEnvironment } = req.body || {};
 
   try {
-    const { data: configRows, error: configError } = await supabase.rpc('obter_asaas_master_checkout');
-    if (configError) throw new Error(`Falha ao obter config Master Asaas: ${configError.message}`);
+    let apiKey = clientApiKey;
+    let environment = clientEnvironment || 'production';
 
-    const masterConfig = Array.isArray(configRows) ? configRows[0] : configRows;
-    const apiKey = masterConfig?.apiKey;
-    const environment = masterConfig?.environment || 'production';
+    if (!apiKey) {
+      const { data: configRows } = await supabase.rpc('obter_asaas_master_checkout');
+      const masterConfig = Array.isArray(configRows) ? configRows[0] : configRows;
+      apiKey = masterConfig?.apiKey;
+      environment = masterConfig?.environment || environment;
+    }
+
+    if (!apiKey) {
+      const { data: tiRows } = await supabase
+        .from('tenant_integrations')
+        .select('metadata')
+        .order('created_at', { ascending: true })
+        .limit(10);
+      for (const r of tiRows || []) {
+        const meta = r.metadata || {};
+        if (meta?.asaas_config?.apiKey) {
+          apiKey = meta.asaas_config.apiKey;
+          environment = meta.asaas_config.environment || environment;
+          break;
+        }
+      }
+    }
 
     if (!apiKey) {
       throw new Error('Conta Asaas Master não configurada para receber assinaturas.');
