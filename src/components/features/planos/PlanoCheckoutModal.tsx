@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CheckCircle2, Copy, ExternalLink, Loader2, QrCode, RefreshCw, X } from 'lucide-react';
+import { CheckCircle2, Copy, ExternalLink, Loader2, MessageCircle, QrCode, RefreshCw, X } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import type { PlanoCatalogoItem } from '../../../utils/planosCatalogo';
 import { obterConfigAsaas } from '../../../services/asaasApiClient';
@@ -36,18 +36,8 @@ export const PlanoCheckoutModal: React.FC<Props> = ({ plano, tenantId, onClose, 
         const localAsaas = await obterConfigAsaas(tenantId);
         const res = await fetch('/api/saas-checkout', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
-          },
-          body: JSON.stringify({
-            action: 'criar',
-            plano: plano.id,
-            valor: plano.preco,
-            tenantId,
-            clientApiKey: localAsaas?.apiKey || undefined,
-            clientEnvironment: localAsaas?.environment || undefined
-          })
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify({ action: 'criar', plano: plano.id, valor: plano.preco, tenantId, clientApiKey: localAsaas?.apiKey, clientEnvironment: localAsaas?.environment })
         });
         const data = await res.json();
         if (!res.ok || data.error) throw new Error(data.error || 'Erro ao gerar cobrança PIX');
@@ -77,15 +67,8 @@ export const PlanoCheckoutModal: React.FC<Props> = ({ plano, tenantId, onClose, 
       const token = sessionData.session?.access_token;
       const res = await fetch('/api/saas-checkout', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
-        },
-        body: JSON.stringify({
-          action: 'verificar',
-          assinaturaId: checkout.assinaturaId,
-          paymentId: checkout.paymentId
-        })
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ action: 'verificar', assinaturaId: checkout.assinaturaId, paymentId: checkout.paymentId })
       });
       const data = await res.json();
       if (!res.ok || data.error) throw new Error(data.error || 'Erro ao consultar pagamento');
@@ -134,7 +117,20 @@ export const PlanoCheckoutModal: React.FC<Props> = ({ plano, tenantId, onClose, 
             </button>
           </div>
         )}
-        {!loading && !checkout && erro && <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-300 border border-red-500/30">{erro}</p>}
+        {!loading && !checkout && erro && (
+          <div className="space-y-4">
+            <p className="rounded-lg bg-red-500/10 p-3 text-xs text-red-300 border border-red-500/30 leading-relaxed">{erro}</p>
+            <p className="text-xs text-slate-400">Para ativar sua assinatura ou tirar dúvidas, fale com nossa equipe:</p>
+            <a
+              href={`https://wa.me/5598984242792?text=Ol%C3%A1%2C%20quero%20assinar%20o%20Plano%20${encodeURIComponent(plano.nome)}%20do%20TerraGest`}
+              target="_blank"
+              rel="noreferrer"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white hover:bg-emerald-500"
+            >
+              <MessageCircle className="h-4 w-4" /> Contratar via WhatsApp
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );
