@@ -74,6 +74,7 @@ export function useEmpresaConfig() {
         registro_crea: payload.registro_crea?.trim() || null,
         logo_url: payload.logo_url !== undefined ? payload.logo_url : (empresa?.logo_url || null),
         assinatura_digital_url: payload.assinatura_digital_url !== undefined ? payload.assinatura_digital_url : (empresa?.assinatura_digital_url || null),
+        parametros_operacionais: payload.parametros_operacionais !== undefined ? payload.parametros_operacionais : (empresa?.parametros_operacionais || {}),
         status_conta: empresa?.status_conta || 'ativo',
         plano: empresa?.plano || 'ENTERPRISE',
         updated_at: new Date().toISOString()

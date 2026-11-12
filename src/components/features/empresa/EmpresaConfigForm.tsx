@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Save, CheckCircle2, AlertCircle, Building2, FileText, MapPin, Award, Cloud, Users } from 'lucide-react';
+import { Save, CheckCircle2, AlertCircle, Building2, FileText, MapPin, Award, Cloud, Users, Clock } from 'lucide-react';
 import type { TenantMaster, EmpresaConfigPayload } from '../../../types/tenant.types';
+import type { ParametrosOperacionaisEmpresa } from '../../../types/agenda.types';
 import { EmpresaFiscalTab } from './EmpresaFiscalTab';
 import { EmpresaContatoTab } from './EmpresaContatoTab';
 import { EmpresaTecnicoTab } from './EmpresaTecnicoTab';
+import { EmpresaOperacionalTab } from './EmpresaOperacionalTab';
 import { MinhaEmpresaIntegracoesTab } from './MinhaEmpresaIntegracoesTab';
 import { EmpresaUsuariosTab } from './EmpresaUsuariosTab';
 
@@ -16,8 +18,8 @@ interface EmpresaConfigFormProps {
   onSave: (payload: EmpresaConfigPayload) => Promise<{ success: boolean }>;
 }
 
-type TabType = 'fiscais' | 'contato' | 'tecnica' | 'integracoes' | 'usuarios';
-const VALID_TABS: TabType[] = ['fiscais', 'contato', 'tecnica', 'integracoes', 'usuarios'];
+type TabType = 'fiscais' | 'contato' | 'tecnica' | 'operacional' | 'integracoes' | 'usuarios';
+const VALID_TABS: TabType[] = ['fiscais', 'contato', 'tecnica', 'operacional', 'integracoes', 'usuarios'];
 
 export const EmpresaConfigForm: React.FC<EmpresaConfigFormProps> = ({
   empresa, isSaving, error, success, onSave
@@ -32,6 +34,7 @@ export const EmpresaConfigForm: React.FC<EmpresaConfigFormProps> = ({
   const [responsavelTecnico, setResponsavelTecnico] = useState(''); const [registroCrea, setRegistroCrea] = useState('');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [assinaturaUrl, setAssinaturaUrl] = useState<string | null>(null);
+  const [parametrosOp, setParametrosOp] = useState<ParametrosOperacionaisEmpresa>({});
 
   useEffect(() => {
     const aba = searchParams.get('aba') as TabType;
@@ -47,6 +50,7 @@ export const EmpresaConfigForm: React.FC<EmpresaConfigFormProps> = ({
     setResponsavelTecnico(empresa.responsavel_tecnico || ''); setRegistroCrea(empresa.registro_crea || '');
     setLogoUrl(empresa.logo_url || null);
     setAssinaturaUrl(empresa.assinatura_digital_url || null);
+    setParametrosOp(empresa.parametros_operacionais || {});
   }, [empresa]);
 
   const handleSubmit = async (e?: React.FormEvent) => {
@@ -55,7 +59,8 @@ export const EmpresaConfigForm: React.FC<EmpresaConfigFormProps> = ({
       razao_social: razaoSocial, cnpj, inscricao_estadual: inscricaoEstadual,
       inscricao_municipal: inscricaoMunicipal, cnae, contato_telefone: telefone,
       contato_email: email, endereco, responsavel_tecnico: responsavelTecnico,
-      registro_crea: registroCrea, logo_url: logoUrl, assinatura_digital_url: assinaturaUrl
+      registro_crea: registroCrea, logo_url: logoUrl, assinatura_digital_url: assinaturaUrl,
+      parametros_operacionais: parametrosOp
     });
   };
 
@@ -63,6 +68,7 @@ export const EmpresaConfigForm: React.FC<EmpresaConfigFormProps> = ({
     { id: 'fiscais' as TabType, label: 'Identidade & Fiscais', icon: FileText },
     { id: 'contato' as TabType, label: 'Contato & Endereço', icon: MapPin },
     { id: 'tecnica' as TabType, label: 'Responsabilidade Técnica', icon: Award },
+    { id: 'operacional' as TabType, label: 'Parâmetros Operacionais', icon: Clock },
     { id: 'integracoes' as TabType, label: 'Bancos (API & PIX) e Drive', icon: Cloud },
     { id: 'usuarios' as TabType, label: 'Usuários & RBAC', icon: Users }
   ];
@@ -116,19 +122,9 @@ export const EmpresaConfigForm: React.FC<EmpresaConfigFormProps> = ({
             cnae={cnae} setCnae={setCnae} logoUrl={logoUrl} setLogoUrl={setLogoUrl}
           />
         )}
-        {activeTab === 'contato' && (
-          <EmpresaContatoTab
-            telefone={telefone} setTelefone={setTelefone} email={email} setEmail={setEmail}
-            endereco={endereco} setEndereco={setEndereco}
-          />
-        )}
-        {activeTab === 'tecnica' && (
-          <EmpresaTecnicoTab
-            responsavelTecnico={responsavelTecnico} setResponsavelTecnico={setResponsavelTecnico}
-            registroCrea={registroCrea} setRegistroCrea={setRegistroCrea}
-            assinaturaUrl={assinaturaUrl} setAssinaturaUrl={setAssinaturaUrl}
-          />
-        )}
+        {activeTab === 'contato' && <EmpresaContatoTab telefone={telefone} setTelefone={setTelefone} email={email} setEmail={setEmail} endereco={endereco} setEndereco={setEndereco} />}
+        {activeTab === 'tecnica' && <EmpresaTecnicoTab responsavelTecnico={responsavelTecnico} setResponsavelTecnico={setResponsavelTecnico} registroCrea={registroCrea} setRegistroCrea={setRegistroCrea} assinaturaUrl={assinaturaUrl} setAssinaturaUrl={setAssinaturaUrl} />}
+        {activeTab === 'operacional' && <EmpresaOperacionalTab parametros={parametrosOp} setParametros={setParametrosOp} />}
         {activeTab === 'integracoes' && <MinhaEmpresaIntegracoesTab tenantId={empresa?.id} />}
         {activeTab === 'usuarios' && <EmpresaUsuariosTab tenantId={empresa?.id} />}
       </div>

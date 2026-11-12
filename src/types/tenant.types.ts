@@ -1,4 +1,5 @@
 import type { PerfilAcesso } from './auth.types';
+import type { ParametrosOperacionaisEmpresa } from './agenda.types';
 
 export type StatusContaTenant = 'ativo' | 'bloqueado' | 'teste';
 export type TipoPlanoTenant = 'START' | 'PRO' | 'ENTERPRISE';
@@ -28,6 +29,7 @@ export interface TenantMaster {
   assinatura_fim?: string;
   contato_email?: string;
   contato_telefone?: string;
+  parametros_operacionais?: ParametrosOperacionaisEmpresa;
   created_at?: string;
   updated_at?: string;
 }
@@ -76,4 +78,5 @@ export interface EmpresaConfigPayload {
   registro_crea?: string;
   logo_url?: string | null;
   assinatura_digital_url?: string | null;
+  parametros_operacionais?: ParametrosOperacionaisEmpresa;
 }

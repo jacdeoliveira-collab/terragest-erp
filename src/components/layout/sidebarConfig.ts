@@ -11,7 +11,8 @@ import {
   Gauge,
   Navigation,
   Boxes,
-  CircleDollarSign
+  CircleDollarSign,
+  Calendar
 } from 'lucide-react';
 import type { WorkspaceMode } from '../../contexts/WorkspaceModeContext';
 
@@ -33,6 +34,12 @@ export const menuItems: MenuItem[] = [
     to: '/comercial',
     label: 'Serviço por Horímetro',
     icon: Gauge,
+    modos: ['HORIMETRO', 'OBRAS']
+  },
+  {
+    to: '/agenda',
+    label: 'Agenda de Máquinas',
+    icon: Calendar,
     modos: ['HORIMETRO', 'OBRAS']
   },
   {
