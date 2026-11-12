@@ -14,6 +14,10 @@ export const MinhaEmpresaIntegracoesTab: React.FC<MinhaEmpresaIntegracoesTabProp
 
   const driveIntegration = getIntegration('GOOGLE_DRIVE') || getIntegration('google_drive');
   const isDriveConnected = driveIntegration?.status === 'connected' || Boolean(driveIntegration?.access_token);
+  const localTokenTime = typeof window !== 'undefined' ? Number(localStorage.getItem('terragest_google_drive_token_time') || 0) : 0;
+  const dbTokenTime = driveIntegration?.updated_at ? new Date(driveIntegration.updated_at).getTime() : 0;
+  const tokenFresh = (Date.now() - Math.max(localTokenTime, dbTokenTime)) < 3000 * 1000;
+  const isDriveExpired = isDriveConnected && !tokenFresh;
 
   const handleConnectDrive = () => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -64,9 +68,15 @@ export const MinhaEmpresaIntegracoesTab: React.FC<MinhaEmpresaIntegracoesTabProp
               </div>
 
               {isDriveConnected ? (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full text-[11px] font-bold">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Conectado
-                </span>
+                isDriveExpired ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 border border-amber-300 text-amber-800 rounded-full text-[11px] font-bold">
+                    Sessão Expirada (Reconectar)
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full text-[11px] font-bold">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Conectado (Ativo)
+                  </span>
+                )
               ) : (
                 <span className="inline-flex items-center px-2 py-0.5 bg-gray-100 text-gray-500 rounded-md text-[10px] font-medium">
                   Não integrado
@@ -90,11 +100,16 @@ export const MinhaEmpresaIntegracoesTab: React.FC<MinhaEmpresaIntegracoesTabProp
             )}
           </div>
 
-          <div className="pt-3 border-t border-gray-100">
+          <div className="pt-3 border-t border-gray-100 space-y-2">
             {isDriveConnected ? (
-              <button type="button" onClick={handleDisconnectDrive} disabled={actionLoading || loading} className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl font-bold cursor-pointer">
-                <Unlink className="w-3.5 h-3.5" /><span>Desconectar</span>
-              </button>
+              <>
+                <button type="button" onClick={handleConnectDrive} disabled={actionLoading || loading} className={`w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl font-bold cursor-pointer ${isDriveExpired ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm' : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200'}`}>
+                  <Cloud className="w-3.5 h-3.5" /><span>{isDriveExpired ? 'Reconectar Google Drive' : 'Renovar Sessão Drive'}</span>
+                </button>
+                <button type="button" onClick={handleDisconnectDrive} disabled={actionLoading || loading} className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl font-bold cursor-pointer">
+                  <Unlink className="w-3.5 h-3.5" /><span>Desconectar</span>
+                </button>
+              </>
             ) : (
               <button type="button" onClick={handleConnectDrive} disabled={actionLoading || loading} className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold shadow-sm cursor-pointer">
                 <Cloud className="w-3.5 h-3.5" /><span>Conectar Google Drive</span>

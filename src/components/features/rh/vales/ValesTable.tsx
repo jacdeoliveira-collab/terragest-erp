@@ -4,6 +4,7 @@ import type { ValeColaboradorItem } from '../../../../types/valeRh.types';
 import { gerarReciboValeRhPDF } from '../../../../utils/reciboValeRhPdf';
 import { abrirVisualizacaoImagem } from '../../../../utils/visualizadorImagem';
 import { uploadParaGoogleDrive } from '../../../../services/driveService';
+import { notificarFalhaDrive } from '../../../../utils/driveFeedback';
 import { comprimirImagem, salvarComprovante } from '../../../../services/comprovanteStorageService';
 import { anexarComprovanteVale } from '../../../../services/valeRhService';
 
@@ -30,6 +31,7 @@ export const ValesTable: React.FC<Props> = ({ vales, onExcluir, onReload }) => {
         const b64 = await comprimirImagem(file);
         await salvarComprovante(chave, b64);
         urlFinal = chave;
+        notificarFalhaDrive(upDrive.erro, true);
       }
       const ok = await anexarComprovanteVale(valeId, urlFinal);
       if (ok) onReload?.();

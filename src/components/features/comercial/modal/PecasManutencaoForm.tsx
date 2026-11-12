@@ -4,6 +4,7 @@ import { EmprestimoFieldsBox } from '../../../common/EmprestimoFieldsBox';
 import { formatarTagEmprestimo, extrairInfoEmprestimo, removerTagEmprestimo } from '../../../../utils/emprestimoHelper';
 import { abrirVisualizacaoImagem } from '../../../../utils/visualizadorImagem';
 import { uploadParaGoogleDrive } from '../../../../services/driveService';
+import { notificarFalhaDrive } from '../../../../utils/driveFeedback';
 import { comprimirImagem, salvarComprovante } from '../../../../services/comprovanteStorageService';
 import type { DespesaItemServico } from '../../../../types/servicoHorimetro.types';
 
@@ -55,6 +56,7 @@ export const PecasManutencaoForm: React.FC<Props> = ({
       setComprovanteUrl(chave);
       const res = await uploadParaGoogleDrive(file, 'frota');
       if (res.sucesso && res.driveUrl) setComprovanteUrl(res.driveUrl);
+      else notificarFalhaDrive(res.erro, true);
     } catch {
     } finally { setUploading(false); }
   };

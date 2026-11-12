@@ -4,6 +4,7 @@ import { useFormaContaSync } from '../../../../hooks/useFormaContaSync';
 import { useTenantContext } from '../../../../contexts/TenantContext';
 import { lancarValeColaborador } from '../../../../services/valeRhService';
 import { uploadParaGoogleDrive } from '../../../../services/driveService';
+import { notificarFalhaDrive } from '../../../../utils/driveFeedback';
 import { comprimirImagem, salvarComprovante } from '../../../../services/comprovanteStorageService';
 import { gerarReciboValeRhPDF } from '../../../../utils/reciboValeRhPdf';
 import type { Funcionario } from '../../../../types/rh.types';
@@ -53,6 +54,7 @@ export function useLancarValeFormState(funcionarioInicial?: Funcionario | null, 
         const b64 = await comprimirImagem(file);
         await salvarComprovante(chave, b64);
         setComprovanteUrl(chave);
+        notificarFalhaDrive(upDrive.erro, true);
       }
     } finally {
       setUploadingComp(false);

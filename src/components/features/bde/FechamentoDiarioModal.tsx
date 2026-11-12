@@ -7,6 +7,7 @@ import { useServicosHorimetro } from '../../../hooks/useServicosHorimetro';
 import { useTenantContext } from '../../../contexts/TenantContext';
 import { useObraContext } from '../../../contexts/ObraContext';
 import { uploadParaGoogleDrive } from '../../../services/driveService';
+import { notificarFalhaDrive } from '../../../utils/driveFeedback';
 import { registrarFechamentoDiarioTarde } from '../../../services/fechamentoDiarioService';
 import { FechamentoDiarioHorimetrosSection } from './FechamentoDiarioHorimetrosSection';
 import type { ServicoHorimetro } from '../../../types/servicoHorimetro.types';
@@ -87,7 +88,7 @@ export const FechamentoDiarioModal: React.FC<Props> = ({ isOpen, onClose, onSucc
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    try { const res = await uploadParaGoogleDrive(file, 'frota'); if (res.sucesso && res.driveUrl) setFotoUrl(res.driveUrl); } finally { setUploading(false); }
+    try { const res = await uploadParaGoogleDrive(file, 'frota'); if (res.sucesso && res.driveUrl) setFotoUrl(res.driveUrl); else notificarFalhaDrive(res.erro, false); } finally { setUploading(false); }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

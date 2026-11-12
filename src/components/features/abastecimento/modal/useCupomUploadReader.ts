@@ -5,6 +5,7 @@ import { extrairTextoDeImagem } from '../../../../services/imageOcrExtractor';
 import { escanearQrCodeArquivo } from '../../../../services/qrCodeScanner';
 import { analisarTextoCupom, type DadosCupomExtraidos } from '../../../../services/cupomParserLocal';
 import { uploadParaGoogleDrive } from '../../../../services/driveService';
+import { notificarFalhaDrive } from '../../../../utils/driveFeedback';
 
 interface Props {
   onDadosExtraidos: (dados: DadosCupomExtraidos) => void;
@@ -70,6 +71,8 @@ export function useCupomUploadReader({ onDadosExtraidos }: Props) {
       const driveRes = await uploadParaGoogleDrive(file, 'frota');
       if (driveRes.sucesso && driveRes.driveUrl) {
         setFotoCupomUrl(driveRes.driveUrl);
+      } else {
+        notificarFalhaDrive(driveRes.erro, false);
       }
     } catch (driveErr) {
       console.warn('Upload do cupom no Google Drive não concluído:', driveErr);

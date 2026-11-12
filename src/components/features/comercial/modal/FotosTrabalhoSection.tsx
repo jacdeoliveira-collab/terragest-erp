@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Camera, Trash2, Image as ImageIcon, Loader2 } from 'lucide-react';
 import type { FotoTrabalhoItem } from '../../../../types/servicoHorimetro.types';
 import { uploadParaGoogleDrive } from '../../../../services/driveService';
+import { notificarFalhaDrive } from '../../../../utils/driveFeedback';
 import { abrirVisualizacaoImagem } from '../../../../utils/visualizadorImagem';
 
 interface FotosTrabalhoSectionProps {
@@ -44,6 +45,8 @@ export const FotosTrabalhoSection: React.FC<FotosTrabalhoSectionProps> = ({
           timestamp: new Date().toLocaleTimeString('pt-BR'),
         };
         onChangeFotos(novas.filter((f) => f.url));
+      } else {
+        notificarFalhaDrive(res.erro, false);
       }
     } finally {
       setSlotCarregando(null);

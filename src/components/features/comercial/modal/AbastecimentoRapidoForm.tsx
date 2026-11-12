@@ -3,6 +3,7 @@ import { Plus, Check, Camera, X, Loader2, RotateCcw } from 'lucide-react';
 import { useEquipments } from '../../../../hooks/useEquipments';
 import { isVehicleOrTruck } from '../../../../utils/equipmentMeasurement';
 import { uploadParaGoogleDrive } from '../../../../services/driveService';
+import { notificarFalhaDrive } from '../../../../utils/driveFeedback';
 import { EmprestimoFieldsBox } from '../../../common/EmprestimoFieldsBox';
 import { extrairInfoEmprestimo } from '../../../../utils/emprestimoHelper';
 import type { TipoCombustivel, AbastecimentoItem } from '../../../../types/abastecimento.types';
@@ -69,8 +70,7 @@ export const AbastecimentoRapidoForm: React.FC<Props> = ({
   const handleFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    try { setUploading(true); const res = await uploadParaGoogleDrive(file, 'frota'); if (res.sucesso && res.driveUrl) setComprovante(res.driveUrl); }
-    finally { setUploading(false); }
+    try { setUploading(true); const res = await uploadParaGoogleDrive(file, 'frota'); if (res.sucesso && res.driveUrl) setComprovante(res.driveUrl); else notificarFalhaDrive(res.erro, false); } finally { setUploading(false); }
   };
 
   const handleGravar = async () => {

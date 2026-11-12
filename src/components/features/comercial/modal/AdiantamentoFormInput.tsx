@@ -3,6 +3,7 @@ import { Plus, Check, Camera, X, Tag, RotateCcw } from 'lucide-react';
 import { useFormaContaSync } from '../../../../hooks/useFormaContaSync';
 import { comprimirImagem, salvarComprovante } from '../../../../services/comprovanteStorageService';
 import { uploadParaGoogleDrive } from '../../../../services/driveService';
+import { notificarFalhaDrive } from '../../../../utils/driveFeedback';
 import type { AdiantamentoItem } from '../../../../types/servicoHorimetro.types';
 
 interface Props {
@@ -53,6 +54,7 @@ export const AdiantamentoFormInput: React.FC<Props> = ({
         const b64 = await comprimirImagem(file);
         await salvarComprovante(chave, b64);
         setComprovante(chave);
+        notificarFalhaDrive(upDrive.erro, true);
       }
     } finally { setCarregandoFoto(false); }
   };
