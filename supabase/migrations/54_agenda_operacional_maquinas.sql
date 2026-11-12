@@ -54,3 +54,4 @@ CREATE POLICY "agenda_operacional_tenant_policy" ON public.agenda_operacional
         AND tu.user_id = auth.uid()
     )
   );
+

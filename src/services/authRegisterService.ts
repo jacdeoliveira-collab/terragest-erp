@@ -63,13 +63,13 @@ export async function registerEmpresa({
         cnpj: cleanCnpj,
         admin_email: cleanEmail,
         contato_email: cleanEmail,
-        plano: 'START',
+        plano: 'GRATIS',
         status_conta: 'ativo',
         assinatura_inicio: dataInicio,
         assinatura_fim: dataFim,
-        limite_usuarios: 5,
-        valor_mensalidade: 1200,
-        plano_valor: 1200
+        limite_usuarios: 2,
+        valor_mensalidade: 0,
+        plano_valor: 0
       }])
       .select()
       .single();
@@ -83,13 +83,13 @@ export async function registerEmpresa({
           cnpj: cleanCnpj,
           admin_email: cleanEmail,
           contato_email: cleanEmail,
-          plano: 'START',
+          plano: 'GRATIS',
           status_conta: 'ativo',
           assinatura_inicio: dataInicio,
           assinatura_fim: dataFim,
-          limite_usuarios: 5,
-          valor_mensalidade: 1200,
-          plano_valor: 1200
+          limite_usuarios: 2,
+          valor_mensalidade: 0,
+          plano_valor: 0
         }]);
 
       if (fallbackError) {

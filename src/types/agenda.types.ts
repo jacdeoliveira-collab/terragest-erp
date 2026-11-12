@@ -39,3 +39,4 @@ export interface AgendaOperacionalItem {
 }
 
 export type CreateAgendaDTO = Omit<AgendaOperacionalItem, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>;
+

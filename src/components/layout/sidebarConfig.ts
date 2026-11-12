@@ -12,7 +12,8 @@ import {
   Navigation,
   Boxes,
   CircleDollarSign,
-  Calendar
+  Calendar,
+  Rocket
 } from 'lucide-react';
 import type { WorkspaceMode } from '../../contexts/WorkspaceModeContext';
 
@@ -100,6 +101,12 @@ export const menuItems: MenuItem[] = [
     to: '/checklist',
     label: 'Checklists Diários',
     icon: CheckSquare,
+    modos: ['HORIMETRO', 'OBRAS']
+  },
+  {
+    to: '/planos',
+    label: 'Planos e Preços',
+    icon: Rocket,
     modos: ['HORIMETRO', 'OBRAS']
   }
 ];

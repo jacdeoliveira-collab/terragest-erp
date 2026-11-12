@@ -8,6 +8,7 @@ interface NovoTenantModalProps {
 }
 
 const PRECOS_SUGERIDOS: Record<TipoPlanoTenant, number> = {
+  GRATIS: 0,
   START: 1200,
   PRO: 2400,
   ENTERPRISE: 4900

@@ -2,7 +2,7 @@ import type { PerfilAcesso } from './auth.types';
 import type { ParametrosOperacionaisEmpresa } from './agenda.types';
 
 export type StatusContaTenant = 'ativo' | 'bloqueado' | 'teste';
-export type TipoPlanoTenant = 'START' | 'PRO' | 'ENTERPRISE';
+export type TipoPlanoTenant = 'GRATIS' | 'START' | 'PRO' | 'ENTERPRISE';
 
 export interface TenantMaster {
   id: string;
@@ -59,6 +59,7 @@ export interface TenantUserItem {
   id: string;
   nome: string;
   razao_social: string;
+  plano?: TipoPlanoTenant;
   status_conta?: StatusContaTenant;
   role?: string;
   perfil_acesso?: PerfilAcesso;

@@ -16,6 +16,7 @@ import { Manutencao } from './pages/Manutencao';
 import { Obras } from './pages/Obras';
 import { Comercial } from './pages/Comercial';
 import { AgendaPage } from './pages/AgendaPage';
+import { PlanosPage } from './pages/PlanosPage';
 import { MasterDashboard } from './pages/MasterDashboard';
 import { EmpresaSettings } from './pages/EmpresaSettings';
 import { Producao } from './pages/Producao';
@@ -73,6 +74,7 @@ export const App: React.FC = () => {
             <Route path="checklist" element={<Checklist />} />
             <Route path="abastecimento" element={<Abastecimento />} />
             <Route path="manutencao" element={<Manutencao />} />
+            <Route path="planos" element={<PlanosPage />} />
             <Route path="minha-empresa" element={<EmpresaSettings />} />
             <Route
               path="master"

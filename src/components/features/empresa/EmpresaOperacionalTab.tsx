@@ -115,3 +115,4 @@ export const EmpresaOperacionalTab: React.FC<Props> = ({ parametros, setParametr
     </div>
   );
 };
+

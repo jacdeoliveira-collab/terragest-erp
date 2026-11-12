@@ -43,26 +43,34 @@ export default async function handler(req, res) {
       const forma = payment?.billingType === 'PIX' || body?.type === 'pix' ? 'PIX' : 'BOLETO';
 
       if (extRef) {
-        const cleanId = String(extRef).replace(/^serv_/, '').split('_p')[0];
+        if (String(extRef).startsWith('saas_')) {
+          const assinaturaId = String(extRef).replace(/^saas_/, '');
+          await supabase.rpc('confirmar_pagamento_saas', {
+            p_assinatura_id: assinaturaId,
+            p_asaas_payment_id: payment?.id || null
+          });
+        } else {
+          const cleanId = String(extRef).replace(/^serv_/, '').split('_p')[0];
 
-        await supabase
-          .from('medicoes')
-          .update({
-            status_pagamento: 'PAGO',
-            data_pagamento: dataPgto,
-            forma_pagamento: forma,
-            updated_at: new Date().toISOString()
-          })
-          .or(`id.eq.${cleanId},observacoes.ilike.%[REF:${cleanId}]%`);
+          await supabase
+            .from('medicoes')
+            .update({
+              status_pagamento: 'PAGO',
+              data_pagamento: dataPgto,
+              forma_pagamento: forma,
+              updated_at: new Date().toISOString()
+            })
+            .or(`id.eq.${cleanId},observacoes.ilike.%[REF:${cleanId}]%`);
 
-        await supabase
-          .from('servicos_horimetro')
-          .update({
-            status_pagamento_cliente: 'QUITADO',
-            saldo_restante: 0,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', cleanId);
+          await supabase
+            .from('servicos_horimetro')
+            .update({
+              status_pagamento_cliente: 'QUITADO',
+              saldo_restante: 0,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', cleanId);
+        }
       }
     }
 

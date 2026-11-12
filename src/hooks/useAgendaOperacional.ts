@@ -91,3 +91,4 @@ export function useAgendaOperacional() {
     excluirAgendamento, registrarWhatsapp, moverNaFila
   };
 }
+

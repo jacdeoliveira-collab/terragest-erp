@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { ObraProvider } from '../../contexts/ObraContext';
 import { WorkspaceModeProvider } from '../../contexts/WorkspaceModeContext';
 import { AppearanceProvider } from '../../contexts/AppearanceContext';
+import { useTenantContext } from '../../contexts/TenantContext';
 import { RoleRoute } from '../auth/RoleRoute';
 import { VersionUpdateAlert } from './VersionUpdateAlert';
+import { PlanoBloqueadoGate } from '../features/planos/PlanoBloqueadoGate';
+import { temAcessoModuloPorPlano } from '../../utils/planosCatalogo';
 
 export const MainLayout: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const location = useLocation();
+  const { tenantAtivo, isMaster } = useTenantContext();
+  const moduloLiberado = temAcessoModuloPorPlano(tenantAtivo?.plano, location.pathname, isMaster);
+  const nomeModulo = location.pathname.replace(/^\//, '').toUpperCase() || 'DASHBOARD';
 
   return (
     <AppearanceProvider>
@@ -36,7 +43,7 @@ export const MainLayout: React.FC = () => {
 
               <main className="flex-1 overflow-y-auto overflow-x-hidden p-2.5 sm:p-4 lg:p-6">
                 <RoleRoute>
-                  <Outlet />
+                  {moduloLiberado ? <Outlet /> : <PlanoBloqueadoGate nomeModulo={nomeModulo} />}
                 </RoleRoute>
               </main>
             </div>

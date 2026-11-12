@@ -28,7 +28,7 @@ export function useTenantUsers() {
       if (userIsMaster) {
         const { data, error: err } = await supabase
           .from('tenants')
-          .select('id, nome, razao_social, status_conta, logo_url')
+          .select('id, nome, razao_social, plano, status_conta, logo_url')
           .neq('status_conta', 'bloqueado')
           .order('nome', { ascending: true });
 
@@ -37,6 +37,7 @@ export function useTenantUsers() {
           id: t.id,
           nome: t.nome || t.razao_social || 'Empresa',
           razao_social: t.razao_social || t.nome || 'Empresa',
+          plano: t.plano,
           status_conta: t.status_conta,
           role: 'master',
           perfil_acesso: 'ADMIN',
@@ -55,7 +56,7 @@ export function useTenantUsers() {
         const tIds = utData.map((u) => u.tenant_id);
         const { data: tList } = await supabase
           .from('tenants')
-          .select('id, nome, razao_social, status_conta, logo_url')
+          .select('id, nome, razao_social, plano, status_conta, logo_url')
           .in('id', tIds)
           .neq('status_conta', 'bloqueado');
 
@@ -66,6 +67,7 @@ export function useTenantUsers() {
               id: t.id,
               nome: t.nome || t.razao_social || 'Empresa',
               razao_social: t.razao_social || t.nome || 'Empresa',
+              plano: t.plano,
               status_conta: t.status_conta as any,
               role: ut?.role || 'membro',
               perfil_acesso: (ut?.perfil_acesso as any) || 'OPERADOR',
@@ -78,7 +80,7 @@ export function useTenantUsers() {
       if (rows.length === 0 && user.email) {
         const { data: byEmail } = await supabase
           .from('tenants')
-          .select('id, nome, razao_social, status_conta, logo_url')
+          .select('id, nome, razao_social, plano, status_conta, logo_url')
           .or(`admin_email.eq.${user.email},contato_email.eq.${user.email}`)
           .neq('status_conta', 'bloqueado');
 
@@ -87,6 +89,7 @@ export function useTenantUsers() {
             id: t.id,
             nome: t.nome || t.razao_social || 'Empresa',
             razao_social: t.razao_social || t.nome || 'Empresa',
+            plano: t.plano,
             status_conta: t.status_conta,
             role: 'admin',
             perfil_acesso: 'ADMIN',
@@ -102,7 +105,7 @@ export function useTenantUsers() {
         } else if (rows.length === 0) {
           const { data: byMeta } = await supabase
             .from('tenants')
-            .select('id, nome, razao_social, status_conta, logo_url')
+            .select('id, nome, razao_social, plano, status_conta, logo_url')
             .eq('id', user.user_metadata.tenant_id)
             .neq('status_conta', 'bloqueado');
           if (byMeta && byMeta.length > 0) {
@@ -110,6 +113,7 @@ export function useTenantUsers() {
               id: t.id,
               nome: t.nome || t.razao_social || 'Empresa',
               razao_social: t.razao_social || t.nome || 'Empresa',
+              plano: t.plano,
               status_conta: t.status_conta as any,
               role: (user.user_metadata?.role as string) || 'membro',
               perfil_acesso: (user.user_metadata?.perfil_acesso as any) || 'OPERADOR',

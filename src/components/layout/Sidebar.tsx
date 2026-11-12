@@ -6,6 +6,7 @@ import { useTenantContext } from '../../contexts/TenantContext';
 import { useWorkspaceMode } from '../../contexts/WorkspaceModeContext';
 import { isMasterEmail } from '../../services/adminService';
 import { canAccessRoute } from '../../utils/rbac';
+import { temAcessoModuloPorPlano } from '../../utils/planosCatalogo';
 import { menuItems } from './sidebarConfig';
 import { SidebarModeSelector } from './SidebarModeSelector';
 
@@ -81,6 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
       <nav className="p-3.5 space-y-1 flex-1 overflow-y-auto">
         {visibleMenuItems.map((item) => {
           const Icon = item.icon;
+          const bloqueadoPorPlano = !temAcessoModuloPorPlano(tenantAtivo?.plano, item.to, isMaster);
           return (
             <NavLink
               key={item.to}
@@ -96,7 +98,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose }) => 
               }
             >
               <Icon className="w-4 h-4 shrink-0" />
-              <span className="truncate">{item.label}</span>
+              <span className="truncate flex-1">{item.label}</span>
+              {bloqueadoPorPlano && (
+                <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-bold text-amber-400">
+                  PRO
+                </span>
+              )}
             </NavLink>
           );
         })}

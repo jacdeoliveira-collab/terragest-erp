@@ -83,3 +83,4 @@ export function gerarLinkWhatsappAgenda(
     .replace(/\{endereco\}/g, item.endereco_servico || 'local combinado');
   return `https://wa.me/${numero}?text=${encodeURIComponent(msg)}`;
 }
+
