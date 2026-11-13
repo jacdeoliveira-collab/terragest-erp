@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
+import { MobileDrawer } from './MobileDrawer';
+import { MobileBottomNav } from './MobileBottomNav';
 import { Header } from './Header';
 import { ObraProvider } from '../../contexts/ObraContext';
 import { WorkspaceModeProvider } from '../../contexts/WorkspaceModeContext';
@@ -36,17 +38,21 @@ export const MainLayout: React.FC = () => {
               />
             )}
 
-            <Sidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
+            <div className="hidden lg:flex h-full">
+              <Sidebar isOpen={false} onClose={() => setIsMobileMenuOpen(false)} />
+            </div>
+            <MobileDrawer isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
 
             <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
               <Header onOpenMenu={() => setIsMobileMenuOpen(true)} />
 
-              <main className="flex-1 overflow-y-auto overflow-x-hidden p-2.5 sm:p-4 lg:p-6">
+              <main className="flex-1 overflow-y-auto overflow-x-hidden p-2.5 sm:p-4 lg:p-6 pb-20 lg:pb-6">
                 <RoleRoute>
                   {moduloLiberado ? <Outlet /> : <PlanoBloqueadoGate nomeModulo={nomeModulo} />}
                 </RoleRoute>
               </main>
             </div>
+            <MobileBottomNav />
           </div>
         </ObraProvider>
       </WorkspaceModeProvider>

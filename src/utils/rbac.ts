@@ -35,6 +35,8 @@ export const ROTAS_ADMIN = [
   '/manutencao',
   '/checklist',
   '/planos',
+  '/inicio',
+  '/gestao',
   '/minha-empresa'
 ];
 

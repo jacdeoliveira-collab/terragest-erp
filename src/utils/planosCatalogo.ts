@@ -67,6 +67,8 @@ export const PLANOS_CATALOGO: PlanoCatalogoItem[] = [
 ];
 
 const ROTAS_GRATIS_LIBERADAS = [
+  '/inicio',
+  '/gestao',
   '/agenda',
   '/planos',
   '/minha-empresa',

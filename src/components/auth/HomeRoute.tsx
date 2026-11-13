@@ -23,6 +23,9 @@ export const HomeRoute: React.FC = () => {
   if (perfil === 'FINANCEIRO') {
     return <Navigate to="/faturamento" replace />;
   }
+  if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+    return <Navigate to="/inicio" replace />;
+  }
   if (modoAtivo === 'HORIMETRO') {
     return <Navigate to="/comercial" replace />;
   }
