@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Calendar, ChevronRight, CircleDollarSign, ClipboardList, FileText,
-  HardHat, HelpCircle, LogOut, Moon, Rocket, Settings, Sun, Truck, X
+  HardHat, HelpCircle, LogOut, Moon, Rocket, Settings, Sun, Truck, Users, X
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTenantContext } from '../../contexts/TenantContext';
@@ -31,8 +31,9 @@ export const MobileDrawer: React.FC<Props> = ({ isOpen, onClose }) => {
     { label: 'Boletins (BDE)', to: '/bde', icon: FileText },
     { label: 'Finanças & pagamentos', to: '/financeiro', icon: CircleDollarSign },
     { label: 'Agenda de Máquinas', to: '/agenda', icon: Calendar },
+    { label: 'Clientes', to: '/clientes', icon: Users },
     { label: 'Frota & Maquinário', to: '/frota', icon: Truck },
-    { label: 'Obras & Clientes', to: '/obras', icon: HardHat },
+    { label: 'Obras & Centros de Custo', to: '/obras', icon: HardHat },
     { label: 'Planos e preços', to: '/planos', icon: Rocket, highlight: true },
     { label: 'Outras configurações', to: '/minha-empresa', icon: Settings }
   ];

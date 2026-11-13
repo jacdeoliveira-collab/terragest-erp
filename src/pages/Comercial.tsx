@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { Users, FileText, Gauge } from 'lucide-react';
-import { ClienteList } from '../components/features/comercial/ClienteList';
+import { FileText, Gauge } from 'lucide-react';
 import { OrcamentoList } from '../components/features/comercial/OrcamentoList';
 import { ServicoHorimetroList } from '../components/features/comercial/ServicoHorimetroList';
 import { ErrorBoundary } from '../components/common/ErrorBoundary';
 
 export const Comercial: React.FC = () => {
-  const [abaAtiva, setAbaAtiva] = useState<'horimetros' | 'orcamentos' | 'clientes'>('horimetros');
+  const [abaAtiva, setAbaAtiva] = useState<'horimetros' | 'orcamentos'>('horimetros');
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -14,7 +13,7 @@ export const Comercial: React.FC = () => {
         <div>
           <h1 className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Serviço por Horímetro</h1>
           <p className="text-xs text-gray-500">
-            Locação por horímetro, medição com fotos, comprovantes de diesel, orçamentos e clientes
+            Locação por horímetro, medição com fotos, comprovantes de diesel e orçamentos
           </p>
         </div>
 
@@ -42,25 +41,12 @@ export const Comercial: React.FC = () => {
             <FileText className="w-3.5 h-3.5 text-teal-600 shrink-0" />
             <span>Orçamentos</span>
           </button>
-
-          <button
-            onClick={() => setAbaAtiva('clientes')}
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-              abaAtiva === 'clientes'
-                ? 'bg-emerald-50 text-emerald-900 border border-emerald-300 font-bold shadow-2xs'
-                : 'text-gray-600 hover:text-gray-900 border border-transparent'
-            }`}
-          >
-            <Users className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-            <span>Clientes</span>
-          </button>
         </div>
       </div>
 
       <ErrorBoundary fallbackTitle="Erro ao carregar módulo de serviços por horímetro">
         {abaAtiva === 'horimetros' && <ServicoHorimetroList />}
         {abaAtiva === 'orcamentos' && <OrcamentoList onIrParaHorimetros={() => setAbaAtiva('horimetros')} />}
-        {abaAtiva === 'clientes' && <ClienteList />}
       </ErrorBoundary>
     </div>
   );

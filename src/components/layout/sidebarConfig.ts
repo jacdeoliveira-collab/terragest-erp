@@ -44,6 +44,12 @@ export const menuItems: MenuItem[] = [
     modos: ['HORIMETRO', 'OBRAS']
   },
   {
+    to: '/clientes',
+    label: 'Clientes',
+    icon: Users,
+    modos: ['HORIMETRO', 'OBRAS']
+  },
+  {
     to: '/obras',
     label: 'Centros de Custo & Obras',
     icon: HardHat,

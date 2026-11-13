@@ -16,6 +16,7 @@ import { Manutencao } from './pages/Manutencao';
 import { Obras } from './pages/Obras';
 import { Comercial } from './pages/Comercial';
 import { AgendaPage } from './pages/AgendaPage';
+import { ClientesPage } from './pages/ClientesPage';
 import { PlanosPage } from './pages/PlanosPage';
 import { MobileHomePage } from './pages/MobileHomePage';
 import { MobileGestaoPage } from './pages/MobileGestaoPage';
@@ -62,6 +63,7 @@ export const App: React.FC = () => {
             <Route path="dashboard" element={<HomeRoute />} />
             <Route path="comercial" element={<Comercial />} />
             <Route path="agenda" element={<AgendaPage />} />
+            <Route path="clientes" element={<ClientesPage />} />
             <Route path="frota" element={<Frota />} />
             <Route path="obras" element={<Obras />} />
             <Route path="bde" element={<Boletim />} />

@@ -20,6 +20,7 @@ export const ROTAS_ADMIN = [
   '/dashboard',
   '/comercial',
   '/agenda',
+  '/clientes',
   '/obras',
   '/frota',
   '/bde',

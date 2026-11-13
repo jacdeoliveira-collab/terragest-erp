@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Boxes, Calendar, CalendarPlus, CircleDollarSign, ClipboardList,
-  Eye, EyeOff, Fuel, HardHat, Lock, Truck, Wallet
+  Eye, EyeOff, Fuel, Lock, Truck, Users, Wallet
 } from 'lucide-react';
 import { useTenantContext } from '../contexts/TenantContext';
 import { useDashboardGlobal } from '../hooks/useDashboardGlobal';
@@ -12,7 +12,7 @@ const CARDS = [
   { label: 'Pedidos / Horímetro', to: '/comercial', icon: ClipboardList, bg: 'bg-indigo-500/20 text-indigo-300' },
   { label: 'Agenda', to: '/agenda', icon: Calendar, bg: 'bg-cyan-500/20 text-cyan-300' },
   { label: 'Financeiro', to: '/financeiro', icon: CircleDollarSign, bg: 'bg-emerald-500/20 text-emerald-300' },
-  { label: 'Clientes & Obras', to: '/obras', icon: HardHat, bg: 'bg-amber-500/20 text-amber-300' },
+  { label: 'Clientes', to: '/clientes', icon: Users, bg: 'bg-amber-500/20 text-amber-300' },
   { label: 'Almoxarifado', to: '/almoxarifado', icon: Boxes, bg: 'bg-sky-500/20 text-sky-300' },
   { label: 'Frota & Serviços', to: '/frota', icon: Truck, bg: 'bg-blue-500/20 text-blue-300' }
 ];
