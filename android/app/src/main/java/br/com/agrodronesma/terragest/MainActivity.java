@@ -1,16 +1,24 @@
 package br.com.agrodronesma.terragest;
 
+import android.content.ActivityNotFoundException;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
+import android.util.Base64;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
+import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import com.getcapacitor.BridgeActivity;
 import org.json.JSONObject;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.concurrent.Executor;
 
 public class MainActivity extends BridgeActivity {
@@ -24,6 +32,7 @@ public class MainActivity extends BridgeActivity {
         if (this.bridge != null && this.bridge.getWebView() != null) {
             WebView webView = this.bridge.getWebView();
             webView.addJavascriptInterface(new BiometricJsBridge(this, webView), "TerraGestBiometrics");
+            webView.addJavascriptInterface(new PdfJsBridge(this), "TerraGestPdf");
         }
     }
 
@@ -109,6 +118,61 @@ public class MainActivity extends BridgeActivity {
                     .build();
 
                 prompt.authenticate(promptInfo);
+            });
+        }
+    }
+
+    public class PdfJsBridge {
+        private final MainActivity activity;
+
+        public PdfJsBridge(MainActivity activity) {
+            this.activity = activity;
+        }
+
+        @JavascriptInterface
+        public void saveAndOpenPdf(String base64Data, String fileName) {
+            activity.runOnUiThread(() -> {
+                try {
+                    String cleanBase64 = base64Data;
+                    if (cleanBase64 != null && cleanBase64.contains(",")) {
+                        cleanBase64 = cleanBase64.substring(cleanBase64.indexOf(",") + 1);
+                    }
+                    byte[] pdfBytes = Base64.decode(cleanBase64, Base64.DEFAULT);
+                    String safeName = (fileName != null && !fileName.trim().isEmpty())
+                        ? fileName.replaceAll("[^a-zA-Z0-9._-]", "_")
+                        : "documento_terragest.pdf";
+                    if (!safeName.toLowerCase().endsWith(".pdf")) {
+                        safeName = safeName + ".pdf";
+                    }
+
+                    File outFile = new File(activity.getCacheDir(), safeName);
+                    try (FileOutputStream fos = new FileOutputStream(outFile)) {
+                        fos.write(pdfBytes);
+                        fos.flush();
+                    }
+
+                    Uri contentUri = FileProvider.getUriForFile(
+                        activity,
+                        activity.getPackageName() + ".fileprovider",
+                        outFile
+                    );
+
+                    Intent viewIntent = new Intent(Intent.ACTION_VIEW);
+                    viewIntent.setDataAndType(contentUri, "application/pdf");
+                    viewIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+
+                    try {
+                        activity.startActivity(Intent.createChooser(viewIntent, "Abrir PDF"));
+                    } catch (ActivityNotFoundException e) {
+                        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+                        shareIntent.setType("application/pdf");
+                        shareIntent.putExtra(Intent.EXTRA_STREAM, contentUri);
+                        shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                        activity.startActivity(Intent.createChooser(shareIntent, "Compartilhar PDF"));
+                    }
+                } catch (Exception e) {
+                    Toast.makeText(activity, "Erro ao abrir PDF: " + e.getMessage(), Toast.LENGTH_LONG).show();
+                }
             });
         }
     }

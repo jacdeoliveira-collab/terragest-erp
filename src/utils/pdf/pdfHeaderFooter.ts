@@ -1,13 +1,14 @@
 import type jsPDF from 'jspdf';
 import type { ServicoHorimetro } from '../../types/servicoHorimetro.types';
+import type { TenantMaster } from '../../types/tenant.types';
 import { getEmpresaAtivaCache } from '../../services/empresaAtivaService';
 import { SITE_TERRAGEST } from './pdfEmpresaLayout';
 import { desenharLogoNoPdf } from './pdfLogoHelper';
 
 export const TOTAL_PAGES_EXP = '{total_pages_count_string}';
 
-export function desenharCabecalhoPrincipal(doc: jsPDF): void {
-  const empresa = getEmpresaAtivaCache() || {};
+export function desenharCabecalhoPrincipal(doc: jsPDF, empresaParam?: Partial<TenantMaster> | null): void {
+  const empresa = empresaParam || getEmpresaAtivaCache() || {};
   const razaoSocial = empresa.razao_social || empresa.nome || 'TERRAGEST OPERAÇÕES DE MÁQUINAS PESADAS';
   const cnpj = empresa.cnpj ? `CNPJ: ${empresa.cnpj}` : '';
   const contato = [empresa.contato_telefone, empresa.contato_email].filter(Boolean).join(' • ');
@@ -38,7 +39,7 @@ export function desenharCabecalhoPrincipal(doc: jsPDF): void {
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(31, 41, 55);
-  doc.text('BOLETIM DE MEDIÇÃO & PRESTAÇÃO DE SERVIÇOS POR HORÍMETRO', 14, 32);
+  doc.text('BOLETIM INTERNO DE MEDIÇÃO & CUSTOS OPERACIONAIS', 14, 32);
 }
 
 export function desenharBoxIdentificacao(doc: jsPDF, servico: ServicoHorimetro): void {

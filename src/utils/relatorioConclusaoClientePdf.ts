@@ -1,17 +1,18 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { ServicoHorimetro } from '../types/servicoHorimetro.types';
-import { getEmpresaAtivaCache } from '../services/empresaAtivaService';
 import { desenharFotosTrabalho, desenharFotosHorimetroEmLinha } from './pdf/pdfFotosTrabalhoAnexo';
 import { desenharLogoNoPdf, calcularLarguraLogo } from './pdf/pdfLogoHelper';
 import { desenharTabelaParcelasConclusao, desenharTabelaAdiantamentosConclusao, desenharAssinaturasConclusao } from './pdf/pdfConclusaoParcelasEAssinatura';
-import { obterServicoCompleto } from './pdf/pdfServicoDataHelper';
+import { obterServicoCompleto, buscarContaServico, buscarDadosClienteServico, prepararEmpresaComLogoParaPdf } from './pdf/pdfServicoDataHelper';
+import { desenharBlocoPagamentoPix, obterDadosPlanilhaBancoCache } from './pdf/pdfOrcamentoPagamentoBlock';
 import { aplicarRodapeTodasPaginas } from './pdf/pdfHeaderFooter';
+import { salvarPdf } from './pdf/pdfExportHelper';
 
 export async function gerarRelatorioConclusaoClientePDF(servicoParam: ServicoHorimetro): Promise<void> {
   const servico = obterServicoCompleto(servicoParam);
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  const empresa = getEmpresaAtivaCache() || {};
+  const empresa = await prepararEmpresaComLogoParaPdf();
   const razaoSocial = empresa.razao_social || empresa.nome || 'J A C DE OLIVEIRA';
   const cnpj = empresa.cnpj ? `CNPJ: ${empresa.cnpj}` : '';
   const contato = [empresa.contato_telefone, empresa.contato_email].filter(Boolean).join(' • ');
@@ -32,21 +33,37 @@ export async function gerarRelatorioConclusaoClientePDF(servicoParam: ServicoHor
   if (infoLinha) doc.text(infoLinha, textStartX, 20);
   if (empresa.endereco) doc.text(empresa.endereco, textStartX, 24);
 
+  const [clienteDados, conta] = await Promise.all([
+    buscarDadosClienteServico(servico.cliente_id, servico.cliente_nome),
+    buscarContaServico(servico.conta_bancaria_id)
+  ]);
+
   doc.setDrawColor(209, 213, 219);
   doc.line(14, 28, 196, 28);
   doc.setFontSize(11); doc.setFont('helvetica', 'bold'); doc.setTextColor(15, 23, 42);
-  doc.text('RELATÓRIO DE ENCERRAMENTO & ENTREGA DE SERVIÇO', 14, 34);
+  doc.text('RELATÓRIO DE SERVIÇO & ENTREGA AO CLIENTE', 14, 34);
 
-  // Box Cliente
+  // Box Cliente (dados completos do contratante)
+  const docCli = servico.cliente_documento || clienteDados?.documento || 'Não informado';
+  const contatoCli = [clienteDados?.telefone, clienteDados?.endereco].filter(Boolean).join(' • ');
+  const boxH = contatoCli ? 27 : 22;
   doc.setDrawColor(229, 231, 235); doc.setFillColor(249, 250, 251);
-  doc.roundedRect(14, 38, 182, 22, 2, 2, 'FD');
+  doc.roundedRect(14, 38, 182, boxH, 2, 2, 'FD');
   doc.setFontSize(8.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(55, 65, 81);
   doc.text('Cliente Contratante:', 18, 44);
   doc.setFont('helvetica', 'normal'); doc.text(servico.cliente_nome, 54, 44);
+  doc.setFont('helvetica', 'bold'); doc.text('Status:', 142, 44);
+  doc.setTextColor(servico.status === 'FINALIZADO' ? 5 : 217, servico.status === 'FINALIZADO' ? 150 : 119, servico.status === 'FINALIZADO' ? 105 : 6);
+  doc.text(servico.status === 'FINALIZADO' ? 'CONCLUÍDO' : 'EM ANDAMENTO', 155, 44);
+  doc.setTextColor(55, 65, 81);
   doc.setFont('helvetica', 'bold'); doc.text('Documento / CPF / CNPJ:', 18, 50);
-  doc.setFont('helvetica', 'normal'); doc.text(servico.cliente_documento || 'Não informado', 60, 50);
+  doc.setFont('helvetica', 'normal'); doc.text(docCli, 60, 50);
   doc.setFont('helvetica', 'bold'); doc.text('Período de Execução:', 18, 56);
-  doc.setFont('helvetica', 'normal'); doc.text(`${servico.data_inicio} até ${servico.data_fim || 'Conclusão'}`, 54, 56);
+  doc.setFont('helvetica', 'normal'); doc.text(`${servico.data_inicio} até ${servico.data_fim || 'Em andamento'}`, 54, 56);
+  if (contatoCli) {
+    doc.setFont('helvetica', 'bold'); doc.text('Contato / Endereço:', 18, 62);
+    doc.setFont('helvetica', 'normal'); doc.text(contatoCli.slice(0, 85), 54, 62);
+  }
 
   // Tabela de Horímetro & Produção
   const horas = Number(servico.horas_trabalhadas || 0), vlrHora = Number(servico.valor_hora || 0);
@@ -60,7 +77,7 @@ export async function gerarRelatorioConclusaoClientePDF(servicoParam: ServicoHor
   const hFim = servico.horimetro_final !== undefined ? Number(servico.horimetro_final) : (pMaq?.horimetro_final !== undefined ? Number(pMaq.horimetro_final) : undefined);
 
   autoTable(doc, {
-    startY: 64,
+    startY: 38 + boxH + 4,
     head: [['Descrição do Trabalho', 'Equipamento', 'Operador', 'H. Inicial', 'H. Final', 'Horas', 'R$ / Hora', 'Total Bruto']],
     body: [[
       servico.descricao_servico, servico.maquina_nome, servico.operador_nome,
@@ -99,6 +116,16 @@ export async function gerarRelatorioConclusaoClientePDF(servicoParam: ServicoHor
   desenharTabelaParcelasConclusao(doc, servico);
 
   let currentY = (doc as any).lastAutoTable.finalY + 4;
+  const plan = obterDadosPlanilhaBancoCache();
+  if (currentY + 34 > 245) { doc.addPage(); currentY = 20; }
+  currentY = desenharBlocoPagamentoPix(doc, {
+    prazo: servico.prazo_descricao,
+    forma: servico.forma_pagamento,
+    banco: conta?.banco || plan.banco,
+    titular: conta?.titular || conta?.nome_conta || plan.titular,
+    chavePix: conta?.chave_pix || plan.chavePix
+  }, currentY);
+
   let horimetroDesenhado = false;
 
   // Se houver espaço na Página 1, desenha fotos do horímetro aqui para não deixar espaço vazio
@@ -117,5 +144,5 @@ export async function gerarRelatorioConclusaoClientePDF(servicoParam: ServicoHor
   await desenharFotosTrabalho(doc, servico, horimetroDesenhado);
 
   aplicarRodapeTodasPaginas(doc);
-  doc.save(`Relatorio_Entrega_${servico.cliente_nome.replace(/\s+/g, '_')}.pdf`);
+  salvarPdf(doc, `Relatorio_Cliente_${servico.cliente_nome.replace(/\s+/g, '_')}.pdf`);
 }

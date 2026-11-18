@@ -33,6 +33,15 @@ export async function prepararImagemParaPdf(urlOrBase64?: string): Promise<strin
   }
 
   return new Promise<string | null>((resolve) => {
+    let settled = false;
+    const finish = (val: string | null) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve(val);
+    };
+    const timer = setTimeout(() => finish(null), 6000);
+
     const img = new Image();
     img.crossOrigin = 'anonymous';
 
@@ -42,17 +51,17 @@ export async function prepararImagemParaPdf(urlOrBase64?: string): Promise<strin
         canvas.width = img.naturalWidth || img.width || 400;
         canvas.height = img.naturalHeight || img.height || 300;
         const ctx = canvas.getContext('2d');
-        if (!ctx) return resolve(null);
+        if (!ctx) return finish(null);
         ctx.drawImage(img, 0, 0);
         const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-        resolve(dataUrl);
+        finish(dataUrl);
       } catch {
-        tentarCarregarViaBlob(targetUrl).then(resolve);
+        tentarCarregarViaBlob(targetUrl).then(finish);
       }
     };
 
     img.onerror = () => {
-      tentarCarregarViaBlob(targetUrl).then(resolve);
+      tentarCarregarViaBlob(targetUrl).then(finish);
     };
 
     img.src = targetUrl;

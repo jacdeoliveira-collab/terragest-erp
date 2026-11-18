@@ -12,18 +12,8 @@ import {
   desenharAssinaturas
 } from './pdf/pdfTabelasServico';
 import { prepararImagemParaPdf, desenharImagemProporcional } from './pdf/pdfImageHelper';
-import { desenharBlocoPagamentoPix, obterDadosPlanilhaBancoCache } from './pdf/pdfOrcamentoPagamentoBlock';
-import { supabase } from '../lib/supabase';
-
-async function buscarContaServico(contaId?: string) {
-  if (!contaId) return null;
-  const { data } = await supabase
-    .from('contas_bancarias')
-    .select('nome_conta, banco, titular, chave_pix')
-    .eq('id', contaId)
-    .maybeSingle();
-  return data;
-}
+import { prepararEmpresaComLogoParaPdf } from './pdf/pdfServicoDataHelper';
+import { salvarPdf } from './pdf/pdfExportHelper';
 
 function desenharSecaoFotos(
   doc: jsPDF,
@@ -84,8 +74,9 @@ function desenharSecaoFotos(
 
 export async function gerarRelatorioServicoPDF(servico: ServicoHorimetro): Promise<void> {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const empresa = await prepararEmpresaComLogoParaPdf();
 
-  desenharCabecalhoPrincipal(doc);
+  desenharCabecalhoPrincipal(doc, empresa);
   desenharBoxIdentificacao(doc, servico);
 
   const finalMedicaoY = desenharTabelaMedicao(doc, servico);
@@ -103,24 +94,12 @@ export async function gerarRelatorioServicoPDF(servico: ServicoHorimetro): Promi
     prepararImagemParaPdf(urlCupom)
   ]);
 
-  const conta = await buscarContaServico(servico.conta_bancaria_id);
-  const plan = obterDadosPlanilhaBancoCache();
-  let yPagamento = finalResumoY;
-  if (yPagamento + 34 > 245) { doc.addPage(); yPagamento = 20; }
-  const finalPagamentoY = desenharBlocoPagamentoPix(doc, {
-    prazo: servico.prazo_descricao,
-    forma: servico.forma_pagamento,
-    banco: conta?.banco || plan.banco,
-    titular: conta?.titular || conta?.nome_conta || plan.titular,
-    chavePix: conta?.chave_pix || plan.chavePix
-  }, yPagamento + 3);
-
-  const finalFotosY = desenharSecaoFotos(doc, servico, finalPagamentoY, fotoIni, fotoFim, fotoCupom);
+  const finalFotosY = desenharSecaoFotos(doc, servico, finalResumoY + 2, fotoIni, fotoFim, fotoCupom);
 
   const yAssinatura = Math.max(250, Math.min(260, finalFotosY + 12));
   desenharAssinaturas(doc, yAssinatura);
   aplicarRodapeTodasPaginas(doc);
 
-  const nomeArquivo = `Boletim_Horimetro_${(servico.cliente_nome || 'Servico').replace(/\s+/g, '_')}_${servico.id.slice(0, 6)}.pdf`;
-  doc.save(nomeArquivo);
+  const nomeArquivo = `Boletim_Interno_${(servico.cliente_nome || 'Servico').replace(/\s+/g, '_')}_${servico.id.slice(0, 6)}.pdf`;
+  salvarPdf(doc, nomeArquivo);
 }
