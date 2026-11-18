@@ -37,15 +37,15 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
         setEmail(savedMail);
         setEmailBiometria(savedMail);
       }
-      if (disp && salva) {
-        handleEntrarComDigital();
-      }
+      const manualLogout = typeof window !== 'undefined' && sessionStorage.getItem('terragest_manual_logout') === '1';
+      const isNativeBiometric = typeof window !== 'undefined' && Boolean(window.TerraGestBiometrics);
+      if (disp && salva && isNativeBiometric && !manualLogout) handleEntrarComDigital();
     });
   }, []);
 
   const handleEntrarComDigital = async () => {
-    limparErro();
-    setErroBiometria(null);
+    limparErro(); setErroBiometria(null);
+    if (typeof window !== 'undefined') sessionStorage.removeItem('terragest_manual_logout');
     try {
       const creds = await autenticarComBiometria();
       const res = await login(creds.email, creds.password);
@@ -60,8 +60,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    limparErro();
-    setErroBiometria(null);
+    limparErro(); setErroBiometria(null);
+    if (typeof window !== 'undefined') sessionStorage.removeItem('terragest_manual_logout');
     try {
       const res = await login(email.trim(), password);
       if (salvarBiometria) {

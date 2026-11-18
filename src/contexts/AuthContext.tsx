@@ -109,18 +109,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       setError(null);
-      const { error: signOutError } = await supabase.auth.signOut();
-      if (signOutError) throw signOutError;
-      setUser(null);
-      setSession(null);
-      setPerfilAcesso('ADMIN');
       if (typeof window !== 'undefined') {
+        sessionStorage.setItem('terragest_manual_logout', '1');
         localStorage.removeItem('terragest_tenant_ativo_id');
       }
+      await supabase.auth.signOut();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Falha ao encerrar sessão';
       setError(msg);
     } finally {
+      setUser(null);
+      setSession(null);
+      setPerfilAcesso('ADMIN');
       setLoading(false);
     }
   }, []);
