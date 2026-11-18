@@ -47,7 +47,8 @@ export const PERFIS_ROTAS: Record<PerfilAcesso, string[]> = {
   ENGENHARIA: ROTAS_ENGENHARIA,
   RH: ROTAS_RH,
   FINANCEIRO: ROTAS_FINANCEIRO,
-  ADMIN: ROTAS_ADMIN
+  ADMIN: ROTAS_ADMIN,
+  BLOQUEADO: []
 };
 
 export function canAccessRoute(perfil: PerfilAcesso | undefined | null, path: string): boolean {

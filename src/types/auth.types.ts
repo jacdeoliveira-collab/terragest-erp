@@ -1,6 +1,6 @@
 import type { User, Session } from '@supabase/supabase-js';
 
-export type PerfilAcesso = 'ADMIN' | 'FINANCEIRO' | 'RH' | 'ENGENHARIA' | 'OPERACIONAL' | 'OPERADOR';
+export type PerfilAcesso = 'ADMIN' | 'FINANCEIRO' | 'RH' | 'ENGENHARIA' | 'OPERACIONAL' | 'OPERADOR' | 'BLOQUEADO';
 
 export interface AuthUser extends User {
   perfil_acesso?: PerfilAcesso;

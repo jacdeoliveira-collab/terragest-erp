@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Users, UserPlus, Shield, RefreshCw, Edit2 } from 'lucide-react';
+import { Users, UserPlus, Shield, RefreshCw, Edit2, Ban, CheckCircle } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useTenantContext } from '../../../contexts/TenantContext';
+import { useAuth } from '../../../hooks/useAuth';
 import { UsuarioFormModal } from './UsuarioFormModal';
 import { UsuarioEditPerfilModal, type UsuarioTenantItem } from './UsuarioEditPerfilModal';
 import type { PerfilAcesso } from '../../../types/auth.types';
@@ -14,11 +15,13 @@ const BADGE_COLORS: Record<PerfilAcesso, string> = {
   ENGENHARIA: 'bg-blue-50 text-blue-700 border-blue-200',
   RH: 'bg-purple-50 text-purple-700 border-purple-200',
   FINANCEIRO: 'bg-teal-50 text-teal-700 border-teal-200',
-  ADMIN: 'bg-rose-50 text-rose-700 border-rose-200'
+  ADMIN: 'bg-rose-50 text-rose-700 border-rose-200',
+  BLOQUEADO: 'bg-slate-200 text-slate-700 border-slate-300'
 };
 
 export const EmpresaUsuariosTab: React.FC<{ tenantId?: string }> = ({ tenantId }) => {
   const { tenantAtivoId } = useTenantContext();
+  const { user } = useAuth();
   const [usuarios, setUsuarios] = useState<TenantUserRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -52,6 +55,13 @@ export const EmpresaUsuariosTab: React.FC<{ tenantId?: string }> = ({ tenantId }
 
   useEffect(() => { fetchUsuarios(); }, [fetchUsuarios]);
 
+  const handleBloquearUsuario = async (u: TenantUserRecord) => {
+    if (!confirm(`Bloquear o acesso de "${u.email || u.user_id}"?\nOs dados e alterações históricas serão preservados.`)) return;
+    const { error } = await supabase.from('tenant_users').update({ perfil_acesso: 'BLOQUEADO', role: 'blocked' }).eq('id', u.id);
+    if (error) { setErrorMsg(error.message); return; }
+    fetchUsuarios();
+  };
+
   return (
     <div className="space-y-4 text-xs text-left">
       <div className="p-3.5 bg-emerald-50/60 border border-emerald-100 rounded-xl flex items-center justify-between gap-3">
@@ -61,13 +71,8 @@ export const EmpresaUsuariosTab: React.FC<{ tenantId?: string }> = ({ tenantId }
             Controle de Perfis de Acesso (RBAC): Gerencie operadores, apontadores e administradores da sua construtora.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setModalOpen(true)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-xs shrink-0 cursor-pointer shadow-sm transition-all"
-        >
-          <UserPlus className="w-3.5 h-3.5" />
-          <span>Novo Acesso</span>
+        <button type="button" onClick={() => setModalOpen(true)} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl text-xs shrink-0 cursor-pointer shadow-sm transition-all">
+          <UserPlus className="w-3.5 h-3.5" /><span>Novo Acesso</span>
         </button>
       </div>
 
@@ -113,6 +118,17 @@ export const EmpresaUsuariosTab: React.FC<{ tenantId?: string }> = ({ tenantId }
                     <button type="button" onClick={() => setUsuarioEditando(u)} title="Alterar função" className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-semibold cursor-pointer">
                       <Edit2 className="w-3 h-3" /><span>Editar</span>
                     </button>
+                    {u.user_id !== user?.id && (
+                      perfil === 'BLOQUEADO' ? (
+                        <button type="button" onClick={() => setUsuarioEditando(u)} title="Reativar usuário" className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-[10px] font-semibold cursor-pointer">
+                          <CheckCircle className="w-3 h-3" /><span>Reativar</span>
+                        </button>
+                      ) : (
+                        <button type="button" onClick={() => handleBloquearUsuario(u)} title="Bloquear acesso" className="inline-flex items-center gap-1 px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-[10px] font-semibold cursor-pointer">
+                          <Ban className="w-3 h-3" /><span>Bloquear</span>
+                        </button>
+                      )
+                    )}
                   </div>
                 </div>
               );
@@ -121,17 +137,8 @@ export const EmpresaUsuariosTab: React.FC<{ tenantId?: string }> = ({ tenantId }
         )}
       </div>
 
-      <UsuarioFormModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        tenantId={tenantId || tenantAtivoId || (typeof window !== 'undefined' ? localStorage.getItem('terragest_tenant_ativo_id') : null) || '00000000-0000-0000-0000-000000000001'}
-        onSuccess={fetchUsuarios}
-      />
-      <UsuarioEditPerfilModal
-        usuario={usuarioEditando}
-        onClose={() => setUsuarioEditando(null)}
-        onSuccess={fetchUsuarios}
-      />
+      <UsuarioFormModal isOpen={modalOpen} onClose={() => setModalOpen(false)} tenantId={tenantId || tenantAtivoId || (typeof window !== 'undefined' ? localStorage.getItem('terragest_tenant_ativo_id') : null) || '00000000-0000-0000-0000-000000000001'} onSuccess={fetchUsuarios} />
+      <UsuarioEditPerfilModal usuario={usuarioEditando} onClose={() => setUsuarioEditando(null)} onSuccess={fetchUsuarios} />
     </div>
   );
 };

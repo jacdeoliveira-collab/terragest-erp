@@ -1,4 +1,4 @@
-android/
-public/*.apk
-public/downloads/*.apk
-
+android
+*.apk
+public/TerraGest-ERP.apk
+public/downloads

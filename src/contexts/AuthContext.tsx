@@ -86,6 +86,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (signInError) throw signInError;
       if (authData.session) {
         const { perfil, tenantId } = await initUserWithProfile(authData.session);
+        if (perfil === 'BLOQUEADO') {
+          await supabase.auth.signOut();
+          setUser(null);
+          setSession(null);
+          throw new Error('Seu acesso está bloqueado pelo administrador da empresa.');
+        }
         if (tenantId && typeof window !== 'undefined') {
           localStorage.setItem('terragest_tenant_ativo_id', tenantId);
         }

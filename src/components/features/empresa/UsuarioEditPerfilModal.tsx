@@ -23,7 +23,8 @@ const PERFIS: { value: PerfilAcesso; label: string }[] = [
   { value: 'ENGENHARIA', label: 'Engenharia (Encarregado)' },
   { value: 'RH', label: 'Recursos Humanos (DP)' },
   { value: 'FINANCEIRO', label: 'Financeiro' },
-  { value: 'ADMIN', label: 'Administrador da Empresa' }
+  { value: 'ADMIN', label: 'Administrador da Empresa' },
+  { value: 'BLOQUEADO', label: 'Bloqueado (Sem Acesso ao Sistema)' }
 ];
 
 export const UsuarioEditPerfilModal: React.FC<UsuarioEditPerfilModalProps> = ({
@@ -50,7 +51,7 @@ export const UsuarioEditPerfilModal: React.FC<UsuarioEditPerfilModalProps> = ({
     setErrorMsg(null);
     setSuccessMsg(null);
     try {
-      const novoRole = perfil === 'ADMIN' ? 'admin' : 'member';
+      const novoRole = perfil === 'ADMIN' ? 'admin' : perfil === 'BLOQUEADO' ? 'blocked' : 'member';
       const { error } = await supabase
         .from('tenant_users')
         .update({ perfil_acesso: perfil, role: novoRole })
