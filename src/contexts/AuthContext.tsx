@@ -14,10 +14,6 @@ async function fetchUserTenantData(user: User): Promise<{ perfil: PerfilAcesso; 
     return { perfil: 'ADMIN', tenantId: metaTenant };
   }
 
-  if (metaPerfil && metaTenant) {
-    return { perfil: metaPerfil, tenantId: metaTenant };
-  }
-
   try {
     const { data, error } = await supabase
       .from('tenant_users')

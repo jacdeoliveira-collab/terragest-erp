@@ -1,18 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Users, UserPlus, Shield, RefreshCw } from 'lucide-react';
+import { Users, UserPlus, Shield, RefreshCw, Edit2 } from 'lucide-react';
 import { supabase } from '../../../lib/supabase';
 import { useTenantContext } from '../../../contexts/TenantContext';
 import { UsuarioFormModal } from './UsuarioFormModal';
+import { UsuarioEditPerfilModal, type UsuarioTenantItem } from './UsuarioEditPerfilModal';
 import type { PerfilAcesso } from '../../../types/auth.types';
 
-interface TenantUserRecord {
-  id: string;
-  user_id: string;
-  role: string;
-  perfil_acesso?: PerfilAcesso;
-  created_at?: string;
-  email?: string;
-}
+type TenantUserRecord = UsuarioTenantItem & { created_at?: string };
 
 const BADGE_COLORS: Record<PerfilAcesso, string> = {
   OPERADOR: 'bg-emerald-50 text-emerald-800 border-emerald-300',
@@ -29,6 +23,7 @@ export const EmpresaUsuariosTab: React.FC<{ tenantId?: string }> = ({ tenantId }
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [usuarioEditando, setUsuarioEditando] = useState<TenantUserRecord | null>(null);
 
   const fetchUsuarios = useCallback(async () => {
     const tid = tenantId || tenantAtivoId || (typeof window !== 'undefined' ? localStorage.getItem('terragest_tenant_ativo_id') : null) || '00000000-0000-0000-0000-000000000001';
@@ -46,20 +41,13 @@ export const EmpresaUsuariosTab: React.FC<{ tenantId?: string }> = ({ tenantId }
         .select('id, user_id, role, perfil_acesso, created_at, email')
         .eq('tenant_id', tid)
         .order('created_at', { ascending: false });
-
       if (error) throw error;
       setUsuarios((data || []) as TenantUserRecord[]);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Erro ao carregar usuários.';
-      setErrorMsg(
-        msg.includes('infinite recursion')
-          ? 'Política RLS de usuários com recursão no Supabase. Execute a migração 56 no SQL Editor.'
-          : msg
-      );
+      setErrorMsg(msg.includes('infinite recursion') ? 'Política RLS de usuários com recursão no Supabase. Execute a migração 56 no SQL Editor.' : msg);
       setUsuarios([]);
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }, [tenantId, tenantAtivoId]);
 
   useEffect(() => { fetchUsuarios(); }, [fetchUsuarios]);
@@ -105,11 +93,7 @@ export const EmpresaUsuariosTab: React.FC<{ tenantId?: string }> = ({ tenantId }
         ) : usuarios.length === 0 ? (
           <div className="p-8 text-center text-gray-400 space-y-2">
             <p>Nenhum colaborador registrado nesta empresa.</p>
-            <button
-              type="button"
-              onClick={() => setModalOpen(true)}
-              className="inline-flex items-center gap-1 text-emerald-600 font-semibold hover:underline cursor-pointer"
-            >
+            <button type="button" onClick={() => setModalOpen(true)} className="inline-flex items-center gap-1 text-emerald-600 font-semibold hover:underline cursor-pointer">
               Criar o primeiro acesso
             </button>
           </div>
@@ -122,13 +106,14 @@ export const EmpresaUsuariosTab: React.FC<{ tenantId?: string }> = ({ tenantId }
                 <div key={u.id} className="p-3.5 flex items-center justify-between hover:bg-gray-50/60 transition-colors">
                   <div className="space-y-0.5">
                     <p className="font-semibold text-gray-900 text-xs">{u.email || u.user_id}</p>
-                    <p className="text-[10px] text-gray-400 font-mono">
-                      {u.email ? `ID: ${u.user_id.slice(0, 8)}... | ` : ''}Papel: {u.role || 'membro'}
-                    </p>
+                    <p className="text-[10px] text-gray-400 font-mono">{u.email ? `ID: ${u.user_id.slice(0, 8)}... | ` : ''}Papel: {u.role || 'membro'}</p>
                   </div>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${badgeClass}`}>
-                    {perfil}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${badgeClass}`}>{perfil}</span>
+                    <button type="button" onClick={() => setUsuarioEditando(u)} title="Alterar função" className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-semibold cursor-pointer">
+                      <Edit2 className="w-3 h-3" /><span>Editar</span>
+                    </button>
+                  </div>
                 </div>
               );
             })}
@@ -140,6 +125,11 @@ export const EmpresaUsuariosTab: React.FC<{ tenantId?: string }> = ({ tenantId }
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         tenantId={tenantId || tenantAtivoId || (typeof window !== 'undefined' ? localStorage.getItem('terragest_tenant_ativo_id') : null) || '00000000-0000-0000-0000-000000000001'}
+        onSuccess={fetchUsuarios}
+      />
+      <UsuarioEditPerfilModal
+        usuario={usuarioEditando}
+        onClose={() => setUsuarioEditando(null)}
         onSuccess={fetchUsuarios}
       />
     </div>
