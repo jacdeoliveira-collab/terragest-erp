@@ -1,41 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import type { User, Session } from '@supabase/supabase-js';
+import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
-import { isMasterEmail } from '../services/adminService';
+import { fetchUserTenantData } from './authTenantHelper';
 import type { AuthContextType, AuthUser, PerfilAcesso } from '../types/auth.types';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-async function fetchUserTenantData(user: User): Promise<{ perfil: PerfilAcesso; tenantId: string | null }> {
-  const metaPerfil = user.user_metadata?.perfil_acesso as PerfilAcesso | undefined;
-  const metaTenant = (user.user_metadata?.tenant_id as string | undefined) || null;
-
-  if (isMasterEmail(user.email)) {
-    return { perfil: 'ADMIN', tenantId: metaTenant };
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('tenant_users')
-      .select('perfil_acesso, tenant_id')
-      .eq('user_id', user.id)
-      .limit(1)
-      .maybeSingle();
-
-    if (!error && data) {
-      return {
-        perfil: (data.perfil_acesso as PerfilAcesso) || metaPerfil || 'ADMIN',
-        tenantId: data.tenant_id || metaTenant
-      };
-    }
-  } catch {
-    // fallback silencioso para user_metadata
-  }
-  return {
-    perfil: metaPerfil || 'ADMIN',
-    tenantId: metaTenant
-  };
-}
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);

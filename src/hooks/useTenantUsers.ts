@@ -50,7 +50,8 @@ export function useTenantUsers() {
       const { data: utData } = await supabase
         .from('tenant_users')
         .select('tenant_id, role, perfil_acesso')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .neq('perfil_acesso', 'BLOQUEADO');
 
       if (utData && utData.length > 0) {
         const tIds = utData.map((u) => u.tenant_id);
@@ -78,14 +79,15 @@ export function useTenantUsers() {
       }
 
       if (rows.length === 0 && user.email) {
+        const emailClean = user.email.trim();
         const { data: byEmail } = await supabase
           .from('tenants')
           .select('id, nome, razao_social, plano, status_conta, logo_url')
-          .or(`admin_email.eq.${user.email},contato_email.eq.${user.email}`)
-          .neq('status_conta', 'bloqueado');
+          .or(`admin_email.ilike.${emailClean},contato_email.ilike.${emailClean}`);
 
-        if (byEmail && byEmail.length > 0) {
-          rows = byEmail.map((t) => ({
+        const byEmailAtivos = (byEmail || []).filter((t) => t.status_conta !== 'bloqueado');
+        if (byEmailAtivos.length > 0) {
+          rows = byEmailAtivos.map((t) => ({
             id: t.id,
             nome: t.nome || t.razao_social || 'Empresa',
             razao_social: t.razao_social || t.nome || 'Empresa',

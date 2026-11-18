@@ -51,12 +51,20 @@ export const UsuarioEditPerfilModal: React.FC<UsuarioEditPerfilModalProps> = ({
     setErrorMsg(null);
     setSuccessMsg(null);
     try {
-      const novoRole = perfil === 'ADMIN' ? 'admin' : perfil === 'BLOQUEADO' ? 'blocked' : 'member';
-      const { error } = await supabase
-        .from('tenant_users')
-        .update({ perfil_acesso: perfil, role: novoRole })
-        .eq('id', usuario.id);
-      if (error) throw new Error(error.message);
+      const { data: rpcData, error: rpcError } = await supabase.rpc('atualizar_perfil_usuario_tenant', {
+        p_tenant_user_id: usuario.id,
+        p_perfil_acesso: perfil
+      });
+      if (rpcError) {
+        const novoRole = perfil === 'ADMIN' ? 'admin' : perfil === 'BLOQUEADO' ? 'blocked' : 'member';
+        const { error } = await supabase
+          .from('tenant_users')
+          .update({ perfil_acesso: perfil, role: novoRole })
+          .eq('id', usuario.id);
+        if (error) throw new Error(error.message);
+      } else if (rpcData && !rpcData.success) {
+        throw new Error(rpcData.error || 'Erro ao atualizar função.');
+      }
       setSuccessMsg(`Função atualizada para ${perfil}!`);
       setTimeout(() => { onSuccess(); onClose(); }, 800);
     } catch (err) {

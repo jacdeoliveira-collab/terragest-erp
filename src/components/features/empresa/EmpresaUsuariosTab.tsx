@@ -57,8 +57,11 @@ export const EmpresaUsuariosTab: React.FC<{ tenantId?: string }> = ({ tenantId }
 
   const handleBloquearUsuario = async (u: TenantUserRecord) => {
     if (!confirm(`Bloquear o acesso de "${u.email || u.user_id}"?\nOs dados e alterações históricas serão preservados.`)) return;
-    const { error } = await supabase.from('tenant_users').update({ perfil_acesso: 'BLOQUEADO', role: 'blocked' }).eq('id', u.id);
-    if (error) { setErrorMsg(error.message); return; }
+    const { data: rpcData, error: rpcError } = await supabase.rpc('atualizar_perfil_usuario_tenant', { p_tenant_user_id: u.id, p_perfil_acesso: 'BLOQUEADO' });
+    if (rpcError) {
+      const { error } = await supabase.from('tenant_users').update({ perfil_acesso: 'BLOQUEADO', role: 'blocked' }).eq('id', u.id);
+      if (error) { setErrorMsg(error.message); return; }
+    } else if (rpcData && !rpcData.success) { setErrorMsg(rpcData.error || 'Erro ao bloquear usuário.'); return; }
     fetchUsuarios();
   };
 
