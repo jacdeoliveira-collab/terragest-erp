@@ -27,12 +27,20 @@ export const EmpresaUsuariosTab: React.FC<{ tenantId?: string }> = ({ tenantId }
   const { tenantAtivoId } = useTenantContext();
   const [usuarios, setUsuarios] = useState<TenantUserRecord[]>([]);
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
   const fetchUsuarios = useCallback(async () => {
     const tid = tenantId || tenantAtivoId || (typeof window !== 'undefined' ? localStorage.getItem('terragest_tenant_ativo_id') : null) || '00000000-0000-0000-0000-000000000001';
     setLoading(true);
+    setErrorMsg(null);
     try {
+      const rpcRes = await supabase.rpc('listar_usuarios_tenant', { p_tenant_id: tid });
+      if (!rpcRes.error && Array.isArray(rpcRes.data)) {
+        setUsuarios(rpcRes.data as TenantUserRecord[]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('tenant_users')
         .select('id, user_id, role, perfil_acesso, created_at, email')
@@ -40,16 +48,14 @@ export const EmpresaUsuariosTab: React.FC<{ tenantId?: string }> = ({ tenantId }
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      if (!data || data.length === 0) {
-        const { data: allUsers } = await supabase
-          .from('tenant_users')
-          .select('id, user_id, role, perfil_acesso, created_at, email')
-          .order('created_at', { ascending: false });
-        setUsuarios((allUsers || []) as TenantUserRecord[]);
-      } else {
-        setUsuarios(data as TenantUserRecord[]);
-      }
-    } catch {
+      setUsuarios((data || []) as TenantUserRecord[]);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Erro ao carregar usuários.';
+      setErrorMsg(
+        msg.includes('infinite recursion')
+          ? 'Política RLS de usuários com recursão no Supabase. Execute a migração 56 no SQL Editor.'
+          : msg
+      );
       setUsuarios([]);
     } finally {
       setLoading(false);
@@ -87,6 +93,12 @@ export const EmpresaUsuariosTab: React.FC<{ tenantId?: string }> = ({ tenantId }
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
+
+        {errorMsg && (
+          <div className="p-3 bg-rose-50 border-b border-rose-200 text-rose-700 text-[11px] font-medium">
+            {errorMsg}
+          </div>
+        )}
 
         {loading ? (
           <div className="p-6 text-center text-gray-400">Carregando acessos...</div>
