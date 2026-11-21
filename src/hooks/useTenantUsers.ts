@@ -2,7 +2,21 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
 import { isMasterEmail, isUserSuperAdmin } from '../services/adminService';
+import { lerTenantsOffline, salvarTenantsOffline } from '../services/offlineAuthService';
 import type { TenantUserItem } from '../types/tenant.types';
+
+function mapTenantRow(t: any, role: string, perfil: TenantUserItem['perfil_acesso']): TenantUserItem {
+  return {
+    id: t.id,
+    nome: t.nome || t.razao_social || 'Empresa',
+    razao_social: t.razao_social || t.nome || 'Empresa',
+    plano: t.plano,
+    status_conta: t.status_conta,
+    role,
+    perfil_acesso: perfil,
+    logo_url: t.logo_url
+  };
+}
 
 export function useTenantUsers() {
   const { user } = useAuth();
@@ -20,6 +34,10 @@ export function useTenantUsers() {
     try {
       setLoading(true);
       setError(null);
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        const cached = lerTenantsOffline(user.id);
+        if (cached) { setTenants(cached.tenants); setIsMaster(cached.isMaster); return; }
+      }
       const isMasterByEmail = isMasterEmail(user.email);
       const isMasterByDb = await isUserSuperAdmin(user.id);
       const userIsMaster = isMasterByEmail || isMasterByDb;
@@ -33,16 +51,9 @@ export function useTenantUsers() {
           .order('nome', { ascending: true });
 
         if (err) throw err;
-        setTenants((data || []).map((t) => ({
-          id: t.id,
-          nome: t.nome || t.razao_social || 'Empresa',
-          razao_social: t.razao_social || t.nome || 'Empresa',
-          plano: t.plano,
-          status_conta: t.status_conta,
-          role: 'master',
-          perfil_acesso: 'ADMIN',
-          logo_url: t.logo_url
-        })));
+        const mapped = (data || []).map((t) => mapTenantRow(t, 'master', 'ADMIN'));
+        setTenants(mapped);
+        salvarTenantsOffline(user.id, mapped, true);
         return;
       }
 
@@ -64,16 +75,7 @@ export function useTenantUsers() {
         if (tList) {
           rows = tList.map((t) => {
             const ut = utData.find((u) => u.tenant_id === t.id);
-            return {
-              id: t.id,
-              nome: t.nome || t.razao_social || 'Empresa',
-              razao_social: t.razao_social || t.nome || 'Empresa',
-              plano: t.plano,
-              status_conta: t.status_conta as any,
-              role: ut?.role || 'membro',
-              perfil_acesso: (ut?.perfil_acesso as any) || 'OPERADOR',
-              logo_url: t.logo_url
-            };
+            return mapTenantRow(t, ut?.role || 'membro', (ut?.perfil_acesso as any) || 'OPERADOR');
           });
         }
       }
@@ -87,16 +89,7 @@ export function useTenantUsers() {
 
         const byEmailAtivos = (byEmail || []).filter((t) => t.status_conta !== 'bloqueado');
         if (byEmailAtivos.length > 0) {
-          rows = byEmailAtivos.map((t) => ({
-            id: t.id,
-            nome: t.nome || t.razao_social || 'Empresa',
-            razao_social: t.razao_social || t.nome || 'Empresa',
-            plano: t.plano,
-            status_conta: t.status_conta,
-            role: 'admin',
-            perfil_acesso: 'ADMIN',
-            logo_url: t.logo_url
-          }));
+          rows = byEmailAtivos.map((t) => mapTenantRow(t, 'admin', 'ADMIN'));
         }
       }
 
@@ -111,24 +104,22 @@ export function useTenantUsers() {
             .eq('id', user.user_metadata.tenant_id)
             .neq('status_conta', 'bloqueado');
           if (byMeta && byMeta.length > 0) {
-            rows = byMeta.map((t) => ({
-              id: t.id,
-              nome: t.nome || t.razao_social || 'Empresa',
-              razao_social: t.razao_social || t.nome || 'Empresa',
-              plano: t.plano,
-              status_conta: t.status_conta as any,
-              role: (user.user_metadata?.role as string) || 'membro',
-              perfil_acesso: (user.user_metadata?.perfil_acesso as any) || 'OPERADOR',
-              logo_url: t.logo_url
-            }));
+            rows = byMeta.map((t) => mapTenantRow(t, (user.user_metadata?.role as string) || 'membro', (user.user_metadata?.perfil_acesso as any) || 'OPERADOR'));
           }
         }
       }
 
       setTenants(rows);
+      if (rows.length > 0) salvarTenantsOffline(user.id, rows, false);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Falha ao buscar empresas');
-      setTenants([]);
+      const cached = lerTenantsOffline(user.id);
+      if (cached) {
+        setTenants(cached.tenants);
+        setIsMaster(cached.isMaster);
+      } else {
+        setError(err instanceof Error ? err.message : 'Falha ao buscar empresas');
+        setTenants([]);
+      }
     } finally {
       setLoading(false);
     }

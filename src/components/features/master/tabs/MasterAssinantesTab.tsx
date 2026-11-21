@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Users, Plus, Search } from 'lucide-react';
 import type { TenantMaster, CreateTenantDTO, UpdateTenantDTO } from '../../../../types/tenant.types';
 import { NovoTenantModal } from '../NovoTenantModal';
+import { ExcluirTenantModal } from '../ExcluirTenantModal';
 import { MasterAssinantesKPIs } from './MasterAssinantesKPIs';
 import { MasterAssinantesTableRow } from './MasterAssinantesTableRow';
 
@@ -11,6 +12,7 @@ interface MasterAssinantesTabProps {
   onToggleStatus: (id: string, novoStatus: 'ativo' | 'bloqueado') => Promise<{ success: boolean }>;
   onUpdate: (id: string, payload: UpdateTenantDTO) => Promise<{ success: boolean }>;
   onCreate: (payload: CreateTenantDTO) => Promise<{ success: boolean }>;
+  onDelete: (id: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 export const MasterAssinantesTab: React.FC<MasterAssinantesTabProps> = ({
@@ -18,10 +20,12 @@ export const MasterAssinantesTab: React.FC<MasterAssinantesTabProps> = ({
   isLoading,
   onToggleStatus,
   onCreate,
+  onDelete,
 }) => {
   const [filtroStatus, setFiltroStatus] = useState<string>('todos');
   const [busca, setBusca] = useState<string>('');
   const [modalNovoAberto, setModalNovoAberto] = useState<boolean>(false);
+  const [tenantExcluindo, setTenantExcluindo] = useState<TenantMaster | null>(null);
 
   const totalTenants = tenants.length;
   const ativos = tenants.filter((t) => t.status_conta === 'ativo').length;
@@ -109,6 +113,7 @@ export const MasterAssinantesTab: React.FC<MasterAssinantesTabProps> = ({
                     key={t.id}
                     tenant={t}
                     onToggleStatus={onToggleStatus}
+                    onRequestDelete={setTenantExcluindo}
                   />
                 ))
               )}
@@ -125,6 +130,14 @@ export const MasterAssinantesTab: React.FC<MasterAssinantesTabProps> = ({
             if (res.success) setModalNovoAberto(false);
             return res;
           }}
+        />
+      )}
+
+      {tenantExcluindo && (
+        <ExcluirTenantModal
+          tenant={tenantExcluindo}
+          onClose={() => setTenantExcluindo(null)}
+          onConfirm={onDelete}
         />
       )}
     </div>

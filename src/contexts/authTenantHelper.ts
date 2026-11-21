@@ -1,6 +1,7 @@
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { isMasterEmail } from '../services/adminService';
+import { lerSessaoOffline } from '../services/offlineAuthService';
 import type { PerfilAcesso } from '../types/auth.types';
 
 export async function fetchUserTenantData(user: User): Promise<{ perfil: PerfilAcesso; tenantId: string | null }> {
@@ -9,6 +10,15 @@ export async function fetchUserTenantData(user: User): Promise<{ perfil: PerfilA
 
   if (isMasterEmail(user.email)) {
     return { perfil: 'ADMIN', tenantId: metaTenant };
+  }
+
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    const offline = lerSessaoOffline();
+    if (offline && offline.user.id === user.id) {
+      return { perfil: offline.perfil, tenantId: offline.tenantId || metaTenant };
+    }
+    const savedId = typeof window !== 'undefined' ? localStorage.getItem('terragest_tenant_ativo_id') : null;
+    return { perfil: metaPerfil || 'ADMIN', tenantId: savedId || metaTenant };
   }
 
   try {

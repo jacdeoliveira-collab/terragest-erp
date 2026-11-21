@@ -1,15 +1,17 @@
 import React from 'react';
-import { Shield } from 'lucide-react';
+import { Shield, Trash2 } from 'lucide-react';
 import type { TenantMaster } from '../../../../types/tenant.types';
 
 interface MasterAssinantesTableRowProps {
   tenant: TenantMaster;
   onToggleStatus: (id: string, novoStatus: 'ativo' | 'bloqueado') => Promise<{ success: boolean }>;
+  onRequestDelete: (tenant: TenantMaster) => void;
 }
 
 export const MasterAssinantesTableRow: React.FC<MasterAssinantesTableRowProps> = ({
   tenant,
   onToggleStatus,
+  onRequestDelete,
 }) => {
   return (
     <tr className="hover:bg-[#161b22] transition-colors">
@@ -41,13 +43,22 @@ export const MasterAssinantesTableRow: React.FC<MasterAssinantesTableRowProps> =
         </select>
       </td>
       <td className="py-2.5 px-3 text-right">
-        <button
-          onClick={() => onToggleStatus(tenant.id, tenant.status_conta === 'ativo' ? 'bloqueado' : 'ativo')}
-          className="p-1 hover:text-white text-gray-400 transition-colors"
-          title="Alternar Status"
-        >
-          <Shield className="w-4 h-4" />
-        </button>
+        <div className="inline-flex items-center gap-1.5">
+          <button
+            onClick={() => onToggleStatus(tenant.id, tenant.status_conta === 'ativo' ? 'bloqueado' : 'ativo')}
+            className="p-1 hover:text-white text-gray-400 transition-colors cursor-pointer"
+            title="Alternar Status"
+          >
+            <Shield className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => onRequestDelete(tenant)}
+            className="p-1 hover:text-rose-400 text-gray-400 transition-colors cursor-pointer"
+            title="Excluir Assinante e Todos os Dados"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       </td>
     </tr>
   );

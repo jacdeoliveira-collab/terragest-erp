@@ -119,9 +119,19 @@ export function useMasterTenants() {
     }
   };
 
-  useEffect(() => {
-    fetchTenants();
-  }, [fetchTenants]);
+  const excluirTenant = async (id: string) => {
+    try {
+      const { data, error: rpcError } = await supabase.rpc('excluir_assinante_completo', { p_tenant_id: id });
+      if (rpcError) throw new Error(rpcError.message);
+      if (data && data.success === false) throw new Error(data.error || 'Falha ao excluir assinante.');
+      setTenants((prev) => prev.filter((t) => t.id !== id));
+      return { success: true };
+    } catch (err: unknown) {
+      return { success: false, error: err instanceof Error ? err.message : 'Erro ao excluir assinante' };
+    }
+  };
+
+  useEffect(() => { fetchTenants(); }, [fetchTenants]);
 
   return {
     tenants,
@@ -130,6 +140,7 @@ export function useMasterTenants() {
     refetch: fetchTenants,
     alternarStatusConta,
     atualizarTenant,
-    criarTenant
+    criarTenant,
+    excluirTenant
   };
 }

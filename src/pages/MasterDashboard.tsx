@@ -19,6 +19,7 @@ export const MasterDashboard: React.FC = () => {
     alternarStatusConta,
     atualizarTenant,
     criarTenant,
+    excluirTenant,
   } = useMasterTenants();
 
   const {
@@ -77,6 +78,7 @@ export const MasterDashboard: React.FC = () => {
           onToggleStatus={alternarStatusConta}
           onUpdate={atualizarTenant}
           onCreate={criarTenant}
+          onDelete={excluirTenant}
         />
       )}
 
