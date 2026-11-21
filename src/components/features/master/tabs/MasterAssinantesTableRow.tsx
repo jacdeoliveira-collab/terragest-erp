@@ -46,17 +46,17 @@ export const MasterAssinantesTableRow: React.FC<MasterAssinantesTableRowProps> =
         <div className="inline-flex items-center gap-1.5">
           <button
             onClick={() => onToggleStatus(tenant.id, tenant.status_conta === 'ativo' ? 'bloqueado' : 'ativo')}
-            className="p-1 hover:text-white text-gray-400 transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600/60 transition-colors cursor-pointer"
             title="Alternar Status"
           >
-            <Shield className="w-4 h-4" />
+            <Shield className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={() => onRequestDelete(tenant)}
-            className="p-1 hover:text-rose-400 text-gray-400 transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/30 text-rose-400 border border-rose-500/40 transition-colors cursor-pointer"
             title="Excluir Assinante e Todos os Dados"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-3.5 h-3.5" />
           </button>
         </div>
       </td>

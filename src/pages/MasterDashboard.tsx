@@ -45,7 +45,7 @@ export const MasterDashboard: React.FC = () => {
   const tenantAtivo = tenants[0];
 
   return (
-    <div className="space-y-5 text-left pb-10">
+    <div className="master-dark-surface space-y-5 text-left pb-10">
       {/* Cabeçalho Escuro Master com Badges, Operador e Abas */}
       <MasterHeader
         activeTab={activeTab}

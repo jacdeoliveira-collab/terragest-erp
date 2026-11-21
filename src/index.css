@@ -122,3 +122,15 @@ html.theme-solar .border-gray-200, html.theme-solar .border-slate-200, html.them
 .scroll-touch-x::-webkit-scrollbar { height: 4px; }
 .scroll-touch-x::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 input::placeholder, textarea::placeholder { color: #94a3b8; }
+
+/* PAINEL MASTER (sempre tema escuro independente do tema claro global) */
+.master-dark-surface input,
+.master-dark-surface select,
+.master-dark-surface textarea,
+.master-dark-surface option,
+.master-dark-surface optgroup {
+  color: #f8fafc !important;
+  background-color: #0d1117 !important;
+}
+.master-dark-surface select.text-emerald-400 { color: #34d399 !important; }
+.master-dark-surface select.text-rose-400 { color: #fb7185 !important; }
