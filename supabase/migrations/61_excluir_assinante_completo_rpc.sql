@@ -27,6 +27,12 @@ BEGIN
 
   SELECT (
     EXISTS (SELECT 1 FROM public.super_admins WHERE id = auth.uid())
+    OR EXISTS (
+      SELECT 1 FROM public.tenant_users tu
+      WHERE tu.user_id = auth.uid()
+        AND tu.tenant_id = '00000000-0000-0000-0000-000000000001'::uuid
+        AND (tu.role IN ('admin', 'master', 'superadmin') OR tu.perfil_acesso = 'ADMIN')
+    )
     OR COALESCE(auth.jwt() -> 'user_metadata' ->> 'role', '') IN ('master', 'superadmin')
     OR COALESCE(auth.jwt() -> 'user_metadata' ->> 'is_master', '') = 'true'
     OR COALESCE(auth.jwt() -> 'user_metadata' ->> 'is_super_admin', '') = 'true'
