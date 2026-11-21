@@ -116,7 +116,7 @@ export const FuncionarioHistoricoModal: React.FC<Props> = ({ isOpen, onClose, fu
                 <ValesTable vales={data.vales} onExcluir={handleExcluirVale} onReload={refetch} />
               </div>
             )}
-            <FuncionarioRemuneracaoTable remuneracoes={remuneracoesExibidas} operadorNome={funcionario.nome} onQuitarItem={(it) => setItemParaQuitar(it)} />
+            <FuncionarioRemuneracaoTable remuneracoes={remuneracoesExibidas} operadorNome={funcionario.nome} totalVales={data.vales.reduce((acc, v) => acc + v.valor, 0)} onQuitarItem={(it) => setItemParaQuitar(it)} />
           </div>
         )}
         {subTab === 'vales' && (

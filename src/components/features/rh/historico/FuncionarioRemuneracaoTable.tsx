@@ -7,6 +7,7 @@ import { exportarRemuneracoesOperadorExcel, exportarRemuneracoesOperadorPDF } fr
 interface Props {
   remuneracoes: FuncionarioRemuneracaoItem[];
   operadorNome: string;
+  totalVales?: number;
   onQuitarItem: (item: FuncionarioRemuneracaoItem) => void;
 }
 
@@ -16,7 +17,7 @@ const OPCOES_STATUS = [
   { valor: 'PENDENTE', label: 'Pendentes' }
 ];
 
-export const FuncionarioRemuneracaoTable: React.FC<Props> = ({ remuneracoes, operadorNome, onQuitarItem }) => {
+export const FuncionarioRemuneracaoTable: React.FC<Props> = ({ remuneracoes, operadorNome, totalVales = 0, onQuitarItem }) => {
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
   const [status, setStatus] = useState('TODOS');
@@ -47,7 +48,7 @@ export const FuncionarioRemuneracaoTable: React.FC<Props> = ({ remuneracoes, ope
         status={status} setStatus={setStatus}
         statusOptions={OPCOES_STATUS}
         onExportarExcel={() => exportarRemuneracoesOperadorExcel(operadorNome, filtrados)}
-        onExportarPdf={() => exportarRemuneracoesOperadorPDF(operadorNome, filtrados)}
+        onExportarPdf={() => exportarRemuneracoesOperadorPDF(operadorNome, filtrados, { totalVales })}
         totalFiltrados={filtrados.length}
       />
 
