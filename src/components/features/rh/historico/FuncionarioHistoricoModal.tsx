@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Modal } from '../../../ui/Modal';
-import { Settings, RefreshCw, AlertCircle, Phone, DollarSign, Clock, Receipt, Plus } from 'lucide-react';
+import { Settings, RefreshCw, AlertCircle, Phone, DollarSign, Clock, Receipt, Plus, FileText } from 'lucide-react';
 import { useFuncionarioHistorico } from '../../../../hooks/useFuncionarioHistorico';
 import { FuncionarioHistoricoCards } from './FuncionarioHistoricoCards';
 import { FuncionarioMaquinasResumo } from './FuncionarioMaquinasResumo';
@@ -10,6 +10,7 @@ import { QuitarOperadorModal } from './QuitarOperadorModal';
 import { LancarValeModal } from '../vales/LancarValeModal';
 import { ValesTable } from '../vales/ValesTable';
 import { excluirValeColaborador } from '../../../../services/valeRhService';
+import { exportarValesOperadorPDF } from '../../../../utils/exportValesOperador';
 import type { Funcionario } from '../../../../types/rh.types';
 import type { FuncionarioRemuneracaoItem } from '../../../../types/funcionarioHistorico.types';
 
@@ -38,6 +39,14 @@ export const FuncionarioHistoricoModal: React.FC<Props> = ({ isOpen, onClose, fu
   const handleExcluirVale = async (id: string) => {
     await excluirValeColaborador(id);
     refetch();
+  };
+
+  const handleExportarValesPdf = () => {
+    exportarValesOperadorPDF(funcionario.nome, data.vales, {
+      totalGanhos: data.totalGanhos,
+      totalPago: data.totalPago,
+      saldoAPagar: data.totalSaldoAberto
+    });
   };
 
   return (
@@ -90,14 +99,19 @@ export const FuncionarioHistoricoModal: React.FC<Props> = ({ isOpen, onClose, fu
           <div className="space-y-3">
             {data.vales.length > 0 && (
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <h4 className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
                     <Receipt className="w-3.5 h-3.5 text-blue-600" />
                     <span>Adiantamentos & Vales Registrados ({data.vales.length})</span>
                   </h4>
-                  <span className="text-[11px] font-mono font-bold text-blue-800">
-                    Total Já Pago / Vales: R$ {data.totalPago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-mono font-bold text-blue-800">
+                      Total Já Pago / Vales: R$ {data.totalPago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </span>
+                    <button type="button" onClick={handleExportarValesPdf} className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-[11px] font-bold cursor-pointer shadow-xs">
+                      <FileText className="w-3 h-3" /><span>Extrato PDF</span>
+                    </button>
+                  </div>
                 </div>
                 <ValesTable vales={data.vales} onExcluir={handleExcluirVale} onReload={refetch} />
               </div>
@@ -106,7 +120,19 @@ export const FuncionarioHistoricoModal: React.FC<Props> = ({ isOpen, onClose, fu
           </div>
         )}
         {subTab === 'vales' && (
-          <ValesTable vales={data.vales} onExcluir={handleExcluirVale} onReload={refetch} />
+          <div className="space-y-2">
+            {data.vales.length > 0 && (
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-mono font-bold text-blue-800">
+                  Total Vales & Haveres: R$ {data.totalPago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ({data.vales.length})
+                </span>
+                <button type="button" onClick={handleExportarValesPdf} className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-[11px] font-bold cursor-pointer shadow-xs">
+                  <FileText className="w-3 h-3" /><span>Extrato Haveres PDF</span>
+                </button>
+              </div>
+            )}
+            <ValesTable vales={data.vales} onExcluir={handleExcluirVale} onReload={refetch} />
+          </div>
         )}
         {subTab === 'producao' && (
           <div className="space-y-3">
