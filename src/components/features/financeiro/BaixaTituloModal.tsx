@@ -8,7 +8,7 @@ interface BaixaTituloModalProps {
   isOpen: boolean;
   onClose: () => void;
   titulo: MedicaoItem | null;
-  onConfirmar: (id: string, dataPagamento: string, formaPagamento: FormaPagamentoTitulo, contaBancariaId?: string) => Promise<boolean>;
+  onConfirmar: (id: string, dataPagamento: string, formaPagamento: FormaPagamentoTitulo, contaBancariaId?: string) => Promise<boolean | { success: boolean; error?: string }>;
 }
 
 const formatBRL = (val: number) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -39,10 +39,11 @@ export const BaixaTituloModal: React.FC<BaixaTituloModalProps> = ({
     setError(null);
     setIsSubmitting(true);
 
-    const success = await onConfirmar(titulo.id, dataPagamento, formaPagamento, contaBancariaId || contaPadrao?.id || undefined);
+    const res = await onConfirmar(titulo.id, dataPagamento, formaPagamento, contaBancariaId || contaPadrao?.id || undefined);
     setIsSubmitting(false);
-    if (success) onClose();
-    else setError('Falha ao confirmar recebimento do título.');
+    const ok = typeof res === 'boolean' ? res : res.success;
+    if (ok) onClose();
+    else setError((typeof res === 'object' && res?.error) || 'Falha ao confirmar recebimento do título.');
   };
 
   return (

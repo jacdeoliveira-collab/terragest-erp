@@ -35,9 +35,8 @@ export const ContasReceber: React.FC = () => {
     dataPagamento: string,
     formaPagamento: FormaPagamentoTitulo,
     contaBancariaId?: string
-  ): Promise<boolean> => {
-    const res = await darBaixa(id, dataPagamento, formaPagamento, contaBancariaId);
-    return res.success;
+  ): Promise<{ success: boolean; error?: string }> => {
+    return await darBaixa(id, dataPagamento, formaPagamento, contaBancariaId);
   };
 
   const handleConfirmarHaver = async (

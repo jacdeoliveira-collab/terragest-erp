@@ -4,10 +4,39 @@ import type { AdiantamentoItem } from '../types/servicoHorimetro.types';
 import { parseParcelaRef, liquidarParcelaReceber } from './contasReceberParcelaBaixa';
 import { registrarQuitacaoIntegralServico } from './servicoQuitacaoHelper';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function extrairRefServico(idOuObs: string): string {
   if (idOuObs.startsWith('serv_')) return idOuObs.replace('serv_', '');
   const m = idOuObs.match(/\[REF:([^\]]+)\]/);
   return m ? m[1] : idOuObs;
+}
+
+async function atualizarMedicaoPaga(
+  filtro: { tipo: 'id' | 'ref'; valor: string },
+  dataPagamento: string,
+  formaPagamento: string,
+  contaBancariaId?: string
+): Promise<void> {
+  const contaUuid = contaBancariaId && UUID_RE.test(contaBancariaId) ? contaBancariaId : null;
+  const executar = (payload: Record<string, unknown>) =>
+    filtro.tipo === 'id'
+      ? supabase.from('medicoes').update(payload).eq('id', filtro.valor)
+      : supabase.from('medicoes').update(payload).ilike('observacoes', `%[REF:${filtro.valor}]%`);
+
+  const { error: err1 } = await executar({
+    status_pagamento: 'PAGO', data_pagamento: dataPagamento, forma_pagamento: formaPagamento,
+    conta_bancaria_id: contaUuid, updated_at: new Date().toISOString()
+  });
+  if (!err1) return;
+
+  const msg = (err1.message || '').toLowerCase();
+  if (msg.includes('conta_bancaria_id') || msg.includes('updated_at') || msg.includes('column') || msg.includes('schema cache')) {
+    const { error: err2 } = await executar({ status_pagamento: 'PAGO', data_pagamento: dataPagamento, forma_pagamento: formaPagamento });
+    if (err2) throw new Error(err2.message);
+    return;
+  }
+  throw new Error(err1.message);
 }
 
 export async function liquidarTituloReceber(
@@ -27,26 +56,10 @@ export async function liquidarTituloReceber(
 
     if (isServicoId) {
       await registrarQuitacaoIntegralServico(realId, dataPagamento, formaPagamento);
-
-      await supabase.from('medicoes').update({
-        status_pagamento: 'PAGO',
-        data_pagamento: dataPagamento,
-        forma_pagamento: formaPagamento,
-        conta_bancaria_id: contaBancariaId || null,
-        updated_at: new Date().toISOString()
-      }).ilike('observacoes', `%[REF:${realId}]%`);
+      await atualizarMedicaoPaga({ tipo: 'ref', valor: realId }, dataPagamento, formaPagamento, contaBancariaId).catch(() => {});
     } else {
-      const { error: updErr } = await supabase.from('medicoes').update({
-        status_pagamento: 'PAGO',
-        data_pagamento: dataPagamento,
-        forma_pagamento: formaPagamento,
-        conta_bancaria_id: contaBancariaId || null,
-        updated_at: new Date().toISOString()
-      }).eq('id', id);
+      await atualizarMedicaoPaga({ tipo: 'id', valor: id }, dataPagamento, formaPagamento, contaBancariaId);
 
-      if (updErr) throw new Error(updErr.message);
-
-      // Se a medição tiver [REF:serv_id], quita também o serviço correspondente
       const { data: med } = await supabase.from('medicoes').select('observacoes').eq('id', id).maybeSingle();
       if (med?.observacoes) {
         const servId = extrairRefServico(med.observacoes);
