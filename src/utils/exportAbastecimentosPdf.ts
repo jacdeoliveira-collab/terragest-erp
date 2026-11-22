@@ -3,6 +3,7 @@ import autoTable from 'jspdf-autotable';
 import type { AbastecimentoItem } from '../types/abastecimento.types';
 import { desenharCabecalhoPdf } from './pdf/pdfEmpresaLayout';
 import { aplicarRodapeTodasPaginas } from './pdf/pdfHeaderFooter';
+import { isVehicleOrTruck } from './equipmentMeasurement';
 
 export function exportarAbastecimentosPDF(abastecimentos: AbastecimentoItem[]): void {
   if (!abastecimentos || abastecimentos.length === 0) return;
@@ -61,8 +62,9 @@ export function exportarAbastecimentosPDF(abastecimentos: AbastecimentoItem[]): 
       ? `${a.maquina_codigo} - ${a.maquina_nome || ''}`
       : (a.maquina_nome || '-');
 
-    const horim = a.horimetro_momento
-      ? (String(a.horimetro_momento).length > 5 ? `${a.horimetro_momento} km` : `${Number(a.horimetro_momento).toFixed(1)} h`)
+    const ehVeiculo = isVehicleOrTruck({ code: a.maquina_codigo, name: a.maquina_nome });
+    const horim = Number(a.horimetro_momento) > 0
+      ? (ehVeiculo ? `${Number(a.horimetro_momento).toLocaleString('pt-BR')} km` : `${Number(a.horimetro_momento).toFixed(1)} h`)
       : '-';
 
     const refDoc = [
