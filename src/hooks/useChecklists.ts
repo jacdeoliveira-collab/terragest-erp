@@ -22,13 +22,21 @@ export function useChecklists() {
         .select(`
           *,
           equipment:maquina_id (code, name),
-          funcionario:operador_id (nome)
+          funcionario:rh_funcionarios!operador_id (nome)
         `)
         .order('data', { ascending: false });
 
       query = aplicarFiltroTenant(query, currentTenant);
 
-      const { data: responseData, error: responseError } = await query;
+      let { data: responseData, error: responseError } = await query;
+
+      if (responseError) {
+        let fallback = supabase.from('checklists_diarios').select('*').order('data', { ascending: false });
+        fallback = aplicarFiltroTenant(fallback, currentTenant);
+        const fbRes = await fallback;
+        responseData = fbRes.data;
+        responseError = fbRes.error;
+      }
 
       if (responseError) {
         throw new Error(responseError.message);

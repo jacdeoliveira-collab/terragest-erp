@@ -44,7 +44,7 @@ export const ServicoFiltrosBar: React.FC<ServicoFiltrosBarProps> = ({
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             placeholder="Filtrar por cliente, máquina, operador ou obra..."
-            className="w-full pl-8.5 pr-7 py-1.5 bg-gray-50 hover:bg-gray-100/70 focus:bg-white border border-gray-200 rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+            className="w-full pl-10 pr-8 py-1.5 bg-gray-50 hover:bg-gray-100/70 focus:bg-white border border-gray-200 rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
           />
           {busca && (
             <button

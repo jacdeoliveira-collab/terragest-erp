@@ -59,7 +59,7 @@ export const ListFilterBar: React.FC<ListFilterBarProps> = (props) => {
           <input
             type="text" value={props.busca} onChange={(e) => handleBusca(e.target.value)}
             placeholder={placeholder}
-            className="w-full pl-8.5 pr-7 py-1.5 bg-gray-50 hover:bg-gray-100/70 focus:bg-white border border-gray-200 rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+            className="w-full pl-10 pr-8 py-1.5 bg-gray-50 hover:bg-gray-100/70 focus:bg-white border border-gray-200 rounded-xl text-xs text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
           />
           {props.busca && (
             <button type="button" onClick={() => handleBusca('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer">
