@@ -30,7 +30,7 @@ export const TermoAdesaoPlanoBox: React.FC<Props> = ({
         <div className="min-w-0">
           <div className="flex items-center gap-1.5 font-bold">
             <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-            <span className="truncate">Contrato de Adesão, LGPD & Escopo ({plano.nome})</span>
+            <span className="truncate">{plano.termo_titulo?.trim() || `Contrato de Adesão, LGPD & Escopo (${plano.nome})`}</span>
           </div>
           <span className="block text-[10px] opacity-75">Contratada: JAC de Oliveira / TerraGest — Codó/MA • Foro: Codó/MA</span>
         </div>
@@ -73,10 +73,16 @@ export const TermoAdesaoPlanoBox: React.FC<Props> = ({
           className="mt-0.5 h-4 w-4 rounded accent-emerald-600 cursor-pointer shrink-0"
         />
         <span className="leading-snug">
-          Li e concordo com o <strong>Contrato de Adesão (JAC de Oliveira / TerraGest — Codó/MA)</strong> referente ao{' '}
-          <strong>{plano.nome}</strong> ({qtdModulos} módulos habilitados e limite de <strong>{plano.limite_usuarios} usuários</strong>),
-          com a cláusula <strong>LGPD (Contratante Controladora / TerraGest Operador)</strong>, cobrança mensal recorrente ({fmt(plano.valor_mensal)}/mês),
-          regras de suspensão (5 dias), retenção (30 dias) e Foro de Codó/MA.
+          {plano.termo_aceite_texto?.trim() ? (
+            plano.termo_aceite_texto.trim()
+          ) : (
+            <>
+              Li e concordo com o <strong>Contrato de Adesão (JAC de Oliveira / TerraGest — Codó/MA)</strong> referente ao{' '}
+              <strong>{plano.nome}</strong> ({qtdModulos} módulos habilitados e limite de <strong>{plano.limite_usuarios} usuários</strong>),
+              com a cláusula <strong>LGPD (Contratante Controladora / TerraGest Operador)</strong>, cobrança mensal recorrente ({fmt(plano.valor_mensal)}/mês),
+              regras de suspensão por inadimplência, retenção (30 dias) e Foro de Codó/MA.
+            </>
+          )}
         </span>
       </label>
     </div>

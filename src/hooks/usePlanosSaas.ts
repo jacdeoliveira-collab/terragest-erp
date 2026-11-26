@@ -14,6 +14,8 @@ function normalizarPlano(row: any): PlanoSaasRecord {
     destaque: Boolean(row.destaque),
     ordem: Number(row.ordem || 0),
     modulos_habilitados: Array.isArray(row.modulos_habilitados) ? row.modulos_habilitados : [],
+    termo_titulo: row.termo_titulo || null,
+    termo_aceite_texto: row.termo_aceite_texto || null,
     created_at: row.created_at,
     updated_at: row.updated_at
   };

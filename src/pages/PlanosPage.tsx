@@ -11,6 +11,13 @@ export const PlanosPage: React.FC = () => {
   const [planoSelecionado, setPlanoSelecionado] = useState<PlanoSaasRecord | null>(null);
 
   const planoAtual = (tenantAtivo?.plano || 'GRATIS').toUpperCase();
+  const vencimentoIso = tenantAtivo?.assinatura_fim || null;
+  const vencimentoBr = vencimentoIso ? vencimentoIso.split('-').reverse().join('/') : null;
+  const hojeIso = new Date().toISOString().slice(0, 10);
+  const diasAtraso = vencimentoIso && vencimentoIso < hojeIso
+    ? Math.max(1, Math.round((new Date(`${hojeIso}T00:00:00`).getTime() - new Date(`${vencimentoIso}T00:00:00`).getTime()) / 86400000))
+    : 0;
+  const temPlanoPagoAtivo = planoAtual !== 'GRATIS' && Boolean(vencimentoIso) && diasAtraso === 0;
   const whatsappUrl = 'https://wa.me/5599981228668?text=Ol%C3%A1%2C%20quero%20tirar%20d%C3%BAvidas%20sobre%20os%20planos%20do%20TerraGest%20ERP';
 
   return (
@@ -19,13 +26,21 @@ export const PlanosPage: React.FC = () => {
         <div>
           <div className="flex items-center gap-2 text-emerald-400">
             <Rocket className="h-5 w-5" />
-            <span className="text-xs font-bold uppercase tracking-wider">Assinatura TerraGest ERP</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Assinatura Recorrente TerraGest ERP</span>
           </div>
           <h1 className="mt-1 text-2xl font-bold text-white">Planos e Preços</h1>
-          <p className="mt-1 text-sm text-slate-400">
-            Plano atual da empresa <strong className="text-slate-200">{tenantAtivo?.nome || 'Sua Empresa'}</strong>:{' '}
-            <span className="rounded-md bg-emerald-500/15 px-2 py-0.5 text-xs font-bold text-emerald-300">{planoAtual}</span>
-          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+            <span>Empresa: <strong className="text-slate-200">{tenantAtivo?.nome || 'Sua Empresa'}</strong></span>
+            <span className="rounded-md bg-emerald-500/15 px-2 py-0.5 font-bold text-emerald-300">{planoAtual}</span>
+            {vencimentoBr && (
+              <span className={`rounded-md px-2 py-0.5 font-mono font-bold ${diasAtraso > 0 ? 'bg-rose-500/20 text-rose-300' : 'bg-slate-800 text-slate-200'}`}>
+                {diasAtraso > 0 ? `Vencido em ${vencimentoBr} (${diasAtraso}d atraso)` : `Vencimento: ${vencimentoBr}`}
+              </span>
+            )}
+            {tenantAtivo?.asaas_subscription_id && (
+              <span className="rounded-md bg-sky-500/15 px-2 py-0.5 font-bold text-sky-300">Recorrência Asaas Ativa</span>
+            )}
+          </div>
         </div>
 
         <a href={whatsappUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm font-semibold text-emerald-300 hover:bg-emerald-500/20 transition-all">
@@ -68,13 +83,17 @@ export const PlanosPage: React.FC = () => {
                 </div>
 
                 <div className="mt-6">
-                  {ehAtual ? (
+                  {ehAtual && diasAtraso === 0 ? (
                     <button disabled className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 py-2.5 text-xs font-bold text-emerald-300">
                       <ShieldCheck className="h-4 w-4" /> Plano Ativo
                     </button>
                   ) : (
-                    <button type="button" onClick={() => setPlanoSelecionado(plano)} className={`w-full rounded-xl py-2.5 text-xs font-bold transition-all cursor-pointer ${plano.destaque ? 'bg-emerald-600 text-white hover:bg-emerald-500' : 'bg-slate-800 text-white hover:bg-slate-700'}`}>
-                      Assinar com PIX / Asaas
+                    <button type="button" onClick={() => setPlanoSelecionado(plano)} className={`w-full rounded-xl py-2.5 text-xs font-bold transition-all cursor-pointer ${diasAtraso > 0 ? 'bg-rose-600 text-white hover:bg-rose-500' : plano.destaque ? 'bg-emerald-600 text-white hover:bg-emerald-500' : 'bg-slate-800 text-white hover:bg-slate-700'}`}>
+                      {diasAtraso > 0
+                        ? (ehAtual ? 'Regularizar Assinatura (PIX)' : 'Regularizar e Trocar (PIX)')
+                        : temPlanoPagoAtivo
+                          ? 'Trocar para este Plano'
+                          : 'Assinar Recorrente (PIX / Asaas)'}
                     </button>
                   )}
                 </div>

@@ -15,6 +15,8 @@ export interface PlanoSaasRecord {
   destaque: boolean;
   ordem: number;
   modulos_habilitados: string[];
+  termo_titulo?: string | null;
+  termo_aceite_texto?: string | null;
   created_at?: string;
   updated_at?: string;
 }

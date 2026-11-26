@@ -113,7 +113,10 @@ export default async function handler(req, res) {
             plano_valor: Number(valorMensalRecorrente || valor || 0),
             valor_mensalidade: Number(valorMensalRecorrente || valor || 0),
             ...(limiteUsuarios ? { limite_usuarios: Number(limiteUsuarios) } : {}),
-            assinatura_fim: fim.toISOString().slice(0, 10)
+            status_conta: 'ativo',
+            assinatura_inicio: new Date().toISOString().slice(0, 10),
+            assinatura_fim: fim.toISOString().slice(0, 10),
+            updated_at: new Date().toISOString()
           }).eq('id', tenantId);
         }
       }
@@ -226,20 +229,24 @@ export default async function handler(req, res) {
         await supabase.from('tenants').update({ cnpj: cleanCpfCnpj }).eq('id', tenantId);
       }
 
-      const custRes = await fetch(`${asaasUrl}/customers`, {
-        method: 'POST',
-        headers: asaasHeaders,
-        body: JSON.stringify({
-          name: tenant?.razao_social || tenant?.nome || 'Assinante TerraGest',
-          cpfCnpj: cleanCpfCnpj,
-          email: tenant?.contato_email || tenant?.email || undefined,
-          phone: (tenant?.contato_telefone || tenant?.telefone) ? String(tenant?.contato_telefone || tenant?.telefone).replace(/\D/g, '') : undefined
-        })
-      });
-      const custData = await custRes.json();
-      const customerId = custData.id;
+      let customerId = tenant?.asaas_customer_id || null;
       if (!customerId) {
-        throw new Error(`Erro ao registrar cliente Asaas: ${custData.errors?.[0]?.description || 'Erro'}`);
+        const custRes = await fetch(`${asaasUrl}/customers`, {
+          method: 'POST',
+          headers: asaasHeaders,
+          body: JSON.stringify({
+            name: tenant?.razao_social || tenant?.nome || 'Assinante TerraGest',
+            cpfCnpj: cleanCpfCnpj,
+            email: tenant?.contato_email || tenant?.admin_email || tenant?.email || undefined,
+            phone: (tenant?.contato_telefone || tenant?.telefone) ? String(tenant?.contato_telefone || tenant?.telefone).replace(/\D/g, '') : undefined,
+            externalReference: tenantId
+          })
+        });
+        const custData = await custRes.json();
+        customerId = custData.id;
+        if (!customerId) {
+          throw new Error(`Erro ao registrar cliente Asaas: ${custData.errors?.[0]?.description || 'Erro'}`);
+        }
       }
 
       const { data: subData, error: subError } = await supabase
@@ -256,31 +263,89 @@ export default async function handler(req, res) {
 
       if (subError) throw subError;
 
+      const valorRecorrente = Number(req.body?.valorMensalRecorrente || valor);
       const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + 3);
+      dueDate.setDate(dueDate.getDate() + 1);
       const dueDateStr = dueDate.toISOString().split('T')[0];
 
-      const payRes = await fetch(`${asaasUrl}/payments`, {
-        method: 'POST',
-        headers: asaasHeaders,
-        body: JSON.stringify({
-          customer: customerId,
-          billingType: 'PIX',
-          value: valor,
-          dueDate: dueDateStr,
-          description: `Assinatura TerraGest ERP - Plano ${plano}`,
-          externalReference: `saas_${subData.id}`
-        })
+      // Cobrança e assinatura SEMPRE RECORRENTES (MONTHLY) no Asaas
+      let asaasSubId = tenant?.asaas_subscription_id || null;
+      let asaasSubStatus = 'ACTIVE';
+      if (asaasSubId) {
+        const updSubRes = await fetch(`${asaasUrl}/subscriptions/${asaasSubId}`, {
+          method: 'PUT',
+          headers: asaasHeaders,
+          body: JSON.stringify({
+            billingType: 'PIX',
+            value: valorRecorrente,
+            nextDueDate: dueDateStr,
+            description: `Assinatura Mensal Recorrente TerraGest ERP - Plano ${plano}`,
+            updatePendingPayments: true
+          })
+        });
+        if (!updSubRes.ok) asaasSubId = null;
+      }
+
+      if (!asaasSubId) {
+        const createSubRes = await fetch(`${asaasUrl}/subscriptions`, {
+          method: 'POST',
+          headers: asaasHeaders,
+          body: JSON.stringify({
+            customer: customerId,
+            billingType: 'PIX',
+            value: valorRecorrente,
+            nextDueDate: dueDateStr,
+            cycle: 'MONTHLY',
+            description: `Assinatura Mensal Recorrente TerraGest ERP - Plano ${plano}`,
+            externalReference: `tenant_${tenantId}`
+          })
+        });
+        const createSubData = await createSubRes.json();
+        if (!createSubData.id) {
+          throw new Error(`Erro ao criar assinatura recorrente Asaas: ${createSubData.errors?.[0]?.description || 'Erro'}`);
+        }
+        asaasSubId = createSubData.id;
+        asaasSubStatus = createSubData.status || 'ACTIVE';
+      }
+
+      // Busca a primeira cobrança pendente da assinatura recorrente
+      let payData = null;
+      const paysRes = await fetch(`${asaasUrl}/subscriptions/${asaasSubId}/payments?status=PENDING&limit=1`, {
+        headers: asaasHeaders
       });
-      const payData = await payRes.json();
-      if (!payData.id) {
-        throw new Error(`Erro ao gerar cobrança Asaas: ${payData.errors?.[0]?.description || 'Erro'}`);
+      const paysJson = await paysRes.json();
+      if (Array.isArray(paysJson?.data) && paysJson.data.length > 0) {
+        payData = paysJson.data[0];
+      }
+      if (!payData?.id) {
+        const fallbackPayRes = await fetch(`${asaasUrl}/payments`, {
+          method: 'POST',
+          headers: asaasHeaders,
+          body: JSON.stringify({
+            customer: customerId,
+            billingType: 'PIX',
+            value: Number(valor),
+            dueDate: dueDateStr,
+            description: `Assinatura Recorrente TerraGest ERP - Plano ${plano}`,
+            externalReference: `saas_${subData.id}`
+          })
+        });
+        payData = await fallbackPayRes.json();
+      }
+      if (!payData?.id) {
+        throw new Error(`Erro ao gerar cobrança PIX Asaas: ${payData?.errors?.[0]?.description || 'Erro'}`);
       }
 
       const qrRes = await fetch(`${asaasUrl}/payments/${payData.id}/pixQrCode`, {
         headers: asaasHeaders
       });
       const qrData = await qrRes.json();
+
+      await supabase.from('tenants').update({
+        asaas_customer_id: customerId,
+        asaas_subscription_id: asaasSubId,
+        asaas_subscription_status: asaasSubStatus
+      }).eq('id', tenantId);
 
       await supabase
         .from('saas_assinaturas')
@@ -295,11 +360,12 @@ export default async function handler(req, res) {
       return res.status(200).json({
         success: true,
         assinaturaId: subData.id,
+        subscriptionId: asaasSubId,
         paymentId: payData.id,
         pixQrCode: qrData.encodedImage,
         pixCopiaCola: qrData.payload,
         invoiceUrl: payData.invoiceUrl,
-        valor
+        valor: Number(payData.value || valor)
       });
     }
 

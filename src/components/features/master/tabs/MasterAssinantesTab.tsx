@@ -19,6 +19,7 @@ export const MasterAssinantesTab: React.FC<MasterAssinantesTabProps> = ({
   tenants,
   isLoading,
   onToggleStatus,
+  onUpdate,
   onCreate,
   onDelete,
 }) => {
@@ -96,6 +97,7 @@ export const MasterAssinantesTab: React.FC<MasterAssinantesTabProps> = ({
                 <th className="py-2.5 px-3">Documento</th>
                 <th className="py-2.5 px-3">Plano</th>
                 <th className="py-2.5 px-3">Mensalidade</th>
+                <th className="py-2.5 px-3">Vencimento / Recorrência</th>
                 <th className="py-2.5 px-3">Status</th>
                 <th className="py-2.5 px-3 text-right">Ações</th>
               </tr>
@@ -103,7 +105,7 @@ export const MasterAssinantesTab: React.FC<MasterAssinantesTabProps> = ({
             <tbody className="divide-y divide-[#21262d]">
               {tenantsFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-gray-500">
+                  <td colSpan={7} className="py-8 text-center text-gray-500">
                     Nenhum cliente cadastrado no momento.
                   </td>
                 </tr>
@@ -113,6 +115,7 @@ export const MasterAssinantesTab: React.FC<MasterAssinantesTabProps> = ({
                     key={t.id}
                     tenant={t}
                     onToggleStatus={onToggleStatus}
+                    onUpdate={onUpdate}
                     onRequestDelete={setTenantExcluindo}
                   />
                 ))

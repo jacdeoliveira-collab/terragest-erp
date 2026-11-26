@@ -17,7 +17,16 @@ export const MainLayout: React.FC = () => {
   const location = useLocation();
   const { tenantAtivo, isMaster } = useTenantContext();
   const { temAcessoModulo } = usePlanosContext();
-  const moduloLiberado = temAcessoModulo(tenantAtivo?.plano, location.pathname, isMaster);
+  const pathLimpo = location.pathname.replace(/\/$/, '') || '/';
+  const hojeIso = new Date().toISOString().slice(0, 10);
+  const vencimento = tenantAtivo?.assinatura_fim || null;
+  const diasAtraso = vencimento && vencimento < hojeIso
+    ? Math.max(1, Math.round((new Date(`${hojeIso}T00:00:00`).getTime() - new Date(`${vencimento}T00:00:00`).getTime()) / 86400000))
+    : 0;
+  const statusBloq = ['bloqueado', 'suspenso', 'inadimplente'].includes(String(tenantAtivo?.status_conta || '').toLowerCase());
+  const inadimplente = !isMaster && (statusBloq || diasAtraso > 0);
+  const bloquearPorInadimplencia = inadimplente && pathLimpo !== '/planos';
+  const moduloLiberado = !bloquearPorInadimplencia && temAcessoModulo(tenantAtivo?.plano, location.pathname, isMaster);
   const nomeModulo = location.pathname.replace(/^\//, '').toUpperCase() || 'DASHBOARD';
 
   return (
@@ -47,7 +56,16 @@ export const MainLayout: React.FC = () => {
 
               <main className="flex-1 overflow-y-auto overflow-x-hidden p-2.5 sm:p-4 lg:p-6 pb-20 lg:pb-6">
                 <RoleRoute>
-                  {moduloLiberado ? <Outlet /> : <PlanoBloqueadoGate nomeModulo={nomeModulo} />}
+                  {moduloLiberado ? (
+                    <Outlet />
+                  ) : (
+                    <PlanoBloqueadoGate
+                      nomeModulo={nomeModulo}
+                      motivo={bloquearPorInadimplencia ? 'INADIMPLENTE' : 'MODULO'}
+                      diasAtraso={diasAtraso}
+                      vencimento={vencimento}
+                    />
+                  )}
                 </RoleRoute>
               </main>
             </div>
