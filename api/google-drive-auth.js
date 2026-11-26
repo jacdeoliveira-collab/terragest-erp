@@ -74,22 +74,24 @@ export default async function handler(req, res) {
 
       const { data: existing } = await supabase
         .from('tenant_integrations')
-        .select('id, refresh_token, metadata')
+        .select('id, metadata')
         .eq('tenant_id', tenantId)
         .eq('provider', 'GOOGLE_DRIVE')
         .maybeSingle();
 
-      const refreshFinal = tokenData.refresh_token || existing?.refresh_token || null;
+      const prevMeta = existing?.metadata || {};
+      const refreshFinal = tokenData.refresh_token || prevMeta.refresh_token || null;
       const payload = {
         tenant_id: tenantId,
         provider: 'GOOGLE_DRIVE',
         account_email: accountEmail,
         access_token: tokenData.access_token,
-        refresh_token: refreshFinal,
-        token_expires_at: expiresAt,
         status: 'connected',
         metadata: {
-          ...(existing?.metadata || {}),
+          ...prevMeta,
+          access_token: tokenData.access_token,
+          refresh_token: refreshFinal,
+          token_expires_at: expiresAt,
           connected_at: new Date().toISOString(),
           permanent_oauth: Boolean(refreshFinal)
         },
@@ -116,22 +118,23 @@ export default async function handler(req, res) {
 
       const { data: integ } = await supabase
         .from('tenant_integrations')
-        .select('id, access_token, refresh_token, token_expires_at')
+        .select('id, access_token, metadata')
         .eq('tenant_id', tenantId)
         .in('provider', ['GOOGLE_DRIVE', 'google_drive'])
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (!integ?.refresh_token) {
+      const meta = integ?.metadata || {};
+      const savedRefresh = meta.refresh_token || null;
+      if (!savedRefresh) {
         return res.status(401).json({
           error: 'Google Drive ainda não possui renovação automática ativa. Acesse Minha Empresa > Bancos e Drive e clique em "Conectar / Trocar Conta" uma vez.'
         });
       }
 
-      // Se o access_token salvo ainda tem mais de 5 minutos de validade, reutiliza direto
-      if (integ.access_token && integ.token_expires_at) {
-        const msLeft = new Date(integ.token_expires_at).getTime() - Date.now();
+      if (integ.access_token && meta.token_expires_at) {
+        const msLeft = new Date(meta.token_expires_at).getTime() - Date.now();
         if (msLeft > 5 * 60 * 1000) {
           return res.status(200).json({
             success: true,
@@ -147,7 +150,7 @@ export default async function handler(req, res) {
         body: new URLSearchParams({
           client_id: clientId,
           client_secret: clientSecret,
-          refresh_token: integ.refresh_token,
+          refresh_token: savedRefresh,
           grant_type: 'refresh_token'
         }).toString()
       });
@@ -162,8 +165,8 @@ export default async function handler(req, res) {
         .from('tenant_integrations')
         .update({
           access_token: refData.access_token,
-          token_expires_at: newExpiresAt,
           status: 'connected',
+          metadata: { ...meta, access_token: refData.access_token, token_expires_at: newExpiresAt, permanent_oauth: true },
           updated_at: new Date().toISOString()
         })
         .eq('id', integ.id);
