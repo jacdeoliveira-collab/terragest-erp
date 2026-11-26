@@ -3,18 +3,12 @@ import { Mail, Lock, AlertCircle, ArrowRight, Eye, EyeOff, KeyRound, Fingerprint
 import { useAuth } from '../../hooks/useAuth';
 import { RecuperarSenhaModal } from './RecuperarSenhaModal';
 import {
-  verificarBiometriaDisponivel,
-  possuiBiometriaSalva,
-  obterEmailBiometriaSalva,
-  salvarCredenciaisBiometria,
-  limparCredenciaisBiometria,
-  autenticarComBiometria
+  verificarBiometriaDisponivel, possuiBiometriaSalva, obterEmailBiometriaSalva,
+  salvarCredenciaisBiometria, limparCredenciaisBiometria, autenticarComBiometria
 } from '../../services/biometriaService';
 import type { PerfilAcesso } from '../../types/auth.types';
 
-interface LoginFormProps {
-  onSuccess?: (perfilAcesso?: PerfilAcesso) => void;
-}
+interface LoginFormProps { onSuccess?: (perfilAcesso?: PerfilAcesso) => void; }
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
   const { login, loading, error, limparErro } = useAuth();
@@ -34,13 +28,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       const salva = disp && possuiBiometriaSalva();
       setTemBiometriaSalva(salva);
       const savedMail = salva ? obterEmailBiometriaSalva() : '';
-      if (savedMail) {
-        setEmail(savedMail);
-        setEmailBiometria(savedMail);
-      }
+      if (savedMail) { setEmail(savedMail); setEmailBiometria(savedMail); }
       const manualLogout = typeof window !== 'undefined' && sessionStorage.getItem('terragest_manual_logout') === '1';
-      const isNativeBiometric = typeof window !== 'undefined' && Boolean(window.TerraGestBiometrics);
-      if (disp && salva && isNativeBiometric && !manualLogout) handleEntrarComDigital();
+      if (disp && salva && typeof window !== 'undefined' && Boolean(window.TerraGestBiometrics) && !manualLogout) handleEntrarComDigital();
     });
   }, []);
 
@@ -59,10 +49,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
 
   const handleRemoverBiometria = () => {
     limparCredenciaisBiometria();
-    setTemBiometriaSalva(false);
-    setEmailBiometria('');
-    setEmail('');
-    setPassword('');
+    setTemBiometriaSalva(false); setEmailBiometria(''); setEmail(''); setPassword('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -73,13 +60,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess }) => {
       const res = await login(email.trim(), password);
       if (biometriaSuportada && salvarBiometria) {
         await salvarCredenciaisBiometria(email.trim(), password);
-        setTemBiometriaSalva(true);
-        setEmailBiometria(email.trim());
+        setTemBiometriaSalva(true); setEmailBiometria(email.trim());
       }
       onSuccess?.(res?.perfil_acesso);
-    } catch {
-      // Erro tratado no useAuth
-    }
+    } catch {}
   };
 
   const mostrarBotaoDigital = biometriaSuportada && temBiometriaSalva &&
