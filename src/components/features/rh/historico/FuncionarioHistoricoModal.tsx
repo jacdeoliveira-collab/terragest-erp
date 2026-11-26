@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Modal } from '../../../ui/Modal';
-import { Settings, RefreshCw, AlertCircle, Phone, DollarSign, Clock, Receipt, Plus, FileText } from 'lucide-react';
+import { Settings, RefreshCw, AlertCircle, Phone, DollarSign, Clock, Receipt, Plus, FileText, CheckCheck } from 'lucide-react';
+import { useTenantContext } from '../../../../contexts/TenantContext';
 import { useFuncionarioHistorico } from '../../../../hooks/useFuncionarioHistorico';
 import { FuncionarioHistoricoCards } from './FuncionarioHistoricoCards';
 import { FuncionarioMaquinasResumo } from './FuncionarioMaquinasResumo';
@@ -10,22 +11,21 @@ import { QuitarOperadorModal } from './QuitarOperadorModal';
 import { LancarValeModal } from '../vales/LancarValeModal';
 import { ValesTable } from '../vales/ValesTable';
 import { excluirValeColaborador } from '../../../../services/valeRhService';
+import { reconciliarBaixasOperador } from '../../../../services/operadorRepasseBaixaService';
 import { exportarValesOperadorPDF } from '../../../../utils/exportValesOperador';
 import type { Funcionario } from '../../../../types/rh.types';
 import type { FuncionarioRemuneracaoItem } from '../../../../types/funcionarioHistorico.types';
 
-interface Props {
-  isOpen: boolean;
-  onClose: () => void;
-  funcionario: Funcionario | null;
-  onEditar?: (funcionario: Funcionario) => void;
-}
+interface Props { isOpen: boolean; onClose: () => void; funcionario: Funcionario | null; onEditar?: (funcionario: Funcionario) => void; }
 
 export const FuncionarioHistoricoModal: React.FC<Props> = ({ isOpen, onClose, funcionario, onEditar }) => {
+  const { tenantAtivoId } = useTenantContext();
   const { data, isLoading, error, refetch } = useFuncionarioHistorico(funcionario);
   const [subTab, setSubTab] = useState<'financeiro' | 'vales' | 'producao'>('financeiro');
   const [itemParaQuitar, setItemParaQuitar] = useState<FuncionarioRemuneracaoItem | null>(null);
   const [modalValeAberto, setModalValeAberto] = useState(false);
+  const [baixando, setBaixando] = useState(false);
+  const [msgBaixa, setMsgBaixa] = useState<string | null>(null);
   const [filtroRemuneracao, setFiltroRemuneracao] = useState<'todos' | 'quitados' | 'pendentes'>('todos');
 
   const remuneracoesExibidas = React.useMemo(() => {
@@ -36,23 +36,27 @@ export const FuncionarioHistoricoModal: React.FC<Props> = ({ isOpen, onClose, fu
 
   if (!funcionario) return null;
 
+  const handleDarBaixaRepasses = async () => {
+    setBaixando(true); setMsgBaixa(null);
+    try {
+      const r = await reconciliarBaixasOperador({ tenantId: tenantAtivoId, operadorNome: funcionario.nome, operadorId: funcionario.id });
+      setMsgBaixa(`Baixa aplicada: ${r.servicosQuitados} quitado(s), ${r.servicosParciais} parcial(is) (R$ ${r.totalRepassado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} em repasses).`);
+      await refetch();
+    } finally { setBaixando(false); }
+  };
+
   const handleExcluirVale = async (id: string) => {
     await excluirValeColaborador(id);
+    await reconciliarBaixasOperador({ tenantId: tenantAtivoId, operadorNome: funcionario.nome, operadorId: funcionario.id }).catch(() => {});
     refetch();
   };
 
-  const handleExportarValesPdf = () => {
-    exportarValesOperadorPDF(funcionario.nome, data.vales, {
-      totalGanhos: data.totalGanhos,
-      totalPago: data.totalPago,
-      saldoAPagar: data.totalSaldoAberto
-    });
-  };
+  const handleExportarValesPdf = () => exportarValesOperadorPDF(funcionario.nome, data.vales, { totalGanhos: data.totalGanhos, totalPago: data.totalPago, saldoAPagar: data.totalSaldoAberto });
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Ficha Operacional & Financeira: ${funcionario.nome}`} maxWidth="4xl">
       <div className="space-y-3.5">
-        <div className="flex items-center justify-between bg-emerald-900/5 p-3 rounded-xl border border-emerald-900/10 gap-3">
+        <div className="flex flex-wrap items-center justify-between bg-emerald-900/5 p-3 rounded-xl border border-emerald-900/10 gap-2">
           <div className="min-w-0">
             <div className="text-xs font-bold text-gray-900 flex items-center gap-2">
               <span className="truncate">{funcionario.nome}</span>
@@ -64,7 +68,10 @@ export const FuncionarioHistoricoModal: React.FC<Props> = ({ isOpen, onClose, fu
               <span>• ASO: {funcionario.vencimento_aso || funcionario.aso_validade || 'Não informado'}</span>
             </p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button type="button" onClick={handleDarBaixaRepasses} disabled={baixando || data.vales.length === 0} title="Abater repasses/vales já pagos nos serviços mais antigos (FIFO)" className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold cursor-pointer shadow-xs disabled:opacity-50">
+              <CheckCheck className="w-3.5 h-3.5" /><span>{baixando ? 'Baixando...' : 'Dar Baixa c/ Repasses'}</span>
+            </button>
             <button type="button" onClick={() => setModalValeAberto(true)} className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold cursor-pointer shadow-xs">
               <Plus className="w-3.5 h-3.5" /><span>Novo Vale / Haver</span>
             </button>
@@ -79,6 +86,7 @@ export const FuncionarioHistoricoModal: React.FC<Props> = ({ isOpen, onClose, fu
           </div>
         </div>
 
+        {msgBaixa && <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-xs font-medium">{msgBaixa}</div>}
         {error && <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs flex items-center gap-2"><AlertCircle className="w-4 h-4" /><span>{error}</span></div>}
 
         <FuncionarioHistoricoCards data={data} onSelectAba={(tab, f) => { setSubTab(tab); if (f) setFiltroRemuneracao(f); }} />
@@ -100,17 +108,10 @@ export const FuncionarioHistoricoModal: React.FC<Props> = ({ isOpen, onClose, fu
             {data.vales.length > 0 && (
               <div className="space-y-1.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h4 className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
-                    <Receipt className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Adiantamentos & Vales Registrados ({data.vales.length})</span>
-                  </h4>
+                  <h4 className="text-xs font-bold text-blue-900 flex items-center gap-1.5"><Receipt className="w-3.5 h-3.5 text-blue-600" /><span>Adiantamentos & Vales Registrados ({data.vales.length})</span></h4>
                   <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-mono font-bold text-blue-800">
-                      Total Já Pago / Vales: R$ {data.totalPago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </span>
-                    <button type="button" onClick={handleExportarValesPdf} className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-[11px] font-bold cursor-pointer shadow-xs">
-                      <FileText className="w-3 h-3" /><span>Extrato PDF</span>
-                    </button>
+                    <span className="text-[11px] font-mono font-bold text-blue-800">Total Já Pago / Vales: R$ {data.totalPago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                    <button type="button" onClick={handleExportarValesPdf} className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-[11px] font-bold cursor-pointer shadow-xs"><FileText className="w-3 h-3" /><span>Extrato PDF</span></button>
                   </div>
                 </div>
                 <ValesTable vales={data.vales} onExcluir={handleExcluirVale} onReload={refetch} />
@@ -123,22 +124,15 @@ export const FuncionarioHistoricoModal: React.FC<Props> = ({ isOpen, onClose, fu
           <div className="space-y-2">
             {data.vales.length > 0 && (
               <div className="flex items-center justify-between gap-2">
-                <span className="text-[11px] font-mono font-bold text-blue-800">
-                  Total Vales & Haveres: R$ {data.totalPago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ({data.vales.length})
-                </span>
-                <button type="button" onClick={handleExportarValesPdf} className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-[11px] font-bold cursor-pointer shadow-xs">
-                  <FileText className="w-3 h-3" /><span>Extrato Haveres PDF</span>
-                </button>
+                <span className="text-[11px] font-mono font-bold text-blue-800">Total Vales & Haveres: R$ {data.totalPago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ({data.vales.length})</span>
+                <button type="button" onClick={handleExportarValesPdf} className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-700 hover:bg-blue-800 text-white rounded-lg text-[11px] font-bold cursor-pointer shadow-xs"><FileText className="w-3 h-3" /><span>Extrato Haveres PDF</span></button>
               </div>
             )}
             <ValesTable vales={data.vales} onExcluir={handleExcluirVale} onReload={refetch} />
           </div>
         )}
         {subTab === 'producao' && (
-          <div className="space-y-3">
-            <FuncionarioMaquinasResumo maquinas={data.maquinasOperadas} />
-            <FuncionarioProducaoTable servicos={data.servicos} bulletins={data.bulletins} />
-          </div>
+          <div className="space-y-3"><FuncionarioMaquinasResumo maquinas={data.maquinasOperadas} /><FuncionarioProducaoTable servicos={data.servicos} bulletins={data.bulletins} /></div>
         )}
 
         <QuitarOperadorModal isOpen={Boolean(itemParaQuitar)} onClose={() => setItemParaQuitar(null)} item={itemParaQuitar} operadorNome={funcionario.nome} onSuccess={() => refetch()} />
