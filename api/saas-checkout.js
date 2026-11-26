@@ -307,15 +307,6 @@ export default async function handler(req, res) {
         throw new Error(`Erro Asaas (Assinatura): ${subData.errors?.[0]?.description || 'Falha ao criar assinatura'}`);
       }
 
-      await supabase.from('tenants').update({
-        plano,
-        plano_valor: Number(valor),
-        valor_mensalidade: Number(valor),
-        asaas_customer_id: custData.id,
-        asaas_subscription_id: subData.id,
-        asaas_subscription_status: subData.status || 'ACTIVE'
-      }).eq('id', tenantId);
-
       let firstPayment = null;
       let pixData = null;
       const paysRes = await fetch(`${asaasUrl}/subscriptions/${subData.id}/payments?limit=1`, {
@@ -330,19 +321,27 @@ export default async function handler(req, res) {
         }
       }
 
-      await supabase.from('saas_assinaturas').insert([{
-        tenant_id: tenantId,
-        plano,
-        valor: Number(valor),
-        billing_type: billingType,
-        status: 'PENDENTE',
-        asaas_customer_id: custData.id,
-        asaas_subscription_id: subData.id,
-        asaas_payment_id: firstPayment?.id || null,
-        invoice_url: firstPayment?.invoiceUrl || null,
-        pix_qr_code: pixData?.encodedImage || null,
-        pix_copia_cola: pixData?.payload || null
-      }]);
+      const { error: rpcVincErr } = await supabase.rpc('vincular_assinatura_asaas_tenant', {
+        p_tenant_id: tenantId,
+        p_plano: plano,
+        p_valor: Number(valor),
+        p_billing_type: billingType,
+        p_customer_id: custData.id,
+        p_subscription_id: subData.id,
+        p_status: subData.status || 'ACTIVE',
+        p_payment_id: firstPayment?.id || null,
+        p_invoice_url: firstPayment?.invoiceUrl || null,
+        p_pix_qr_code: pixData?.encodedImage || null,
+        p_pix_copia_cola: pixData?.payload || null
+      });
+
+      if (rpcVincErr) {
+        await supabase.from('tenants').update({
+          plano, plano_valor: Number(valor), valor_mensalidade: Number(valor),
+          asaas_customer_id: custData.id, asaas_subscription_id: subData.id,
+          asaas_subscription_status: subData.status || 'ACTIVE'
+        }).eq('id', tenantId);
+      }
 
       return res.status(200).json({
         success: true,

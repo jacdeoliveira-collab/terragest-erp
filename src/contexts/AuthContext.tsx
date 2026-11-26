@@ -105,31 +105,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           throw offErr;
         }
       }
-      const msg = err instanceof Error ? err.message : 'Falha ao autenticar usuário';
-      setError(msg);
+      const rawMsg = err instanceof Error ? err.message : 'Falha ao autenticar usuário';
+      const lower = rawMsg.toLowerCase();
+      setError(
+        lower.includes('invalid login credentials') ? 'E-mail ou senha incorretos. Confira os dados ou clique em "Esqueci a senha".'
+        : lower.includes('email not confirmed') ? 'E-mail ainda não confirmado. Verifique sua caixa de entrada ou contate o administrador.'
+        : rawMsg
+      );
       throw err;
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }, [initUserWithProfile]);
 
   const logout = useCallback(async () => {
     try {
-      setLoading(true);
-      setError(null);
+      setLoading(true); setError(null);
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('terragest_manual_logout', '1');
         localStorage.removeItem('terragest_tenant_ativo_id');
       }
       if (typeof navigator === 'undefined' || navigator.onLine) await supabase.auth.signOut();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Falha ao encerrar sessão';
-      setError(msg);
+      setError(err instanceof Error ? err.message : 'Falha ao encerrar sessão');
     } finally {
-      setUser(null);
-      setSession(null);
-      setPerfilAcesso('ADMIN');
-      setLoading(false);
+      setUser(null); setSession(null); setPerfilAcesso('ADMIN'); setLoading(false);
     }
   }, []);
 

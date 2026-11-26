@@ -52,7 +52,13 @@ export async function registerEmpresa(params: RegisterEmpresaParams): Promise<Re
         data: { nome: cleanNome, empresa: cleanNome, role: 'admin', perfil_acesso: 'ADMIN' }
       }
     });
-    if (authError) return { success: false, error: authError.message };
+    if (authError) {
+      const msg = authError.message.toLowerCase();
+      if (msg.includes('already registered')) {
+        return { success: false, error: 'Este e-mail já possui cadastro. Faça login ou clique em "Esqueci a senha".' };
+      }
+      return { success: false, error: authError.message };
+    }
 
     const userId = authData.user?.id;
     if (!userId) return { success: false, error: 'Não foi possível criar o usuário de acesso.' };
@@ -72,6 +78,9 @@ export async function registerEmpresa(params: RegisterEmpresaParams): Promise<Re
     if (!session) {
       const { data: signInData } = await supabase.auth.signInWithPassword({ email: cleanEmail, password: params.senha });
       session = signInData?.session || null;
+    } else {
+      const { data: refreshed } = await supabase.auth.refreshSession();
+      if (refreshed?.session) session = refreshed.session;
     }
 
     let asaas: AsaasOnboardingResult | undefined;
