@@ -2,17 +2,22 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useTenantContext } from '../contexts/TenantContext';
 import type { CentroCusto, CreateCentroCustoDTO, CentroCustoDreResumo } from '../types/centroCusto.types';
-import { aplicarFiltroTenant, DEFAULT_LEGACY_TENANT } from '../utils/tenantFilter';
+import { aplicarFiltroTenant } from '../utils/tenantFilter';
 
 export function useCentrosCusto() {
   const { tenantAtivoId } = useTenantContext();
-  const activeTenant = tenantAtivoId || DEFAULT_LEGACY_TENANT;
+  const activeTenant = tenantAtivoId;
   const [centrosCusto, setCentrosCusto] = useState<CentroCusto[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const carregarCentrosCusto = useCallback(async () => {
+    if (!activeTenant) {
+      setCentrosCusto([]);
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       setError(null);

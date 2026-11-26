@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useTenantContext } from '../contexts/TenantContext';
 import { useObraContext } from '../contexts/ObraContext';
-import { aplicarFiltroTenant, DEFAULT_LEGACY_TENANT } from '../utils/tenantFilter';
+import { aplicarFiltroTenant } from '../utils/tenantFilter';
 import { consolidarReceitasDashboard } from '../services/dashboardReceitasHelper';
 
 export interface DashboardGlobalMetrics {
@@ -34,11 +34,16 @@ export function useDashboardGlobal() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchGlobal = useCallback(async () => {
+    if (!tenantAtivoId) {
+      setMetrics(INITIAL_METRICS);
+      setIsLoading(false);
+      return;
+    }
     try {
       setIsLoading(true);
       setError(null);
 
-      const currentTenant = tenantAtivoId || DEFAULT_LEGACY_TENANT;
+      const currentTenant = tenantAtivoId;
       const mesAtual = new Date().toISOString().slice(0, 7);
 
       let qObras = supabase.from('obras').select('id, status');

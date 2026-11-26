@@ -18,11 +18,10 @@ const STORAGE_KEY = 'terragest_tenant_ativo_id';
 
 export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { tenants, loading, isMaster, recarregarTenants } = useTenantUsers();
-  const [tenantAtivoId, setTenantAtivoIdState] = useState<string | null>(() => {
-    return typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
-  });
+  const [tenantAtivoId, setTenantAtivoIdState] = useState<string | null>(null);
 
   useEffect(() => {
+    if (loading) return;
     if (tenants.length > 0) {
       setTenantAtivoIdState((prev) => {
         if (prev && tenants.some((t) => t.id === prev)) {
@@ -38,8 +37,11 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
         return primeiro;
       });
-    } else if (!loading) {
+    } else {
       setTenantAtivoIdState(null);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(STORAGE_KEY);
+      }
     }
   }, [tenants, loading]);
 
