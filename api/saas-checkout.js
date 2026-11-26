@@ -40,7 +40,9 @@ export default async function handler(req, res) {
     let environment = clientEnvironment || process.env.ASAAS_ENVIRONMENT || process.env.VITE_ASAAS_ENVIRONMENT || 'production';
 
     if (clientApiKey) {
-      await supabase.rpc('salvar_asaas_master_checkout', { p_api_key: clientApiKey, p_environment: environment }).catch(() => {});
+      try {
+        await supabase.rpc('salvar_asaas_master_checkout', { p_api_key: clientApiKey, p_environment: environment });
+      } catch {}
     }
 
     if (!apiKey) {
