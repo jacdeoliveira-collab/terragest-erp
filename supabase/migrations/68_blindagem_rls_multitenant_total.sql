@@ -1,11 +1,9 @@
 -- ==============================================================================
 -- TerraGest ERP - Migração 68: BLINDAGEM TOTAL MULTITENANT (RLS EM TODAS TABELAS)
--- Corrige a brecha da migração 50 que permitia qualquer usuário autenticado ler
--- registros de tenant_id = '00000000-0000-0000-0000-000000000001' ou NULL.
--- A partir desta migração, NENHUMA empresa consegue ver dados de outra empresa.
+-- Sem recursão em tenant_users (usa funções SECURITY DEFINER) e zero user_metadata.
 -- ==============================================================================
 
--- 1. Função confiável (sem user_metadata) que verifica se o usuário pertence ao tenant
+-- 1. Função confiável: verifica se o usuário pertence ao tenant (bypassa RLS sem recursão)
 CREATE OR REPLACE FUNCTION public.user_belongs_to_tenant(p_tenant_id UUID)
 RETURNS BOOLEAN
 LANGUAGE sql
@@ -27,10 +25,32 @@ AS $$
     );
 $$;
 
-GRANT EXECUTE ON FUNCTION public.user_belongs_to_tenant(UUID) TO authenticated;
+-- 2. Função confiável: verifica se o usuário é ADMIN daquele tenant (sem recursão)
+CREATE OR REPLACE FUNCTION public.is_tenant_admin(p_tenant_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT
+    p_tenant_id IS NOT NULL
+    AND (
+      public.is_super_admin()
+      OR p_tenant_id = (SELECT auth.uid())
+      OR EXISTS (
+        SELECT 1 FROM public.tenant_users tu
+        WHERE tu.tenant_id = p_tenant_id
+          AND tu.user_id = (SELECT auth.uid())
+          AND tu.perfil_acesso = 'ADMIN'
+      )
+    );
+$$;
 
--- 2. Atribuir tenant_id da Matriz a registros legados que estavam com tenant_id NULL
--- e aplicar política RLS estrita (somente authenticated, zero vazamento entre tenants)
+GRANT EXECUTE ON FUNCTION public.user_belongs_to_tenant(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_tenant_admin(UUID) TO authenticated;
+
+-- 3. Normaliza registros legados (NULL -> Matriz) e aplica RLS estrita em TODAS tabelas
 DO $$
 DECLARE
   r RECORD;
@@ -46,16 +66,13 @@ BEGIN
       AND t.table_type = 'BASE TABLE'
       AND c.table_name NOT IN ('tenants', 'tenant_users', 'saas_planos')
   LOOP
-    -- Normaliza registros legados antigos sem tenant_id para a Matriz
     EXECUTE format(
       'UPDATE public.%I SET tenant_id = ''00000000-0000-0000-0000-000000000001''::uuid WHERE tenant_id IS NULL;',
       r.table_name
     );
 
-    -- Habilita RLS na tabela
     EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY;', r.table_name);
 
-    -- Remove todas as políticas antigas/permissivas nesta tabela
     FOR pol IN
       SELECT policyname FROM pg_policies
       WHERE schemaname = 'public' AND tablename = r.table_name
@@ -63,7 +80,6 @@ BEGIN
       EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I;', pol.policyname, r.table_name);
     END LOOP;
 
-    -- Cria política única blindada: cada empresa acessa EXCLUSIVAMENTE seus próprios dados
     EXECUTE format('
       CREATE POLICY %I ON public.%I
       FOR ALL TO authenticated
@@ -73,7 +89,7 @@ BEGIN
   END LOOP;
 END $$;
 
--- 3. Blindar também public.tenant_users (cada usuário vê só seus vínculos; Super Admin vê todos)
+-- 4. Blindar public.tenant_users SEM auto-referência (zero recursão infinita)
 ALTER TABLE public.tenant_users ENABLE ROW LEVEL SECURITY;
 
 DO $$
@@ -95,23 +111,15 @@ CREATE POLICY "strict_rls_tenant_users_select" ON public.tenant_users
     OR public.user_belongs_to_tenant(tenant_id)
   );
 
-CREATE POLICY "strict_rls_tenant_users_write" ON public.tenant_users
-  FOR ALL TO authenticated
-  USING (
-    public.is_super_admin()
-    OR EXISTS (
-      SELECT 1 FROM public.tenant_users tu
-      WHERE tu.tenant_id = public.tenant_users.tenant_id
-        AND tu.user_id = (SELECT auth.uid())
-        AND tu.perfil_acesso = 'ADMIN'
-    )
-  )
-  WITH CHECK (
-    public.is_super_admin()
-    OR EXISTS (
-      SELECT 1 FROM public.tenant_users tu
-      WHERE tu.tenant_id = public.tenant_users.tenant_id
-        AND tu.user_id = (SELECT auth.uid())
-        AND tu.perfil_acesso = 'ADMIN'
-    )
-  );
+CREATE POLICY "strict_rls_tenant_users_insert" ON public.tenant_users
+  FOR INSERT TO authenticated
+  WITH CHECK (public.is_tenant_admin(tenant_id));
+
+CREATE POLICY "strict_rls_tenant_users_update" ON public.tenant_users
+  FOR UPDATE TO authenticated
+  USING (public.is_tenant_admin(tenant_id))
+  WITH CHECK (public.is_tenant_admin(tenant_id));
+
+CREATE POLICY "strict_rls_tenant_users_delete" ON public.tenant_users
+  FOR DELETE TO authenticated
+  USING (public.is_tenant_admin(tenant_id));
