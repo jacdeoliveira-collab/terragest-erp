@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useTenantContext } from '../contexts/TenantContext';
-import { DEFAULT_LEGACY_TENANT } from '../utils/tenantFilter';
 import type {
   AgendaOperacionalItem,
   CreateAgendaDTO,
@@ -10,13 +9,18 @@ import type {
 
 export function useAgendaOperacional() {
   const { tenantAtivoId } = useTenantContext();
-  const activeTenant = tenantAtivoId || DEFAULT_LEGACY_TENANT;
+  const activeTenant = tenantAtivoId;
   const [itens, setItens] = useState<AgendaOperacionalItem[]>([]);
   const [parametros, setParametros] = useState<ParametrosOperacionaisEmpresa>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const carregarAgenda = useCallback(async () => {
+    if (!activeTenant) {
+      setItens([]);
+      setIsLoading(false);
+      return;
+    }
     try {
       setIsLoading(true);
       setError(null);
