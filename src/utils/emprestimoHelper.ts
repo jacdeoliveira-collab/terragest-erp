@@ -26,6 +26,15 @@ export interface InfoEmprestimoExtraida {
 
 export function extrairInfoEmprestimo(item: Partial<ContaPagarItem>): InfoEmprestimoExtraida {
   const obs = item.observacoes || '';
+  if (obs.includes('[ABAT_EMP:')) {
+    return {
+      isEmprestimo: false,
+      credorNome: item.fornecedor || '',
+      dataEmprestimo: '',
+      dataPagamentoPrevista: '',
+      observacaoLimpa: obs
+    };
+  }
   const match = obs.match(/\[EMPRESTIMO\|CREDOR:([^|]*)\|DATA:([^|]*)\|PAGAR:([^\]]*)\]/);
 
   const isPorCategoriaOuForma =
