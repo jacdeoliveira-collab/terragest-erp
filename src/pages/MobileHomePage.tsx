@@ -96,19 +96,19 @@ export const MobileHomePage: React.FC = () => {
           </button>
         </div>
 
-        <div className="grid grid-cols-3 gap-2.5 rounded-2xl bg-[#232130] border border-slate-700/60 p-3.5">
-          <div>
-            <p className="text-[10px] text-slate-400">Receitas</p>
+        <div className="grid grid-cols-3 gap-2.5 rounded-2xl bg-[#232130] border border-slate-700/60 p-3">
+          <button type="button" onClick={() => navigate('/financeiro?aba=receber')} className="text-left rounded-xl p-1.5 hover:bg-slate-800/70 transition-colors cursor-pointer">
+            <p className="text-[10px] text-slate-400">Receitas ↗</p>
             <p className="mt-0.5 text-xs font-bold text-emerald-400 truncate">{fmt(metrics.totalReceitasMes)}</p>
-          </div>
-          <div>
-            <p className="text-[10px] text-slate-400">Despesas</p>
+          </button>
+          <button type="button" onClick={() => navigate('/financeiro?aba=pagar')} className="text-left rounded-xl p-1.5 hover:bg-slate-800/70 transition-colors cursor-pointer">
+            <p className="text-[10px] text-slate-400">Despesas ↗</p>
             <p className="mt-0.5 text-xs font-bold text-rose-400 truncate">{fmt(metrics.totalDespesasMes)}</p>
-          </div>
-          <div>
-            <p className="text-[10px] text-slate-400">Saldo</p>
+          </button>
+          <button type="button" onClick={() => navigate('/gestao')} className="text-left rounded-xl p-1.5 hover:bg-slate-800/70 transition-colors cursor-pointer">
+            <p className="text-[10px] text-slate-400">Saldo ↗</p>
             <p className="mt-0.5 text-xs font-bold text-indigo-300 truncate">{fmt(metrics.saldoProjetado)}</p>
-          </div>
+          </button>
         </div>
       </section>
 

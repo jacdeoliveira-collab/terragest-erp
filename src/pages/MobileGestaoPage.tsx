@@ -1,112 +1,68 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart3, Crown, HardHat, Truck } from 'lucide-react';
+import { BarChart3, Crown, AlertCircle } from 'lucide-react';
 import { useTenantContext } from '../contexts/TenantContext';
-import { useDashboardGlobal } from '../hooks/useDashboardGlobal';
+import { useGestaoBI } from '../hooks/useGestaoBI';
+import { GestaoFiltrosBar } from '../components/features/gestao/GestaoFiltrosBar';
+import { GestaoKpisGrid } from '../components/features/gestao/GestaoKpisGrid';
+import { GestaoCustosChartCard } from '../components/features/gestao/GestaoCustosChartCard';
+import { GestaoCruzamentoTabs } from '../components/features/gestao/GestaoCruzamentoTabs';
+import { GestaoRadarOperacional } from '../components/features/gestao/GestaoRadarOperacional';
 
 export const MobileGestaoPage: React.FC = () => {
   const navigate = useNavigate();
   const { tenantAtivo, isMaster } = useTenantContext();
-  const { metrics, isLoading } = useDashboardGlobal();
+  const { resultado, filtros, atualizarFiltro, limparFiltros, isLoading, error, refetch } = useGestaoBI();
 
   const ehGratis = !isMaster && tenantAtivo?.plano === 'GRATIS';
-  const fmt = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
-
-  const maxPrevisto = Math.max(metrics.totalReceitasMes, metrics.totalDespesasMes, 1);
-  const maxRealizado = Math.max(metrics.recebidoNoMes, metrics.pagoNoMes, 1);
 
   return (
-    <div className="min-h-full bg-[#14131c] text-slate-100 rounded-2xl p-4 space-y-4">
-      <div className="flex items-center justify-between rounded-xl bg-[#232130] border border-slate-700/60 px-4 py-3">
-        <span className="text-xs text-slate-400">
-          Você tá vendo: <strong className="text-white">Mês Atual ({metrics.mesAtual})</strong>
-        </span>
-        <BarChart3 className="w-4 h-4 text-indigo-400" />
-      </div>
-
-      <div className="rounded-2xl bg-[#232130] border border-slate-700/60 p-4 space-y-4">
-        <h2 className="text-base font-bold text-white">Receita x Custo</h2>
-        {ehGratis ? (
-          <div className="flex flex-col items-center py-6 text-center space-y-3">
-            <BarChart3 className="w-10 h-10 text-slate-500" />
-            <p className="text-xs text-slate-400">Disponível nos planos Start, Pro e Enterprise</p>
-            <button
-              type="button"
-              onClick={() => navigate('/planos')}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-bold text-white"
-            >
-              <Crown className="w-3.5 h-3.5" /> Liberar Gestão
-            </button>
+    <div className="min-h-full bg-[#14131c] text-slate-100 rounded-2xl p-3 sm:p-5 space-y-4 text-left">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <div className="flex items-center gap-2 text-indigo-400">
+            <BarChart3 className="w-4 h-4" />
+            <span className="text-[11px] font-bold uppercase tracking-wider">Central de Gestão & BI</span>
           </div>
-        ) : (
-          <div className="space-y-3">
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-slate-400">Receitas do Mês</span>
-                <span className="font-bold text-emerald-400">{isLoading ? '...' : fmt(metrics.totalReceitasMes)}</span>
-              </div>
-              <div className="h-2.5 rounded-full bg-slate-800 overflow-hidden">
-                <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${(metrics.totalReceitasMes / maxPrevisto) * 100}%` }} />
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-slate-400">Custos & Despesas</span>
-                <span className="font-bold text-rose-400">{isLoading ? '...' : fmt(metrics.totalDespesasMes)}</span>
-              </div>
-              <div className="h-2.5 rounded-full bg-slate-800 overflow-hidden">
-                <div className="h-full bg-rose-500 rounded-full" style={{ width: `${(metrics.totalDespesasMes / maxPrevisto) * 100}%` }} />
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="rounded-2xl bg-[#232130] border border-slate-700/60 p-4 space-y-4">
-        <h2 className="text-base font-bold text-white">Recebido x Custos pagos</h2>
-        {ehGratis ? (
-          <p className="text-xs text-slate-400 py-4 text-center">Faça upgrade para acompanhar o fluxo de caixa realizado.</p>
-        ) : (
-          <div className="space-y-3">
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-slate-400">Total Recebido</span>
-                <span className="font-bold text-emerald-400">{isLoading ? '...' : fmt(metrics.recebidoNoMes)}</span>
-              </div>
-              <div className="h-2.5 rounded-full bg-slate-800 overflow-hidden">
-                <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${(metrics.recebidoNoMes / maxRealizado) * 100}%` }} />
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-slate-400">Custos Pagos</span>
-                <span className="font-bold text-amber-400">{isLoading ? '...' : fmt(metrics.pagoNoMes)}</span>
-              </div>
-              <div className="h-2.5 rounded-full bg-slate-800 overflow-hidden">
-                <div className="h-full bg-amber-500 rounded-full" style={{ width: `${(metrics.pagoNoMes / maxRealizado) * 100}%` }} />
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl bg-[#232130] border border-slate-700/60 p-4 flex items-center gap-3">
-          <HardHat className="w-6 h-6 text-amber-400 shrink-0" />
-          <div>
-            <p className="text-[11px] text-slate-400">Obras Ativas</p>
-            <p className="text-lg font-bold text-white">{metrics.obrasEmAndamento}</p>
-          </div>
+          <h1 className="text-lg sm:text-xl font-extrabold text-white">Indicadores & Cruzamento de Dados</h1>
         </div>
-        <div className="rounded-2xl bg-[#232130] border border-slate-700/60 p-4 flex items-center gap-3">
-          <Truck className="w-6 h-6 text-cyan-400 shrink-0" />
-          <div>
-            <p className="text-[11px] text-slate-400">Máquinas</p>
-            <p className="text-lg font-bold text-white">{metrics.frotasAtivas}/{metrics.totalEquipamentos}</p>
-          </div>
-        </div>
+        <span className="text-[11px] text-slate-400">Toque em qualquer card ou gráfico para abrir a origem</span>
       </div>
+
+      {ehGratis ? (
+        <div className="rounded-2xl bg-[#232130] border border-slate-700/60 p-8 flex flex-col items-center text-center space-y-3">
+          <BarChart3 className="w-10 h-10 text-indigo-400" />
+          <h2 className="text-base font-bold text-white">BI & Cruzamento de Dados</h2>
+          <p className="text-xs text-slate-400 max-w-sm">
+            Acompanhe lucro por máquina, consumo L/h, inadimplência e produtividade por operador nos planos assinantes.
+          </p>
+          <button type="button" onClick={() => navigate('/planos')} className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 px-5 py-2 text-xs font-bold text-white cursor-pointer">
+            <Crown className="w-4 h-4" /> Liberar Gestão Completa
+          </button>
+        </div>
+      ) : (
+        <>
+          <GestaoFiltrosBar
+            filtros={filtros}
+            opcoes={resultado.opcoes}
+            isLoading={isLoading}
+            onChange={atualizarFiltro}
+            onLimpar={limparFiltros}
+            onRefresh={refetch}
+          />
+
+          {error && (
+            <div className="rounded-xl bg-rose-950/50 border border-rose-500/40 p-3 text-xs text-rose-300 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" /><span>{error}</span>
+            </div>
+          )}
+
+          <GestaoKpisGrid kpis={resultado.kpis} isLoading={isLoading} />
+          <GestaoCustosChartCard kpis={resultado.kpis} isLoading={isLoading} />
+          <GestaoCruzamentoTabs resultado={resultado} onCruzar={atualizarFiltro} />
+          <GestaoRadarOperacional radar={resultado.radar} />
+        </>
+      )}
     </div>
   );
 };
-
