@@ -17,7 +17,7 @@ export const GestaoKpisGrid: React.FC<Props> = ({ kpis, isLoading }) => {
       sub: `${kpis.qtdServicos} serviço(s) no recorte`,
       to: '/comercial',
       icon: Clock,
-      cor: 'text-indigo-400'
+      cor: 'text-indigo-700'
     },
     {
       label: 'Receita / Hora',
@@ -25,7 +25,7 @@ export const GestaoKpisGrid: React.FC<Props> = ({ kpis, isLoading }) => {
       sub: `Faturado: ${fmt(kpis.receitaTotal)}`,
       to: '/comercial',
       icon: CircleDollarSign,
-      cor: 'text-emerald-400'
+      cor: 'text-emerald-700'
     },
     {
       label: 'Custo Real / Hora',
@@ -33,7 +33,7 @@ export const GestaoKpisGrid: React.FC<Props> = ({ kpis, isLoading }) => {
       sub: `Total: ${fmt(kpis.custoTotal)}`,
       to: '/financeiro?aba=pagar',
       icon: Gauge,
-      cor: 'text-rose-400'
+      cor: 'text-rose-600'
     },
     {
       label: 'Margem Líquida',
@@ -41,7 +41,7 @@ export const GestaoKpisGrid: React.FC<Props> = ({ kpis, isLoading }) => {
       sub: `Margem: ${kpis.margemPercent.toFixed(1)}%`,
       to: '/financeiro?aba=dre',
       icon: TrendingUp,
-      cor: kpis.lucroLiquido >= 0 ? 'text-emerald-400' : 'text-rose-400'
+      cor: kpis.lucroLiquido >= 0 ? 'text-emerald-700' : 'text-rose-600'
     },
     {
       label: 'Consumo Diesel',
@@ -49,7 +49,7 @@ export const GestaoKpisGrid: React.FC<Props> = ({ kpis, isLoading }) => {
       sub: `${kpis.litrosDiesel.toFixed(0)}L • ${fmt(kpis.custoDiesel)}`,
       to: '/abastecimento',
       icon: Fuel,
-      cor: 'text-amber-400'
+      cor: 'text-amber-700'
     },
     {
       label: 'Saldo a Receber',
@@ -57,7 +57,7 @@ export const GestaoKpisGrid: React.FC<Props> = ({ kpis, isLoading }) => {
       sub: `Recebido: ${fmt(kpis.receitaRecebida)}`,
       to: '/financeiro?aba=receber',
       icon: Wallet,
-      cor: kpis.saldoAReceber > 0 ? 'text-amber-300' : 'text-emerald-400'
+      cor: kpis.saldoAReceber > 0 ? 'text-amber-700' : 'text-emerald-700'
     }
   ];
 
@@ -71,15 +71,15 @@ export const GestaoKpisGrid: React.FC<Props> = ({ kpis, isLoading }) => {
             type="button"
             onClick={() => navigate(c.to)}
             title={`Abrir origem: ${c.label}`}
-            className="group rounded-2xl bg-[#232130] hover:bg-[#2a273a] border border-slate-700/60 hover:border-indigo-500/50 p-3.5 text-left transition-all cursor-pointer active:scale-[0.98]"
+            className="group rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 hover:border-emerald-500/60 shadow-xs p-3.5 text-left transition-all cursor-pointer active:scale-[0.98]"
           >
             <div className="flex items-center justify-between">
               <Icon className={`w-4 h-4 ${c.cor}`} />
-              <ArrowUpRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-indigo-400 transition-colors" />
+              <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600 transition-colors" />
             </div>
-            <p className="mt-2 text-[11px] text-slate-400">{c.label}</p>
+            <p className="mt-2 text-[11px] font-medium text-slate-600">{c.label}</p>
             <p className={`mt-0.5 text-sm sm:text-base font-extrabold truncate ${c.cor}`}>{c.valor}</p>
-            <p className="mt-0.5 text-[10px] text-slate-400 truncate">{c.sub}</p>
+            <p className="mt-0.5 text-[10px] text-slate-500 truncate">{c.sub}</p>
           </button>
         );
       })}

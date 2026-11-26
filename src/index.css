@@ -103,6 +103,7 @@ html.theme-dark .text-amber-900, html.theme-dark .text-orange-700, html.theme-da
 
 html.theme-dark .text-rose-600, html.theme-dark .text-rose-700,
 html.theme-dark .text-rose-800, html.theme-dark .text-red-600, html.theme-dark .text-red-700, html.theme-dark .text-red-800 { color: #fb7185 !important; }
+html.theme-dark .text-indigo-700, html.theme-dark .text-indigo-600, html.theme-dark .text-blue-700, html.theme-dark .text-blue-600 { color: #93c5fd !important; }
 
 html.theme-dark [class*="border-gray-"], html.theme-dark [class*="border-slate-"],
 html.theme-dark [class*="divide-gray-"] > :not([hidden]) ~ :not([hidden]) { border-color: #334155 !important; }

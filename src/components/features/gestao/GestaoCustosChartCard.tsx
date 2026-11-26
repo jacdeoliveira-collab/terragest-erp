@@ -13,36 +13,36 @@ export const GestaoCustosChartCard: React.FC<Props> = ({ kpis, isLoading }) => {
   const totalCustos = Math.max(kpis.custoTotal, 1);
 
   const barrasFin = [
-    { label: 'Receita Faturada', valor: kpis.receitaTotal, cor: 'bg-emerald-500', text: 'text-emerald-400', to: '/comercial' },
-    { label: 'Total Recebido (Caixa)', valor: kpis.receitaRecebida, cor: 'bg-teal-400', text: 'text-teal-300', to: '/financeiro?aba=receber' },
-    { label: 'Custos & Despesas', valor: kpis.custoTotal, cor: 'bg-rose-500', text: 'text-rose-400', to: '/financeiro?aba=pagar' },
-    { label: 'Custos Pagos (Caixa)', valor: kpis.custosPagos, cor: 'bg-amber-500', text: 'text-amber-400', to: '/financeiro?aba=pagar' }
+    { label: 'Receita Faturada', valor: kpis.receitaTotal, cor: 'bg-emerald-600', text: 'text-emerald-700', to: '/comercial' },
+    { label: 'Total Recebido (Caixa)', valor: kpis.receitaRecebida, cor: 'bg-teal-600', text: 'text-teal-700', to: '/financeiro?aba=receber' },
+    { label: 'Custos & Despesas', valor: kpis.custoTotal, cor: 'bg-rose-600', text: 'text-rose-600', to: '/financeiro?aba=pagar' },
+    { label: 'Custos Pagos (Caixa)', valor: kpis.custosPagos, cor: 'bg-amber-600', text: 'text-amber-700', to: '/financeiro?aba=pagar' }
   ];
 
   const composicao = [
     { label: 'Combustível / Diesel', valor: kpis.custoDiesel, cor: 'bg-amber-500', to: '/abastecimento' },
-    { label: 'Operadores (Comissão)', valor: kpis.custoOperadores, cor: 'bg-indigo-500', to: '/rh' },
+    { label: 'Operadores (Comissão)', valor: kpis.custoOperadores, cor: 'bg-indigo-600', to: '/rh' },
     { label: 'Manutenção & Peças', valor: kpis.custoManutencao, cor: 'bg-rose-500', to: '/manutencao' },
-    { label: 'Outras Despesas', valor: kpis.outrosCustos, cor: 'bg-slate-400', to: '/financeiro?aba=pagar' }
+    { label: 'Outras Despesas', valor: kpis.outrosCustos, cor: 'bg-slate-500', to: '/financeiro?aba=pagar' }
   ];
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div className="rounded-2xl bg-[#232130] border border-slate-700/60 p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold text-white">Receita × Custo × Caixa</h2>
-          <span className="text-[10px] text-slate-400">Toque na barra para abrir origem</span>
+      <div className="rounded-2xl bg-white border border-slate-200 shadow-xs p-4 space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-bold text-slate-900">Receita × Custo × Caixa</h2>
+          <span className="text-[10px] text-slate-500">Toque na barra para abrir origem</span>
         </div>
         <div className="space-y-2.5">
           {barrasFin.map((b) => (
             <button key={b.label} type="button" onClick={() => navigate(b.to)} className="w-full text-left group cursor-pointer">
               <div className="flex items-center justify-between text-xs mb-1">
-                <span className="text-slate-300 group-hover:text-white inline-flex items-center gap-1">
-                  {b.label} <ArrowUpRight className="w-3 h-3 text-slate-500 group-hover:text-indigo-400" />
+                <span className="text-slate-700 group-hover:text-slate-900 font-medium inline-flex items-center gap-1">
+                  {b.label} <ArrowUpRight className="w-3 h-3 text-slate-400 group-hover:text-emerald-600" />
                 </span>
                 <span className={`font-bold font-mono ${b.text}`}>{isLoading ? '...' : fmt(b.valor)}</span>
               </div>
-              <div className="h-2.5 rounded-full bg-slate-800 overflow-hidden">
+              <div className="h-2.5 rounded-full bg-slate-200 overflow-hidden">
                 <div className={`h-full rounded-full ${b.cor} transition-all`} style={{ width: `${Math.min(100, (b.valor / maxFin) * 100)}%` }} />
               </div>
             </button>
@@ -50,10 +50,10 @@ export const GestaoCustosChartCard: React.FC<Props> = ({ kpis, isLoading }) => {
         </div>
       </div>
 
-      <div className="rounded-2xl bg-[#232130] border border-slate-700/60 p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-bold text-white">Composição dos Custos</h2>
-          <span className="text-[10px] text-slate-400">Clique na categoria para detalhar</span>
+      <div className="rounded-2xl bg-white border border-slate-200 shadow-xs p-4 space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-bold text-slate-900">Composição dos Custos</h2>
+          <span className="text-[10px] text-slate-500">Clique na categoria para detalhar</span>
         </div>
         <div className="space-y-2.5">
           {composicao.map((item) => {
@@ -61,14 +61,14 @@ export const GestaoCustosChartCard: React.FC<Props> = ({ kpis, isLoading }) => {
             return (
               <button key={item.label} type="button" onClick={() => navigate(item.to)} className="w-full text-left group cursor-pointer">
                 <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="text-slate-300 group-hover:text-white inline-flex items-center gap-1">
-                    {item.label} <ArrowUpRight className="w-3 h-3 text-slate-500 group-hover:text-indigo-400" />
+                  <span className="text-slate-700 group-hover:text-slate-900 font-medium inline-flex items-center gap-1">
+                    {item.label} <ArrowUpRight className="w-3 h-3 text-slate-400 group-hover:text-emerald-600" />
                   </span>
-                  <span className="font-mono text-slate-200 font-semibold">
+                  <span className="font-mono text-slate-800 font-bold">
                     {isLoading ? '...' : `${fmt(item.valor)} (${pct.toFixed(0)}%)`}
                   </span>
                 </div>
-                <div className="h-2 rounded-full bg-slate-800 overflow-hidden">
+                <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
                   <div className={`h-full rounded-full ${item.cor} transition-all`} style={{ width: `${Math.min(100, pct)}%` }} />
                 </div>
               </button>

@@ -15,7 +15,7 @@ export const GestaoRadarOperacional: React.FC<Props> = ({ radar }) => {
       sub: `${radar.agendaHorasPrevistas.toFixed(0)}h previstas`,
       to: '/agenda',
       icon: CalendarClock,
-      cor: 'text-cyan-400'
+      cor: 'text-blue-700'
     },
     {
       label: 'Manut. Preventivas',
@@ -23,7 +23,7 @@ export const GestaoRadarOperacional: React.FC<Props> = ({ radar }) => {
       sub: `${radar.manutencoesProximas} próxima(s) (≤50h)`,
       to: '/manutencao',
       icon: Wrench,
-      cor: radar.manutencoesVencidas > 0 ? 'text-rose-400' : 'text-emerald-400'
+      cor: radar.manutencoesVencidas > 0 ? 'text-rose-600' : 'text-emerald-700'
     },
     {
       label: 'Frota Ativa',
@@ -31,7 +31,7 @@ export const GestaoRadarOperacional: React.FC<Props> = ({ radar }) => {
       sub: 'Abrir gestão de maquinário',
       to: '/frota',
       icon: Truck,
-      cor: 'text-indigo-400'
+      cor: 'text-indigo-700'
     },
     {
       label: 'Centros de Custo',
@@ -39,7 +39,7 @@ export const GestaoRadarOperacional: React.FC<Props> = ({ radar }) => {
       sub: 'Ativos no período',
       to: '/centros-custo',
       icon: HardHat,
-      cor: 'text-amber-400'
+      cor: 'text-amber-700'
     }
   ];
 
@@ -52,17 +52,17 @@ export const GestaoRadarOperacional: React.FC<Props> = ({ radar }) => {
             key={it.label}
             type="button"
             onClick={() => navigate(it.to)}
-            className="group rounded-2xl bg-[#232130] hover:bg-[#2a273a] border border-slate-700/60 hover:border-indigo-500/50 p-3.5 flex items-center justify-between gap-2 text-left transition-all cursor-pointer active:scale-[0.98]"
+            className="group rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 hover:border-emerald-500/60 shadow-xs p-3.5 flex items-center justify-between gap-2 text-left transition-all cursor-pointer active:scale-[0.98]"
           >
             <div className="flex items-center gap-2.5 min-w-0">
               <Icon className={`w-5 h-5 shrink-0 ${it.cor}`} />
               <div className="min-w-0">
-                <p className="text-[11px] text-slate-400 truncate">{it.label}</p>
+                <p className="text-[11px] font-medium text-slate-600 truncate">{it.label}</p>
                 <p className={`text-sm font-bold truncate ${it.cor}`}>{it.valor}</p>
-                <p className="text-[10px] text-slate-400 truncate">{it.sub}</p>
+                <p className="text-[10px] text-slate-500 truncate">{it.sub}</p>
               </div>
             </div>
-            <ArrowUpRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-indigo-400 shrink-0" />
+            <ArrowUpRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600 shrink-0" />
           </button>
         );
       })}
