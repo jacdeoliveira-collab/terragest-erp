@@ -49,14 +49,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [restaurarOfflineSePermitido]);
 
   useEffect(() => {
+    const isRecoveryHash = typeof window !== 'undefined' && window.location.hash.includes('type=recovery');
     supabase.auth.getSession()
-      .then(({ data: { session: currentSession } }) => initUserWithProfile(currentSession))
+      .then(({ data: { session: currentSession } }) => {
+        if (isRecoveryHash && typeof window !== 'undefined' && window.location.pathname !== '/redefinir-senha') {
+          window.location.replace(`/redefinir-senha${window.location.hash}`);
+          return;
+        }
+        return initUserWithProfile(currentSession);
+      })
       .catch(() => { restaurarOfflineSePermitido(); })
       .finally(() => setLoading(false));
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, newSession) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       await initUserWithProfile(newSession);
       setLoading(false);
+      if (event === 'PASSWORD_RECOVERY' && typeof window !== 'undefined' && window.location.pathname !== '/redefinir-senha') {
+        window.location.replace('/redefinir-senha');
+      }
     });
 
     return () => subscription.unsubscribe();

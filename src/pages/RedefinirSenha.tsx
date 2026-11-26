@@ -14,10 +14,27 @@ export const RedefinirSenha: React.FC = () => {
   const [checkingSession, setCheckingSession] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    let mounted = true;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return;
+      if (session && (event === 'PASSWORD_RECOVERY' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
+        setError(null);
+        setCheckingSession(false);
+      }
+    });
+
+    const timer = setTimeout(async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!mounted) return;
       setCheckingSession(false);
       if (!session) setError('O link de recuperação expirou ou é inválido. Solicite um novo link.');
-    });
+    }, 1200);
+
+    return () => {
+      mounted = false;
+      clearTimeout(timer);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
