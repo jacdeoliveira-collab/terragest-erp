@@ -32,7 +32,7 @@ export const RecuperarSenhaModal: React.FC<RecuperarSenhaModalProps> = ({
         return;
       }
 
-      const redirectUrl = `${window.location.origin}/redefinir-senha`;
+      const redirectUrl = 'https://terragest.agrodronesma.com.br/redefinir-senha';
 
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
         redirectTo: redirectUrl
