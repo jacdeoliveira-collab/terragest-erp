@@ -7,6 +7,7 @@ import { useTenantContext } from '../../../contexts/TenantContext';
 import { usePlanosContext } from '../../../contexts/PlanosContext';
 import { calcularProRataMudancaPlano } from '../../../utils/planoProRataCalculator';
 import { TermoAdesaoPlanoBox } from './TermoAdesaoPlanoBox';
+import { TrocaPlanoResumoDialog } from './TrocaPlanoResumoDialog';
 
 interface Props { plano: PlanoSaasRecord; tenantId: string; onClose: () => void; onConfirmed: () => Promise<void>; }
 interface CheckoutData { assinaturaId: string; paymentId: string; pixQrCode?: string; pixCopiaCola?: string; invoiceUrl?: string; valor: number; }
@@ -93,7 +94,9 @@ export const PlanoCheckoutModal: React.FC<Props> = ({ plano, tenantId, onClose, 
     } catch (err) { setErro(err instanceof Error ? err.message : 'Erro na verificação'); } finally { setChecking(false); }
   };
 
-  const tituloPlano = plano.nome.toLowerCase().startsWith('plano') ? `Assinar ${plano.nome}` : `Assinar Plano ${plano.nome}`;
+  const isTrocaExistente = calculo.tipoMudanca !== 'NOVA_ASSINATURA';
+  const planoAtualObj = planos.find((p) => p.codigo.toUpperCase() === calculo.planoAtualCodigo.toUpperCase()) || null;
+  const tituloPlano = isTrocaExistente ? `Trocar para ${plano.nome}` : (plano.nome.toLowerCase().startsWith('plano') ? `Assinar ${plano.nome}` : `Assinar Plano ${plano.nome}`);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
@@ -101,25 +104,22 @@ export const PlanoCheckoutModal: React.FC<Props> = ({ plano, tenantId, onClose, 
         <div className="mb-4 flex items-center justify-between">
           <div>
             <h3 className="text-lg font-bold text-white">{tituloPlano}</h3>
-            <p className="text-xs text-emerald-400 font-semibold">
-              Mensalidade: R$ {plano.valor_mensal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês • Novo vencimento: {calculo.novaDataVencimentoBr}
-            </p>
+            <p className="text-xs text-emerald-400 font-semibold">Mensalidade: R$ {plano.valor_mensal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês • Próximo vencimento: {calculo.novaDataVencimentoBr}</p>
           </div>
           <button onClick={onClose} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white cursor-pointer"><X className="h-5 w-5" /></button>
         </div>
 
         {!checkout && !pago && (
           <div className="space-y-3.5">
-            <TermoAdesaoPlanoBox plano={plano} aceito={aceitoTermos} onChangeAceito={setAceitoTermos} calculoProRata={calculo} dark />
+            {isTrocaExistente && <TrocaPlanoResumoDialog calculo={calculo} planoAtualObj={planoAtualObj} planoNovo={plano} />}
+            <TermoAdesaoPlanoBox plano={plano} aceito={aceitoTermos} onChangeAceito={setAceitoTermos} calculoProRata={isTrocaExistente ? null : calculo} dark />
             {needsCpfCnpj && <input type="text" placeholder="Digite o CPF ou CNPJ da empresa para o Asaas" value={cpfCnpjInput} onChange={(e) => setCpfCnpjInput(e.target.value)} className="w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-xs text-white" />}
             {erro && <p className="rounded-lg bg-red-500/10 p-2.5 text-xs text-red-300 border border-red-500/30">{erro}</p>}
             <button type="button" onClick={() => confirmarAcaoPlano(cpfCnpjInput)} disabled={loading || !aceitoTermos} className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-xs font-bold text-white hover:bg-emerald-500 disabled:opacity-50 cursor-pointer">
               {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Processando...</>
-                : !calculo.precisaPagamentoImediato
-                  ? `Confirmar Troca com Créditos (Vencimento: ${calculo.novaDataVencimentoBr})`
-                  : calculo.estaAtrasado
-                    ? `Regularizar & Gerar PIX Imediato (R$ ${calculo.valorCobrarAgora.toFixed(2)})`
-                    : `Confirmar Contrato e Gerar QR Code PIX (R$ ${calculo.valorCobrarAgora.toFixed(2)})`}
+                : !calculo.precisaPagamentoImediato ? `Confirmar Troca com Créditos (Vencimento: ${calculo.novaDataVencimentoBr})`
+                : calculo.estaAtrasado ? `Regularizar & Gerar PIX Imediato (R$ ${calculo.valorCobrarAgora.toFixed(2)})`
+                : `Confirmar Contrato e Gerar QR Code PIX (R$ ${calculo.valorCobrarAgora.toFixed(2)})`}
             </button>
           </div>
         )}

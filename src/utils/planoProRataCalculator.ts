@@ -16,6 +16,9 @@ export interface CalculoMudancaPlano {
   planoAtualNome: string;
   valorPlanoAtual: number;
   valorPlanoNovo: number;
+  diariaAtual: number;
+  diariaNova: number;
+  vencimentoAtualBr: string | null;
   diasRestantesAtuais: number;
   creditoProporcionalAtual: number;
   diasConvertidosNovoPlano: number;
@@ -58,12 +61,16 @@ export function calcularProRataMudancaPlano(
   }
 
   const venc30 = addDiasIso(30);
+  const vencAtualBr = tenant?.assinatura_fim ? tenant.assinatura_fim.split('-').reverse().join('/') : null;
+  const diariaAtual = Number((valorAtual / 30).toFixed(2));
+  const diariaNova = Number((valorNovo / 30).toFixed(2));
 
   // 1. Em atraso: obriga pagamento imediato
   if (diasAtraso > 0) {
     return {
       tipoMudanca: 'ATRASADO', estaAtrasado: true, diasAtraso, precisaPagamentoImediato: true,
       planoAtualCodigo: codigoAtual, planoAtualNome: nomeAtual, valorPlanoAtual: valorAtual, valorPlanoNovo: valorNovo,
+      diariaAtual, diariaNova, vencimentoAtualBr: vencAtualBr,
       diasRestantesAtuais: 0, creditoProporcionalAtual: 0, diasConvertidosNovoPlano: 30,
       diasAcessoTotalNovo: 30, novaDataVencimento: venc30.iso, novaDataVencimentoBr: venc30.br,
       valorCobrarAgora: valorNovo,
@@ -76,6 +83,7 @@ export function calcularProRataMudancaPlano(
     return {
       tipoMudanca: 'NOVA_ASSINATURA', estaAtrasado: false, diasAtraso: 0, precisaPagamentoImediato: valorNovo > 0,
       planoAtualCodigo: codigoAtual, planoAtualNome: nomeAtual, valorPlanoAtual: valorAtual, valorPlanoNovo: valorNovo,
+      diariaAtual, diariaNova, vencimentoAtualBr: vencAtualBr,
       diasRestantesAtuais: 0, creditoProporcionalAtual: 0, diasConvertidosNovoPlano: 30,
       diasAcessoTotalNovo: 30, novaDataVencimento: venc30.iso, novaDataVencimentoBr: venc30.br,
       valorCobrarAgora: valorNovo,
@@ -84,10 +92,8 @@ export function calcularProRataMudancaPlano(
   }
 
   // 3. Empresa ativa em dia com saldo de créditos: converte crédito em dias do novo plano e altera o vencimento
-  const diariaAtual = valorAtual / 30;
-  const diariaNova = valorNovo / 30;
-  const creditoAtual = Number((diariaAtual * diasRestantes).toFixed(2));
-  const diasConvertidos = diariaNova > 0 ? Math.floor(creditoAtual / diariaNova) : 30;
+  const creditoAtual = Number(((valorAtual / 30) * diasRestantes).toFixed(2));
+  const diasConvertidos = valorNovo > 0 ? Math.floor(creditoAtual / (valorNovo / 30)) : 30;
   const tipoMudanca = valorNovo > valorAtual ? 'UPGRADE' : valorNovo < valorAtual ? 'DOWNGRADE' : 'RENOVACAO';
 
   if (diasConvertidos >= 1 && tipoMudanca !== 'RENOVACAO') {
@@ -95,6 +101,7 @@ export function calcularProRataMudancaPlano(
     return {
       tipoMudanca, estaAtrasado: false, diasAtraso: 0, precisaPagamentoImediato: false,
       planoAtualCodigo: codigoAtual, planoAtualNome: nomeAtual, valorPlanoAtual: valorAtual, valorPlanoNovo: valorNovo,
+      diariaAtual, diariaNova, vencimentoAtualBr: vencAtualBr,
       diasRestantesAtuais: diasRestantes, creditoProporcionalAtual: creditoAtual,
       diasConvertidosNovoPlano: diasConvertidos, diasAcessoTotalNovo: diasConvertidos,
       novaDataVencimento: novoVenc.iso, novaDataVencimentoBr: novoVenc.br,
@@ -108,6 +115,7 @@ export function calcularProRataMudancaPlano(
   return {
     tipoMudanca, estaAtrasado: false, diasAtraso: 0, precisaPagamentoImediato: true,
     planoAtualCodigo: codigoAtual, planoAtualNome: nomeAtual, valorPlanoAtual: valorAtual, valorPlanoNovo: valorNovo,
+    diariaAtual, diariaNova, vencimentoAtualBr: vencAtualBr,
     diasRestantesAtuais: diasRestantes, creditoProporcionalAtual: creditoAtual,
     diasConvertidosNovoPlano: 30, diasAcessoTotalNovo: 30,
     novaDataVencimento: venc30.iso, novaDataVencimentoBr: venc30.br,
