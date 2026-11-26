@@ -145,6 +145,9 @@ GRANT EXECUTE ON FUNCTION public.vincular_assinatura_asaas_tenant(UUID, TEXT, NU
 -- 3. RLS Estrita em public.tenants (remove leitura anônima; isola cada empresa; libera Super Admin)
 ALTER TABLE public.tenants ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "tenants_select_isolated" ON public.tenants;
+DROP POLICY IF EXISTS "tenants_update_isolated" ON public.tenants;
+DROP POLICY IF EXISTS "tenants_insert_master_only" ON public.tenants;
 DROP POLICY IF EXISTS "tenant_read_policy" ON public.tenants;
 DROP POLICY IF EXISTS "tenant_insert_policy" ON public.tenants;
 DROP POLICY IF EXISTS "tenant_update_policy" ON public.tenants;
