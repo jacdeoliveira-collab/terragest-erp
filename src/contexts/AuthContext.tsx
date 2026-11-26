@@ -19,11 +19,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (manualLogout || (typeof navigator !== 'undefined' && navigator.onLine)) return null;
     const snap = lerSessaoOffline();
     if (!snap) return null;
-    if (snap.tenantId && typeof window !== 'undefined') {
-      localStorage.setItem('terragest_tenant_ativo_id', snap.tenantId);
-    }
-    setUser(snap.user);
-    setPerfilAcesso(snap.perfil);
+    if (snap.tenantId && typeof window !== 'undefined') localStorage.setItem('terragest_tenant_ativo_id', snap.tenantId);
+    setUser(snap.user); setPerfilAcesso(snap.perfil);
     return { perfil: snap.perfil, tenantId: snap.tenantId };
   }, []);
 
@@ -31,19 +28,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!currentSession?.user) {
       const offline = restaurarOfflineSePermitido();
       if (offline) return offline;
-      setSession(null);
-      setUser(null);
-      setPerfilAcesso('ADMIN');
+      setSession(null); setUser(null); setPerfilAcesso('ADMIN');
       return { perfil: 'ADMIN' as PerfilAcesso, tenantId: null };
     }
     const { perfil, tenantId } = await fetchUserTenantData(currentSession.user);
-    if (tenantId && typeof window !== 'undefined') {
-      localStorage.setItem('terragest_tenant_ativo_id', tenantId);
-    }
+    if (tenantId && typeof window !== 'undefined') localStorage.setItem('terragest_tenant_ativo_id', tenantId);
     const enrichedUser: AuthUser = Object.assign(currentSession.user, { perfil_acesso: perfil });
-    setSession(currentSession);
-    setUser(enrichedUser);
-    setPerfilAcesso(perfil);
+    setSession(currentSession); setUser(enrichedUser); setPerfilAcesso(perfil);
     await salvarSessaoOffline(enrichedUser, perfil, tenantId);
     return { perfil, tenantId };
   }, [restaurarOfflineSePermitido]);
