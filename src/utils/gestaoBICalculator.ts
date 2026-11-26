@@ -64,9 +64,13 @@ export function calcularGestaoBI(raw: GestaoBIRawData, filtros: GestaoBIFiltros)
 
   for (const s of srvFiltrados) {
     const h = Number(s.horas_trabalhadas) || 0;
-    const rec = Number(s.valor_total_servico) || 0;
-    const pago = s.status_pagamento_cliente === 'QUITADO' ? rec : Number(s.valor_recebido) || 0;
-    const aberto = Math.max(0, rec - pago);
+    const rec = Number(s.faturamento_bruto) || Number(s.valor_total_servico) || (h * (Number(s.valor_hora) || 0));
+    const pago = s.status_pagamento_cliente === 'QUITADO'
+      ? rec
+      : (Number(s.valor_adiantamento) || Number(s.valor_recebido) || 0);
+    const aberto = s.status_pagamento_cliente === 'QUITADO'
+      ? 0
+      : (s.saldo_restante !== undefined && s.saldo_restante !== null ? Math.max(0, Number(s.saldo_restante)) : Math.max(0, rec - pago));
     const vOp = Number(s.valor_hora_operador) > 0 ? h * Number(s.valor_hora_operador) : (Number(s.despesa_operador) || 0);
 
     horasTrabalhadas += h; receitaTotal += rec; receitaRecebida += pago; saldoAReceber += aberto; custoOperadores += vOp;

@@ -40,12 +40,12 @@ export function useGestaoBI() {
 
       const [resSrv, resAbast, resCp, resEq, resManut, resAg, resObras] = await Promise.all([
         aplicarFiltroTenant(supabase.from('servicos_horimetro').select('*'), t),
-        aplicarFiltroTenant(supabase.from('abastecimentos').select('id, data, created_at, maquina_id, obra_id, servico_id, litros, valor_total'), t),
-        aplicarFiltroTenant(supabase.from('contas_pagar').select('id, valor, status, categoria, data_vencimento, created_at, obra_id, fornecedor, descricao, observacoes'), t),
-        aplicarFiltroTenant(supabase.from('equipment').select('id, code, name, status, current_hourmeter'), t),
-        aplicarFiltroTenant(supabase.from('planos_manutencao').select('id, maquina_id, equipment_id, obra_id, status, data_servico, data_ultima_execucao, created_at, horimetro_proxima_troca, valor_pecas, valor_mao_obra'), t),
-        aplicarFiltroTenant(supabase.from('agenda_operacional').select('id, status, horas_previstas'), t),
-        aplicarFiltroTenant(supabase.from('obras').select('id, nome, status'), t)
+        aplicarFiltroTenant(supabase.from('abastecimentos').select('*'), t),
+        aplicarFiltroTenant(supabase.from('contas_pagar').select('*'), t),
+        aplicarFiltroTenant(supabase.from('equipment').select('*'), t),
+        aplicarFiltroTenant(supabase.from('planos_manutencao').select('*'), t),
+        aplicarFiltroTenant(supabase.from('agenda_operacional').select('*'), t),
+        aplicarFiltroTenant(supabase.from('obras').select('*'), t)
       ]);
 
       setRaw({

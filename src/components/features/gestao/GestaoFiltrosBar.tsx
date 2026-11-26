@@ -59,28 +59,40 @@ export const GestaoFiltrosBar: React.FC<Props> = ({ filtros, opcoes, isLoading, 
 
       {filtros.periodo === 'PERSONALIZADO' && (
         <div className="grid grid-cols-2 gap-2">
-          <input type="date" value={filtros.dataInicio} onChange={(e) => onChange('dataInicio', e.target.value)} className="rounded-lg bg-slate-900 border border-slate-700 px-2.5 py-1.5 text-xs text-slate-200" />
-          <input type="date" value={filtros.dataFim} onChange={(e) => onChange('dataFim', e.target.value)} className="rounded-lg bg-slate-900 border border-slate-700 px-2.5 py-1.5 text-xs text-slate-200" />
+          <input type="date" value={filtros.dataInicio} onChange={(e) => onChange('dataInicio', e.target.value)} style={{ color: '#ffffff', backgroundColor: '#1b1829' }} className="rounded-lg border border-slate-600 px-2.5 py-1.5 text-xs" />
+          <input type="date" value={filtros.dataFim} onChange={(e) => onChange('dataFim', e.target.value)} style={{ color: '#ffffff', backgroundColor: '#1b1829' }} className="rounded-lg border border-slate-600 px-2.5 py-1.5 text-xs" />
         </div>
       )}
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-        <select value={filtros.maquinaId} onChange={(e) => onChange('maquinaId', e.target.value)} className="rounded-lg bg-slate-900 border border-slate-700 px-2.5 py-1.5 text-xs text-slate-200">
-          <option value="">Todas Máquinas</option>
-          {opcoes.maquinas.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
-        </select>
-        <select value={filtros.clienteNome} onChange={(e) => onChange('clienteNome', e.target.value)} className="rounded-lg bg-slate-900 border border-slate-700 px-2.5 py-1.5 text-xs text-slate-200">
-          <option value="">Todos Clientes</option>
-          {opcoes.clientes.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
-        <select value={filtros.operadorNome} onChange={(e) => onChange('operadorNome', e.target.value)} className="rounded-lg bg-slate-900 border border-slate-700 px-2.5 py-1.5 text-xs text-slate-200">
-          <option value="">Todos Operadores</option>
-          {opcoes.operadores.map((o) => <option key={o} value={o}>{o}</option>)}
-        </select>
-        <select value={filtros.centroCustoId} onChange={(e) => onChange('centroCustoId', e.target.value)} className="rounded-lg bg-slate-900 border border-slate-700 px-2.5 py-1.5 text-xs text-slate-200">
-          <option value="">Todos Centros de Custo</option>
-          {opcoes.centrosCusto.map((cc) => <option key={cc.id} value={cc.id}>{cc.nome}</option>)}
-        </select>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+        <label className="space-y-1">
+          <span className="block text-[10px] font-bold uppercase text-slate-300">Máquina</span>
+          <select value={filtros.maquinaId} onChange={(e) => onChange('maquinaId', e.target.value)} style={{ color: '#ffffff', backgroundColor: '#1b1829' }} className="w-full rounded-lg border border-slate-600 px-2.5 py-2 text-xs font-medium">
+            <option value="" style={{ backgroundColor: '#1b1829', color: '#ffffff' }}>Todas Máquinas</option>
+            {opcoes.maquinas.map((m) => <option key={m.id} value={m.id} style={{ backgroundColor: '#1b1829', color: '#ffffff' }}>{m.label}</option>)}
+          </select>
+        </label>
+        <label className="space-y-1">
+          <span className="block text-[10px] font-bold uppercase text-slate-300">Cliente</span>
+          <select value={filtros.clienteNome} onChange={(e) => onChange('clienteNome', e.target.value)} style={{ color: '#ffffff', backgroundColor: '#1b1829' }} className="w-full rounded-lg border border-slate-600 px-2.5 py-2 text-xs font-medium">
+            <option value="" style={{ backgroundColor: '#1b1829', color: '#ffffff' }}>Todos Clientes</option>
+            {opcoes.clientes.map((c) => <option key={c} value={c} style={{ backgroundColor: '#1b1829', color: '#ffffff' }}>{c}</option>)}
+          </select>
+        </label>
+        <label className="space-y-1">
+          <span className="block text-[10px] font-bold uppercase text-slate-300">Operador</span>
+          <select value={filtros.operadorNome} onChange={(e) => onChange('operadorNome', e.target.value)} style={{ color: '#ffffff', backgroundColor: '#1b1829' }} className="w-full rounded-lg border border-slate-600 px-2.5 py-2 text-xs font-medium">
+            <option value="" style={{ backgroundColor: '#1b1829', color: '#ffffff' }}>Todos Operadores</option>
+            {opcoes.operadores.map((o) => <option key={o} value={o} style={{ backgroundColor: '#1b1829', color: '#ffffff' }}>{o}</option>)}
+          </select>
+        </label>
+        <label className="space-y-1">
+          <span className="block text-[10px] font-bold uppercase text-slate-300">Centro de Custo</span>
+          <select value={filtros.centroCustoId} onChange={(e) => onChange('centroCustoId', e.target.value)} style={{ color: '#ffffff', backgroundColor: '#1b1829' }} className="w-full rounded-lg border border-slate-600 px-2.5 py-2 text-xs font-medium">
+            <option value="" style={{ backgroundColor: '#1b1829', color: '#ffffff' }}>Todos Centros</option>
+            {opcoes.centrosCusto.map((cc) => <option key={cc.id} value={cc.id} style={{ backgroundColor: '#1b1829', color: '#ffffff' }}>{cc.nome}</option>)}
+          </select>
+        </label>
       </div>
     </div>
   );

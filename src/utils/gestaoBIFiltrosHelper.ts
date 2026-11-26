@@ -45,7 +45,7 @@ export function calcularRadarEOpcoes(raw: GestaoBIRawData, eqMap: Map<string, an
   return {
     radar: {
       agendaNaFila: filaAgenda.length,
-      agendaHorasPrevistas: filaAgenda.reduce((a, b) => a + (Number(b.horas_previstas) || 0), 0),
+      agendaHorasPrevistas: filaAgenda.reduce((a, b) => a + (Number(b.horas_estimadas ?? b.horas_previstas) || 0), 0),
       manutencoesVencidas: manutVencidas,
       manutencoesProximas: manutProx,
       frotasAtivas: raw.equipments.filter((e) => e.status !== 'INACTIVE').length,
