@@ -17,7 +17,7 @@ export const MobileGestaoPage: React.FC = () => {
   const ehGratis = !isMaster && tenantAtivo?.plano === 'GRATIS';
 
   return (
-    <div className="min-h-full bg-[#14131c] text-slate-100 rounded-2xl p-3 sm:p-5 space-y-4 text-left">
+    <div className="dark-surface min-h-full bg-[#14131c] text-slate-100 rounded-2xl p-3 sm:p-5 space-y-4 text-left">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <div className="flex items-center gap-2 text-indigo-400">

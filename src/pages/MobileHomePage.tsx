@@ -35,7 +35,7 @@ export const MobileHomePage: React.FC = () => {
     ocultarValores ? '••••••' : `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
 
   return (
-    <div className="min-h-full bg-[#14131c] text-slate-100 rounded-2xl p-4 space-y-6">
+    <div className="dark-surface min-h-full bg-[#14131c] text-slate-100 rounded-2xl p-4 space-y-6">
       <div className="grid grid-cols-2 gap-3">
         {CARDS.map((card) => {
           const Icon = card.icon;

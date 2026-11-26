@@ -8,8 +8,8 @@
 
 body, button, input, select, textarea { font-family: var(--app-font-family); }
 body { margin: 0; min-height: 100vh; background-color: #f8fafc; color: #0f172a; }
-input, select, textarea, option, optgroup { color: #0f172a !important; }
-option, optgroup { background-color: #ffffff !important; }
+input, select, textarea { color: #0f172a; }
+option, optgroup { color: #0f172a; background-color: #ffffff; }
 
 /* =========================================================
    MODO ESCURO (html.theme-dark)
@@ -123,14 +123,15 @@ html.theme-solar .border-gray-200, html.theme-solar .border-slate-200, html.them
 .scroll-touch-x::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 input::placeholder, textarea::placeholder { color: #94a3b8; }
 
-/* PAINEL MASTER (sempre tema escuro independente do tema claro global) */
-.master-dark-surface input,
-.master-dark-surface select,
-.master-dark-surface textarea,
-.master-dark-surface option,
-.master-dark-surface optgroup {
+/* SUPERFICIES ESCURAS (Master, Gestão BI, Planos, Modais Escuros) — legiveis em Claro, Escuro e Sol Forte */
+.master-dark-surface input, .master-dark-surface select, .master-dark-surface textarea, .master-dark-surface option, .master-dark-surface optgroup,
+.dark-surface input, .dark-surface select, .dark-surface textarea, .dark-surface option, .dark-surface optgroup,
+select.text-white, input.text-white, textarea.text-white, select.text-slate-100, select.text-slate-200 {
   color: #f8fafc !important;
-  background-color: #0d1117 !important;
+  background-color: #1b1829 !important;
+  border-color: #475569 !important;
 }
+html.theme-solar .dark-surface .text-slate-400, html.theme-solar .dark-surface .text-slate-500,
+html.theme-solar .master-dark-surface .text-slate-400, html.theme-solar .master-dark-surface .text-gray-400 { color: #cbd5e1 !important; }
 .master-dark-surface select.text-emerald-400 { color: #34d399 !important; }
 .master-dark-surface select.text-rose-400 { color: #fb7185 !important; }
