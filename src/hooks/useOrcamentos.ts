@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useTenantContext } from '../contexts/TenantContext';
 import type { Orcamento, CreateOrcamentoDTO, StatusOrcamento } from '../types/comercial.types';
-import { DEFAULT_LEGACY_TENANT, obterFiltroTenantString } from '../utils/tenantFilter';
+import { obterFiltroTenantString } from '../utils/tenantFilter';
 import { mapearOrcamentosCompletos, serializarOrcamentoParaBanco } from './orcamentoMapeadorHelper';
 
 const getStorageKey = (tId: string) => `terragest_orcamentos_${tId}`;
@@ -19,20 +19,20 @@ function getCached(tId: string): Orcamento[] {
 
 export function useOrcamentos() {
   const { tenantAtivoId } = useTenantContext();
-  const activeTenant = tenantAtivoId || DEFAULT_LEGACY_TENANT;
-  const [orcamentos, setOrcamentos] = useState<Orcamento[]>(() => getCached(activeTenant));
+  const [orcamentos, setOrcamentos] = useState<Orcamento[]>(() => (tenantAtivoId ? getCached(tenantAtivoId) : []));
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setOrcamentos(getCached(activeTenant));
-  }, [activeTenant]);
+    setOrcamentos(tenantAtivoId ? getCached(tenantAtivoId) : []);
+  }, [tenantAtivoId]);
 
   const fetchOrcamentos = useCallback(async () => {
+    if (!tenantAtivoId) { setOrcamentos([]); setIsLoading(false); return; }
     try {
       setIsLoading(true);
       setError(null);
-      const currentTenant = tenantAtivoId || DEFAULT_LEGACY_TENANT;
+      const currentTenant = tenantAtivoId;
       const cached = getCached(currentTenant);
       if (cached.length > 0) setOrcamentos(cached);
 
@@ -64,15 +64,16 @@ export function useOrcamentos() {
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Falha ao buscar orçamentos');
-      setOrcamentos(getCached(tenantAtivoId || DEFAULT_LEGACY_TENANT));
+      setOrcamentos(tenantAtivoId ? getCached(tenantAtivoId) : []);
     } finally {
       setIsLoading(false);
     }
   }, [tenantAtivoId]);
 
   const criarOrcamento = async (dto: CreateOrcamentoDTO) => {
+    if (!tenantAtivoId) return { success: false, error: 'Empresa não selecionada.' };
     try {
-      const dbPayload = serializarOrcamentoParaBanco({ ...dto, tenant_id: tenantAtivoId || DEFAULT_LEGACY_TENANT });
+      const dbPayload = serializarOrcamentoParaBanco({ ...dto, tenant_id: tenantAtivoId });
       const { data, error: err } = await supabase
         .from('orcamentos')
         .insert([dbPayload])

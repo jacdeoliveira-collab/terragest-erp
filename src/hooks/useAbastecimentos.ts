@@ -6,27 +6,27 @@ import { obterComprovante } from '../services/comprovanteStorageService';
 import { removerDespesaAbastecimento, ressincronizarDespesaAbastecimento } from '../services/abastecimentoFinanceiroSync';
 import { desvincularAbastecimentoDeServicos } from '../services/servicoAbastecimentoCleanup';
 import type { AbastecimentoItem } from '../types/abastecimento.types';
-import { aplicarFiltroTenant, DEFAULT_LEGACY_TENANT } from '../utils/tenantFilter';
+import { aplicarFiltroTenant } from '../utils/tenantFilter';
 
 import { getStorageKey, getCached } from './abastecimentoStorageCache';
 
 export function useAbastecimentos() {
   const { tenantAtivoId } = useTenantContext();
   const { obraSelecionada } = useObraContext();
-  const activeTenant = tenantAtivoId || DEFAULT_LEGACY_TENANT;
-  const [data, setData] = useState<AbastecimentoItem[]>(() => getCached(activeTenant));
+  const [data, setData] = useState<AbastecimentoItem[]>(() => (tenantAtivoId ? getCached(tenantAtivoId) : []));
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setData(getCached(activeTenant));
-  }, [activeTenant]);
+    setData(tenantAtivoId ? getCached(tenantAtivoId) : []);
+  }, [tenantAtivoId]);
 
   const fetchAbastecimentos = useCallback(async () => {
+    if (!tenantAtivoId) { setData([]); setIsLoading(false); return; }
     try {
       setIsLoading(true);
       setError(null);
-      const currentTenant = tenantAtivoId || DEFAULT_LEGACY_TENANT;
+      const currentTenant = tenantAtivoId;
       const cached = getCached(currentTenant);
       if (cached.length > 0) setData(cached);
 
@@ -80,7 +80,7 @@ export function useAbastecimentos() {
       });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Falha ao buscar abastecimentos');
-      setData(getCached(tenantAtivoId || DEFAULT_LEGACY_TENANT));
+      setData(tenantAtivoId ? getCached(tenantAtivoId) : []);
     } finally {
       setIsLoading(false);
     }
@@ -102,7 +102,7 @@ export function useAbastecimentos() {
       }
       setData((prev) => {
         const novo = prev.map((item) => (item.id === id ? { ...item, ...updates } : item));
-        if (typeof window !== 'undefined') localStorage.setItem(getStorageKey(activeTenant), JSON.stringify(novo));
+        if (typeof window !== 'undefined' && tenantAtivoId) localStorage.setItem(getStorageKey(tenantAtivoId), JSON.stringify(novo));
         return novo;
       });
       return { success: true };
@@ -122,7 +122,7 @@ export function useAbastecimentos() {
       ]);
       setData((prev) => {
         const novo = prev.filter((item) => item.id !== id);
-        if (typeof window !== 'undefined') localStorage.setItem(getStorageKey(activeTenant), JSON.stringify(novo));
+        if (typeof window !== 'undefined' && tenantAtivoId) localStorage.setItem(getStorageKey(tenantAtivoId), JSON.stringify(novo));
         return novo;
       });
       return { success: true };

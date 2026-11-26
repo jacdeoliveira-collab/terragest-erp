@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useTenantContext } from '../contexts/TenantContext';
 import type { Equipment } from '../types/equipment.types';
-import { aplicarFiltroTenant, DEFAULT_LEGACY_TENANT } from '../utils/tenantFilter';
+import { aplicarFiltroTenant } from '../utils/tenantFilter';
 
 interface UseEquipmentsOptions {
   onlyActives?: boolean;
@@ -21,20 +21,20 @@ function getCached(tId: string): Equipment[] {
 
 export function useEquipments(options?: UseEquipmentsOptions) {
   const { tenantAtivoId } = useTenantContext();
-  const activeTenant = tenantAtivoId || DEFAULT_LEGACY_TENANT;
-  const [data, setData] = useState<Equipment[]>(() => getCached(activeTenant));
+  const [data, setData] = useState<Equipment[]>(() => (tenantAtivoId ? getCached(tenantAtivoId) : []));
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setData(getCached(activeTenant));
-  }, [activeTenant]);
+    setData(tenantAtivoId ? getCached(tenantAtivoId) : []);
+  }, [tenantAtivoId]);
 
   const fetchEquipments = useCallback(async () => {
+    if (!tenantAtivoId) { setData([]); setIsLoading(false); return; }
     try {
       setIsLoading(true);
       setError(null);
-      const currentTenant = tenantAtivoId || DEFAULT_LEGACY_TENANT;
+      const currentTenant = tenantAtivoId;
       const localList = getCached(currentTenant);
       if (localList.length > 0) setData(localList);
 

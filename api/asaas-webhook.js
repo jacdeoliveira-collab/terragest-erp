@@ -5,76 +5,61 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, asaas-access-token');
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method === 'GET') {
     return res.status(200).json({
       status: 'active',
-      service: 'TerraGest ERP Asaas Webhook Receiver v3',
+      service: 'TerraGest ERP Asaas Webhook Receiver v4 (Recorrente + RLS)',
       webhookUrl: 'https://terragest.agrodronesma.com.br/api/asaas-webhook'
     });
   }
 
   try {
-    const body = req.body || {};
-    const event = body.event || body.action || body.type;
-    const payment = body.payment || body.data;
-
-    if (!event && !payment) {
-      return res.status(200).json({ received: true, ignored: true });
-    }
-
-    const supabaseUrl = process.env.VITE_SUPABASE_URL;
-    const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
-
-    const isPaidEvent =
-      event === 'PAYMENT_RECEIVED' ||
-      event === 'PAYMENT_CONFIRMED' ||
-      event === 'payment.updated' ||
-      event === 'invoice.paid' ||
-      body.status === 'PAID';
-
-    if (supabaseUrl && supabaseKey && isPaidEvent) {
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      const extRef = payment?.externalReference || payment?.external_reference || body?.externalReference || '';
-      const dataPgto = payment?.paymentDate || payment?.clientPaymentDate || new Date().toISOString().slice(0, 10);
-      const forma = payment?.billingType === 'PIX' || body?.type === 'pix' ? 'PIX' : 'BOLETO';
-
-      if (extRef) {
-        if (String(extRef).startsWith('saas_')) {
-          const assinaturaId = String(extRef).replace(/^saas_/, '');
-          await supabase.rpc('confirmar_pagamento_saas', {
-            p_assinatura_id: assinaturaId,
-            p_asaas_payment_id: payment?.id || null
-          });
-        } else {
-          const cleanId = String(extRef).replace(/^serv_/, '').split('_p')[0];
-
-          await supabase
-            .from('medicoes')
-            .update({
-              status_pagamento: 'PAGO',
-              data_pagamento: dataPgto,
-              forma_pagamento: forma,
-              updated_at: new Date().toISOString()
-            })
-            .or(`id.eq.${cleanId},observacoes.ilike.%[REF:${cleanId}]%`);
-
-          await supabase
-            .from('servicos_horimetro')
-            .update({
-              status_pagamento_cliente: 'QUITADO',
-              saldo_restante: 0,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', cleanId);
-        }
+    const expectedToken = process.env.ASAAS_WEBHOOK_TOKEN;
+    if (expectedToken) {
+      const receivedToken = req.headers['asaas-access-token'] || '';
+      if (receivedToken !== expectedToken) {
+        return res.status(401).json({ error: 'Token de webhook Asaas inválido.' });
       }
     }
 
-    return res.status(200).json({ received: true, event });
+    const body = req.body || {};
+    const event = body.event || body.action || body.type || '';
+    const payment = body.payment || body.data || {};
+    const subscription = body.subscription || {};
+
+    if (!event && !payment?.id && !subscription?.id) {
+      return res.status(200).json({ received: true, ignored: true });
+    }
+
+    const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+    const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      return res.status(500).json({ error: 'Supabase credentials not configured' });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } });
+    const extRef = payment?.externalReference || subscription?.externalReference || body?.externalReference || '';
+    const subId = payment?.subscription || subscription?.id || null;
+    const dataPgto = payment?.paymentDate || payment?.clientPaymentDate || new Date().toISOString().slice(0, 10);
+    const forma = payment?.billingType === 'PIX' || body?.type === 'pix' ? 'PIX' : 'BOLETO';
+
+    const { data, error } = await supabase.rpc('processar_webhook_asaas', {
+      p_event: String(event),
+      p_external_ref: String(extRef || ''),
+      p_subscription_id: subId ? String(subId) : null,
+      p_payment_id: payment?.id ? String(payment.id) : null,
+      p_data_pagamento: String(dataPgto).slice(0, 10),
+      p_forma: forma
+    });
+
+    if (error) {
+      return res.status(200).json({ received: true, event, warning: error.message });
+    }
+
+    return res.status(200).json({ received: true, event, result: data });
   } catch (err) {
     return res.status(200).json({
       received: true,
@@ -82,4 +67,3 @@ export default async function handler(req, res) {
     });
   }
 }
-

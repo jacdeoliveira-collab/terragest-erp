@@ -6,7 +6,7 @@ import { isVehicleOrTruck } from '../utils/equipmentMeasurement';
 import { calcularStatusRevisao } from '../utils/revisaoAlertas';
 import { extrairMetadadosTipoServico } from '../services/manutencaoFinanceiroSync';
 import type { PlanoManutencaoItem } from '../types/manutencao.types';
-import { aplicarFiltroTenant, DEFAULT_LEGACY_TENANT } from '../utils/tenantFilter';
+import { aplicarFiltroTenant } from '../utils/tenantFilter';
 
 export function useManutencoes() {
   const { tenantAtivoId } = useTenantContext();
@@ -16,11 +16,12 @@ export function useManutencoes() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchPlanos = useCallback(async () => {
+    if (!tenantAtivoId) { setData([]); setIsLoading(false); return; }
     try {
       setIsLoading(true);
       setError(null);
 
-      const currentTenant = tenantAtivoId || DEFAULT_LEGACY_TENANT;
+      const currentTenant = tenantAtivoId;
 
       let queryPlanos = supabase.from('planos_manutencao').select('*').order('created_at', { ascending: false });
       let queryEquips = supabase.from('equipment').select('id, code, name, current_hourmeter, category, type');

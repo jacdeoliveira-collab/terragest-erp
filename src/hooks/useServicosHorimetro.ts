@@ -4,7 +4,7 @@ import { useTenantContext } from '../contexts/TenantContext';
 import { garantirClienteCadastrado, sincronizarClientesDeServicosPendentes } from '../services/servicoDbSync';
 import { deduplicarServicos, sincronizarAdiantamentosServicos } from '../services/servicoDeduplicacaoHelper';
 import { persistirServicoSupabase, mesclarServicosLocaisERemotos } from '../services/servicoPersistenciaService';
-import { aplicarFiltroTenant, DEFAULT_LEGACY_TENANT } from '../utils/tenantFilter';
+import { aplicarFiltroTenant } from '../utils/tenantFilter';
 import { gerarUuidV4 } from '../utils/uuid';
 import { calcularTotaisListaServicos } from '../utils/servicoCalculos';
 import type { ServicoHorimetro } from '../types/servicoHorimetro.types';
@@ -18,11 +18,11 @@ export function useServicosHorimetro() {
   const [error, setError] = useState<string | null>(null);
 
   const carregarServicos = useCallback(async (silencioso = false) => {
+    if (!tenantAtivoId) { setServicos([]); if (!silencioso) setIsLoading(false); return; }
     try {
       if (!silencioso) setIsLoading(true);
       setError(null);
-      const { data: userData } = await supabase.auth.getUser();
-      const tId = tenantAtivoId || (userData?.user?.user_metadata?.tenant_id as string | undefined) || DEFAULT_LEGACY_TENANT;
+      const tId = tenantAtivoId;
 
       const q = aplicarFiltroTenant(supabase.from('servicos_horimetro').select('*'), tId);
       const { data, error: err } = await q.order('created_at', { ascending: false });
@@ -50,7 +50,8 @@ export function useServicosHorimetro() {
     try {
       const now = new Date().toISOString();
       const currentList = [...servicos];
-      const tId = tenantAtivoId || '00000000-0000-0000-0000-000000000001';
+      if (!tenantAtivoId) return { success: false, error: 'Empresa ativa não identificada.' };
+      const tId = tenantAtivoId;
 
       if (servico.cliente_nome) {
         const cliId = await garantirClienteCadastrado(servico.cliente_nome, servico.cliente_documento, servico.cliente_telefone, tId);
@@ -86,8 +87,9 @@ export function useServicosHorimetro() {
   };
 
   const excluirServico = async (id: string) => {
+    if (!tenantAtivoId) return { success: false, error: 'Empresa ativa não identificada.' };
     try {
-      const tId = tenantAtivoId || DEFAULT_LEGACY_TENANT;
+      const tId = tenantAtivoId;
       const filtered = servicos.filter((s) => s.id !== id);
       setServicos(filtered);
       salvarServicosCache(tId, filtered);

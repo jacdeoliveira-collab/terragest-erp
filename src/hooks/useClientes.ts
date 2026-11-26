@@ -13,12 +13,11 @@ import {
   deleteClienteApi,
   desduplicarListaClientes
 } from '../services/clienteService';
-import { DEFAULT_LEGACY_TENANT } from '../utils/tenantFilter';
-
 export function useClientes() {
   const { tenantAtivoId } = useTenantContext();
-  const activeTenant = tenantAtivoId || DEFAULT_LEGACY_TENANT;
+  const activeTenant = tenantAtivoId || '';
   const [clientes, setClientes] = useState<Cliente[]>(() => {
+    if (!activeTenant) return [];
     const cached = getCachedClientes(activeTenant);
     const deleted = getDeletedClienteIds(activeTenant);
     return desduplicarListaClientes(cached.filter((c) => !deleted.has(c.id)));
@@ -27,16 +26,18 @@ export function useClientes() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!activeTenant) { setClientes([]); return; }
     const cached = getCachedClientes(activeTenant);
     const deleted = getDeletedClienteIds(activeTenant);
     setClientes(desduplicarListaClientes(cached.filter((c) => !deleted.has(c.id))));
   }, [activeTenant]);
 
   const fetchClientes = useCallback(async () => {
+    if (!tenantAtivoId) { setClientes([]); setIsLoading(false); return; }
     try {
       setIsLoading(true);
       setError(null);
-      const currentTenant = tenantAtivoId || DEFAULT_LEGACY_TENANT;
+      const currentTenant = tenantAtivoId;
       const cached = getCachedClientes(currentTenant);
       const deleted = getDeletedClienteIds(currentTenant);
       const cachedValidos = desduplicarListaClientes(cached.filter((c) => !deleted.has(c.id)));

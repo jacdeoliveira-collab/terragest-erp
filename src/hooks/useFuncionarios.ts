@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useTenantContext } from '../contexts/TenantContext';
 import type { Funcionario } from '../types/rh.types';
-import { aplicarFiltroTenant, DEFAULT_LEGACY_TENANT } from '../utils/tenantFilter';
+import { aplicarFiltroTenant } from '../utils/tenantFilter';
 
 const getStorageKey = (tId: string) => `terragest_funcionarios_cache_${tId}`;
 
@@ -22,20 +22,20 @@ interface UseFuncionariosOptions {
 
 export function useFuncionarios(options?: UseFuncionariosOptions) {
   const { tenantAtivoId } = useTenantContext();
-  const activeTenant = tenantAtivoId || DEFAULT_LEGACY_TENANT;
-  const [data, setData] = useState<Funcionario[]>(() => getCached(activeTenant));
+  const [data, setData] = useState<Funcionario[]>(() => (tenantAtivoId ? getCached(tenantAtivoId) : []));
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setData(getCached(activeTenant));
-  }, [activeTenant]);
+    setData(tenantAtivoId ? getCached(tenantAtivoId) : []);
+  }, [tenantAtivoId]);
 
   const fetchFuncionarios = useCallback(async () => {
+    if (!tenantAtivoId) { setData([]); setIsLoading(false); return; }
     try {
       setIsLoading(true);
       setError(null);
-      const currentTenant = tenantAtivoId || DEFAULT_LEGACY_TENANT;
+      const currentTenant = tenantAtivoId;
       const cached = getCached(currentTenant);
       if (cached.length > 0) setData(cached);
 
@@ -60,7 +60,7 @@ export function useFuncionarios(options?: UseFuncionariosOptions) {
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Falha ao buscar colaboradores');
-      setData(getCached(tenantAtivoId || DEFAULT_LEGACY_TENANT));
+      setData(tenantAtivoId ? getCached(tenantAtivoId) : []);
     } finally {
       setIsLoading(false);
     }

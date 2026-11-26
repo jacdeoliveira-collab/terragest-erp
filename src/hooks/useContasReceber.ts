@@ -6,7 +6,7 @@ import type { MedicaoItem, FormaPagamentoTitulo } from '../types/faturamento.typ
 import type { ServicoHorimetro } from '../types/servicoHorimetro.types';
 import { unificarTitulosReceber, liquidarTituloReceber, lancarHaverReceber } from '../services/contasReceberSyncService';
 import { excluirTituloReceber } from '../services/contasReceberExcluirService';
-import { aplicarFiltroTenant, DEFAULT_LEGACY_TENANT } from '../utils/tenantFilter';
+import { aplicarFiltroTenant } from '../utils/tenantFilter';
 
 export function useContasReceber() {
   const { tenantAtivoId } = useTenantContext();
@@ -16,11 +16,12 @@ export function useContasReceber() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchContasReceber = useCallback(async () => {
+    if (!tenantAtivoId) { setData([]); setIsLoading(false); return; }
     try {
       setIsLoading(true);
       setError(null);
 
-      const currentTenant = tenantAtivoId || DEFAULT_LEGACY_TENANT;
+      const currentTenant = tenantAtivoId;
 
       let qMed = supabase.from('medicoes').select('*').order('created_at', { ascending: false });
       let qServ = supabase.from('servicos_horimetro').select('*').order('created_at', { ascending: false });

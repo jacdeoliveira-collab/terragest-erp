@@ -4,7 +4,7 @@ import { useTenantContext } from '../contexts/TenantContext';
 import { useObraContext } from '../contexts/ObraContext';
 import type { ContaPagarItem, CreateContaPagarDTO, FormaPagamentoDespesa } from '../types/contasPagar.types';
 import { deduplicarContasPagar } from '../services/contasPagarDeduplicacaoHelper';
-import { aplicarFiltroTenant, DEFAULT_LEGACY_TENANT } from '../utils/tenantFilter';
+import { aplicarFiltroTenant } from '../utils/tenantFilter';
 
 export function useContasPagar() {
   const { tenantAtivoId } = useTenantContext();
@@ -14,11 +14,12 @@ export function useContasPagar() {
   const [error, setError] = useState<string | null>(null);
 
   const fetchContasPagar = useCallback(async () => {
+    if (!tenantAtivoId) { setData([]); setIsLoading(false); return; }
     try {
       setIsLoading(true);
       setError(null);
 
-      const currentTenant = tenantAtivoId || DEFAULT_LEGACY_TENANT;
+      const currentTenant = tenantAtivoId;
 
       let q = supabase
         .from('contas_pagar')
