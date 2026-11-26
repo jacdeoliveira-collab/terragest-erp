@@ -34,22 +34,18 @@ export const PlanoCheckoutModal: React.FC<Props> = ({ plano, tenantId, onClose, 
       const token = sessionData.session?.access_token;
       const localAsaas = await obterConfigAsaas(tenantId);
       const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
-
       if (!calculo.precisaPagamentoImediato) {
         const res = await fetch('/api/saas-checkout', {
           method: 'POST', headers,
           body: JSON.stringify({
             action: 'trocar_plano_com_credito', tenantId, plano: plano.codigo,
             valorMensalRecorrente: plano.valor_mensal, limiteUsuarios: plano.limite_usuarios,
-            novaDataVencimento: calculo.novaDataVencimento,
-            clientApiKey: localAsaas?.apiKey, clientEnvironment: localAsaas?.environment
+            novaDataVencimento: calculo.novaDataVencimento, clientApiKey: localAsaas?.apiKey, clientEnvironment: localAsaas?.environment
           })
         });
         const data = await res.json();
         if (!res.ok || data.error) throw new Error(data.error || 'Falha ao trocar plano com saldo de crédito');
-        setPago(true);
-        await onConfirmed();
-        return;
+        setPago(true); await onConfirmed(); return;
       }
 
       const res = await fetch('/api/saas-checkout', {
