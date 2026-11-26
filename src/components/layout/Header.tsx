@@ -1,7 +1,6 @@
 import React from 'react';
 import { Menu } from 'lucide-react';
 import { CentralAlertasBell } from './CentralAlertasBell';
-import { HeaderModeSwitcher } from './HeaderModeSwitcher';
 import { HeaderUserMenuDropdown } from './HeaderUserMenuDropdown';
 
 interface HeaderProps {
@@ -37,9 +36,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenMenu }) => {
         </div>
       </div>
 
-      {/* LADO DIREITO: SELETOR DE MODO, ALERTAS & MENU DO USUÁRIO (EMPRESA, OBRA, MASTER) */}
+      {/* LADO DIREITO: ALERTAS & MENU DO USUÁRIO */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-        <HeaderModeSwitcher />
         <CentralAlertasBell />
         <HeaderUserMenuDropdown />
       </div>

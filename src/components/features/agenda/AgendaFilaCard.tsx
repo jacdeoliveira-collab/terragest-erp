@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  MessageCircle, CheckCircle2, Truck, MapPin, Clock,
+  MessageCircle, CheckCircle2, Truck, MapPin, Clock, Play, User,
   AlertTriangle, Pencil, Trash2, ArrowUp, ArrowDown, Calendar
 } from 'lucide-react';
 import type { ParametrosOperacionaisEmpresa } from '../../../types/agenda.types';
@@ -13,6 +13,7 @@ interface Props {
   parametros: ParametrosOperacionaisEmpresa;
   onConfirmar: (id: string) => void;
   onConcluir: (id: string) => void;
+  onIniciarServico: (item: AgendaItemCalculado) => void;
   onEditar: (item: AgendaItemCalculado) => void;
   onExcluir: (id: string) => void;
   onMover: (dir: 'subir' | 'descer') => void;
@@ -26,7 +27,7 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 export const AgendaFilaCard: React.FC<Props> = ({
-  item, index, total, parametros, onConfirmar, onConcluir, onEditar, onExcluir, onMover, onWhatsappClick
+  item, index, total, parametros, onConfirmar, onConcluir, onIniciarServico, onEditar, onExcluir, onMover, onWhatsappClick
 }) => {
   const waLink = gerarLinkWhatsappAgenda(item, parametros);
   const fmtData = (iso: string) => iso.split('-').reverse().join('/');
@@ -77,6 +78,12 @@ export const AgendaFilaCard: React.FC<Props> = ({
         </div>
       </div>
 
+      {item.operador_nome && (
+        <div className="flex items-center gap-1.5 text-[11px] text-gray-600">
+          <User className="w-3.5 h-3.5 text-emerald-600 shrink-0" /><span>Operador: <strong>{item.operador_nome}</strong></span>
+        </div>
+      )}
+
       {item.endereco_servico && (
         <div className="flex items-center gap-1.5 text-[11px] text-gray-500">
           <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" /><span>{item.endereco_servico}</span>
@@ -103,7 +110,12 @@ export const AgendaFilaCard: React.FC<Props> = ({
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {!item.servico_id && item.status !== 'CONCLUIDO' && (
+            <button type="button" onClick={() => onIniciarServico(item)} className="inline-flex items-center gap-1 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg font-bold text-[11px] shadow-xs cursor-pointer">
+              <Play className="w-3 h-3 fill-current" /><span>Iniciar Serviço</span>
+            </button>
+          )}
           {item.status === 'AGUARDANDO' && (
             <button type="button" onClick={() => onConfirmar(item.id)} className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg font-bold text-[11px] cursor-pointer">
               <CheckCircle2 className="w-3.5 h-3.5" /><span>Confirmar</span>

@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Cliente } from '../../../../types/comercial.types';
-import { useObras } from '../../../../hooks/useObras';
+import { useCentrosCusto } from '../../../../hooks/useCentrosCusto';
 import { ClienteEquipamentoSection } from './ClienteEquipamentoSection';
 
 interface AbaDadosGeraisProps {
@@ -45,7 +45,7 @@ export const AbaDadosGerais: React.FC<AbaDadosGeraisProps> = ({
   clientes, maquinasDisponiveis, operadoresDisponiveis,
   onAbrirNovoCliente, onAbrirNovaMaquina, onEditarCliente, onSelectOperador
 }) => {
-  const { obras } = useObras();
+  const { obras } = useCentrosCusto();
 
   return (
     <div className="space-y-3.5 text-xs text-left">

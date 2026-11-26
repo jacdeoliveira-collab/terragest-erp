@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import type { Obra } from '../types/obras.types';
-import { useObras } from '../hooks/useObras';
+import type { CentroCusto } from '../types/centroCusto.types';
+import { useCentrosCusto } from '../hooks/useCentrosCusto';
 
 interface ObraContextType {
-  obraSelecionada: Obra | null;
-  setObraSelecionada: (obra: Obra | null) => void;
-  obras: Obra[];
+  obraSelecionada: CentroCusto | null;
+  setObraSelecionada: (obra: CentroCusto | null) => void;
+  obras: CentroCusto[];
   loading: boolean;
   error: string | null;
   recarregarObras: () => Promise<void>;
@@ -16,8 +16,8 @@ const ObraContext = createContext<ObraContextType | undefined>(undefined);
 const STORAGE_KEY = 'terragest_obra_selecionada_id';
 
 export const ObraProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { obras, loading, error, recarregarObras } = useObras();
-  const [obraSelecionada, setObraSelecionadaState] = useState<Obra | null>(() => {
+  const { obras, loading, error, recarregarObras } = useCentrosCusto();
+  const [obraSelecionada, setObraSelecionadaState] = useState<CentroCusto | null>(() => {
     try {
       const savedId = localStorage.getItem(STORAGE_KEY);
       if (savedId === 'TODAS' || savedId === '' || !savedId) return null;
@@ -25,7 +25,7 @@ export const ObraProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return null;
   });
 
-  const setObraSelecionada = (obra: Obra | null) => {
+  const setObraSelecionada = (obra: CentroCusto | null) => {
     setObraSelecionadaState(obra);
     try {
       localStorage.setItem(STORAGE_KEY, obra ? obra.id : 'TODAS');

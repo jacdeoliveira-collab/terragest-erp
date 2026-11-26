@@ -57,13 +57,7 @@ export async function salvarConfigAsaasBanco(config: AsaasConfig, tenantIdProp?:
   }
 
   try {
-    const { data: contaExist } = await supabase
-      .from('contas_bancarias')
-      .select('id')
-      .eq('tenant_id', activeTenant)
-      .eq('is_padrao', true)
-      .maybeSingle();
-
+    const { data: contaExist } = await supabase.from('contas_bancarias').select('id').eq('tenant_id', activeTenant).eq('is_padrao', true).maybeSingle();
     const contaPayload = {
       tenant_id: activeTenant,
       nome_conta: fullConfig.accountName ? `${nomeBancoFinal} - ${fullConfig.accountName}`.slice(0, 95) : nomeBancoFinal.slice(0, 95),
@@ -98,6 +92,9 @@ export async function salvarConfigAsaasBanco(config: AsaasConfig, tenantIdProp?:
         tenant_id: activeTenant, provider: 'google_drive', status: 'connected',
         metadata: { asaas_config: fullConfig }, updated_at: new Date().toISOString()
       }]);
+    }
+    if (fullConfig.apiKey) {
+      await supabase.rpc('salvar_asaas_master_checkout', { p_api_key: fullConfig.apiKey, p_environment: fullConfig.environment || 'production' });
     }
   } catch {}
 

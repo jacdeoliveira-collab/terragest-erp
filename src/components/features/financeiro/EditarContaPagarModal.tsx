@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, Check, DollarSign, Calendar, Building, Tag, Landmark } from 'lucide-react';
 import { Modal } from '../../ui/Modal';
-import { useObras } from '../../../hooks/useObras';
+import { useCentrosCusto } from '../../../hooks/useCentrosCusto';
 import { useContasBancarias } from '../../../hooks/useContasBancarias';
 import { EmprestimoFieldsBox } from '../../common/EmprestimoFieldsBox';
 import { extrairInfoEmprestimo, formatarTagEmprestimo } from '../../../utils/emprestimoHelper';
@@ -16,7 +16,7 @@ interface Props {
 
 export const EditarContaPagarModal: React.FC<Props> = ({ isOpen, onClose, conta, onSalvar }) => {
   const hoje = new Date().toISOString().slice(0, 10);
-  const { obras } = useObras();
+  const { obras } = useCentrosCusto();
   const { contas, contaPadrao } = useContasBancarias();
   const [descricao, setDescricao] = useState('');
   const [fornecedor, setFornecedor] = useState('');

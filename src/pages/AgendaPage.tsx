@@ -5,6 +5,7 @@ import { useAgendaOperacional } from '../hooks/useAgendaOperacional';
 import { calcularPrevisoesFila } from '../utils/agendaCalculoHelper';
 import { AgendaFilaCard } from '../components/features/agenda/AgendaFilaCard';
 import { AgendaFormModal } from '../components/features/agenda/AgendaFormModal';
+import { IniciarServicoAgendaModal } from '../components/features/agenda/IniciarServicoAgendaModal';
 import type { AgendaOperacionalItem, CreateAgendaDTO } from '../types/agenda.types';
 
 export const AgendaPage: React.FC = () => {
@@ -16,6 +17,7 @@ export const AgendaPage: React.FC = () => {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [itemEdicao, setItemEdicao] = useState<AgendaOperacionalItem | null>(null);
+  const [itemParaIniciar, setItemParaIniciar] = useState<AgendaOperacionalItem | null>(null);
   const [filtroMaquina, setFiltroMaquina] = useState<string>('TODAS');
 
   const gruposPorMaquina = useMemo(() => {
@@ -113,6 +115,7 @@ export const AgendaPage: React.FC = () => {
                     key={item.id} item={item} index={idx} total={grupo.fila.length} parametros={parametros}
                     onConfirmar={(id) => atualizarAgendamento(id, { status: 'CONFIRMADO' })}
                     onConcluir={(id) => atualizarAgendamento(id, { status: 'CONCLUIDO' })}
+                    onIniciarServico={(it) => setItemParaIniciar(it)}
                     onEditar={(it) => { setItemEdicao(it); setModalOpen(true); }}
                     onExcluir={(id) => { if (confirm('Remover agendamento da fila?')) excluirAgendamento(id); }}
                     onMover={(dir) => moverNaFila(item, dir, grupo.fila)}
@@ -126,6 +129,13 @@ export const AgendaPage: React.FC = () => {
       )}
 
       <AgendaFormModal isOpen={modalOpen} onClose={() => setModalOpen(false)} itemEdicao={itemEdicao} proximaOrdem={itens.length + 1} onSalvar={handleSalvar} />
+      <IniciarServicoAgendaModal
+        item={itemParaIniciar}
+        onClose={() => setItemParaIniciar(null)}
+        onServicoCriado={async (agendaId, servicoId) => {
+          await atualizarAgendamento(agendaId, { status: 'EM_ANDAMENTO', servico_id: servicoId || null });
+        }}
+      />
     </div>
   );
 };

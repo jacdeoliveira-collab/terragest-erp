@@ -1,6 +1,6 @@
 import React from 'react';
 import { HardHat, Calendar, Search, CheckCircle2 } from 'lucide-react';
-import { useObras } from '../../../hooks/useObras';
+import { useCentrosCusto } from '../../../hooks/useCentrosCusto';
 
 interface MedicaoFiltroTabProps {
   obraId: string;
@@ -21,7 +21,7 @@ export const MedicaoFiltroTab: React.FC<MedicaoFiltroTabProps> = ({
   carregando,
   totalBdesEncontrados
 }) => {
-  const { obras, loading: loadingObras } = useObras();
+  const { obras, loading: loadingObras } = useCentrosCusto();
 
   const obrasEmAndamento = obras.filter(
     (o) => o.status === 'EM_ANDAMENTO' || o.status === 'ATIVA'

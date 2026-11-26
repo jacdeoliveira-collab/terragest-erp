@@ -2,7 +2,7 @@ import React from 'react';
 import {
   LayoutDashboard,
   Truck,
-  HardHat,
+  Building2,
   ClipboardList,
   Users,
   CheckSquare,
@@ -15,104 +15,28 @@ import {
   Calendar,
   Rocket
 } from 'lucide-react';
-import type { WorkspaceMode } from '../../contexts/WorkspaceModeContext';
 
 export interface MenuItem {
   to: string;
   label: string;
   icon: React.ElementType;
-  modos?: WorkspaceMode[];
+  destaque?: boolean;
 }
 
 export const menuItems: MenuItem[] = [
-  {
-    to: '/',
-    label: 'Dashboard Executivo',
-    icon: LayoutDashboard,
-    modos: ['OBRAS']
-  },
-  {
-    to: '/comercial',
-    label: 'Serviço por Horímetro',
-    icon: Gauge,
-    modos: ['HORIMETRO', 'OBRAS']
-  },
-  {
-    to: '/agenda',
-    label: 'Agenda de Máquinas',
-    icon: Calendar,
-    modos: ['HORIMETRO', 'OBRAS']
-  },
-  {
-    to: '/clientes',
-    label: 'Clientes',
-    icon: Users,
-    modos: ['HORIMETRO', 'OBRAS']
-  },
-  {
-    to: '/obras',
-    label: 'Centros de Custo & Obras',
-    icon: HardHat,
-    modos: ['OBRAS']
-  },
-  {
-    to: '/frota',
-    label: 'Gestão de Frotas & Maquinário',
-    icon: Truck,
-    modos: ['OBRAS']
-  },
-  {
-    to: '/bde',
-    label: 'Boletins Diários de Equipamento',
-    icon: ClipboardList,
-    modos: ['HORIMETRO', 'OBRAS']
-  },
-  {
-    to: '/producao',
-    label: 'Produção (Sinaleiro & Viagens)',
-    icon: Navigation,
-    modos: ['HORIMETRO', 'OBRAS']
-  },
-  {
-    to: '/almoxarifado',
-    label: 'Almoxarifado & Insumos',
-    icon: Boxes,
-    modos: ['OBRAS']
-  },
-  {
-    to: '/financeiro',
-    label: 'Gestão Financeira',
-    icon: CircleDollarSign,
-    modos: ['OBRAS']
-  },
-  {
-    to: '/rh',
-    label: 'Recursos Humanos & Operadores',
-    icon: Users,
-    modos: ['OBRAS']
-  },
-  {
-    to: '/abastecimento',
-    label: 'Abastecimento & Combustível',
-    icon: Fuel,
-    modos: ['OBRAS']
-  },
-  {
-    to: '/manutencao',
-    label: 'Manutenção Preventiva & Corretiva',
-    icon: Wrench,
-    modos: ['OBRAS']
-  },
-  {
-    to: '/checklist',
-    label: 'Checklists Diários',
-    icon: CheckSquare,
-    modos: ['HORIMETRO', 'OBRAS']
-  },
-  {
-    to: '/planos',
-    label: 'Planos e Preços',
-    icon: Rocket,
-    modos: ['HORIMETRO', 'OBRAS']
-  }
+  { to: '/comercial', label: 'Serviços por Horímetro', icon: Gauge, destaque: true },
+  { to: '/', label: 'Dashboard Executivo', icon: LayoutDashboard },
+  { to: '/agenda', label: 'Agenda e Fila de Máquinas', icon: Calendar },
+  { to: '/clientes', label: 'Clientes', icon: Users },
+  { to: '/centros-custo', label: 'Centros de Custo', icon: Building2 },
+  { to: '/frota', label: 'Gestão de Maquinário', icon: Truck },
+  { to: '/bde', label: 'Boletim de Equipamentos', icon: ClipboardList },
+  { to: '/producao', label: 'Sinaleira & Produção', icon: Navigation },
+  { to: '/almoxarifado', label: 'Almoxarifado & Insumos', icon: Boxes },
+  { to: '/financeiro', label: 'Gestão Financeira', icon: CircleDollarSign },
+  { to: '/rh', label: 'RH & Operadores', icon: Users },
+  { to: '/abastecimento', label: 'Abastecimento & Melosa', icon: Fuel },
+  { to: '/manutencao', label: 'Manutenção Preventiva', icon: Wrench },
+  { to: '/checklist', label: 'Checklist Diário', icon: CheckSquare },
+  { to: '/planos', label: 'Planos e Preços', icon: Rocket }
 ];

@@ -26,9 +26,9 @@ export const MasterHeader: React.FC<MasterHeaderProps> = ({
   const usuarioEmail = user?.email || 'Administrador Master';
 
   const tabs = [
-    { id: 'banco', label: 'Banco & Health Check', icone: Database },
+    { id: 'planos', label: 'Planos & Assinaturas', icone: Layers },
     { id: 'assinantes', label: `Assinantes (${totalTenants})`, icone: Users },
-    { id: 'planos', label: 'Matriz de Planos & Toggles', icone: Layers },
+    { id: 'banco', label: 'Banco & Health Check', icone: Database },
     { id: 'webhooks', label: `Onboarding & Webhooks (${totalOnboardings})`, icone: Webhook },
     { id: 'flags', label: 'Flags de Sistema', icone: Flag },
   ] as const;

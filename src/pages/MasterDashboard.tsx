@@ -11,7 +11,7 @@ import { MasterFlagsTab } from '../components/features/master/tabs/MasterFlagsTa
 import type { MasterTab } from '../components/features/master/types/master.types';
 
 export const MasterDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<MasterTab>('banco');
+  const [activeTab, setActiveTab] = useState<MasterTab>('planos');
 
   const {
     tenants,

@@ -34,6 +34,7 @@ scratch_*.mjs
 *.traineddata
 
 .vercel
+backups/
 *.apk
 android/.gradle
 android/app/build

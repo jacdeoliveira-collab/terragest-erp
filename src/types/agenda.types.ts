@@ -21,6 +21,9 @@ export interface AgendaOperacionalItem {
   tenant_id: string;
   maquina_id?: string | null;
   maquina_nome?: string | null;
+  operador_id?: string | null;
+  operador_nome?: string | null;
+  servico_id?: string | null;
   cliente_id?: string | null;
   cliente_nome: string;
   cliente_telefone?: string | null;

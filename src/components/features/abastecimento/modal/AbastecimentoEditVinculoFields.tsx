@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Building, Wrench, Camera, Upload, X } from 'lucide-react';
-import type { Obra } from '../../../../types/obra.types';
+import type { CentroCusto } from '../../../../types/centroCusto.types';
 import type { ServicoHorimetro } from '../../../../types/servicoHorimetro.types';
 import { abrirVisualizacaoImagem } from '../../../../utils/visualizadorImagem';
 import { comprimirImagem } from '../../../../services/comprovanteStorageService';
@@ -12,7 +12,7 @@ interface Props {
   setServicoId: (v: string) => void;
   fotoComprovante?: string;
   setFotoComprovante: (v: string | undefined) => void;
-  obras: Obra[];
+  obras: CentroCusto[];
   servicos: ServicoHorimetro[];
 }
 

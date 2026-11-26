@@ -6,7 +6,7 @@ import { useFormaContaSync } from '../../../hooks/useFormaContaSync';
 import { EmprestimoFieldsBox } from '../../common/EmprestimoFieldsBox';
 import { extrairInfoEmprestimo, formatarTagEmprestimo } from '../../../utils/emprestimoHelper';
 import type { CategoriaCusto } from '../../../types/manutencao.types';
-import type { Obra } from '../../../types/obras.types';
+import type { CentroCusto } from '../../../types/centroCusto.types';
 
 export interface ManutencaoCustosTabProps {
   obraId: string; setObraId: (val: string) => void;
@@ -17,7 +17,7 @@ export interface ManutencaoCustosTabProps {
   contaBancariaId: string; setContaBancariaId: (val: string) => void;
   formaPagamento: string; setFormaPagamento: (val: string) => void;
   statusPagamentoOs: 'PAGO' | 'PENDENTE'; setStatusPagamentoOs: (val: 'PAGO' | 'PENDENTE') => void;
-  obras: Obra[]; loadingObras: boolean;
+  obras: CentroCusto[]; loadingObras: boolean;
   categorias: CategoriaCusto[]; loadingCategorias: boolean;
 }
 

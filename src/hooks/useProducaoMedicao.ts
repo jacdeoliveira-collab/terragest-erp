@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { filtroTenant } from '../services/obraCustosExtrasService';
+import { aplicarFiltroTenant } from '../utils/tenantFilter';
 import { useTenantContext } from '../contexts/TenantContext';
 
 export interface ProducaoMedicao {
@@ -19,8 +19,7 @@ export function useProducaoMedicao() {
     const fim = new Date(ano, mes, 1).toISOString();
     let q = supabase.from('apontamentos_viagens_producao').select('volume_m3')
       .eq('obra_id', obraId).gte('data_hora', ini).lt('data_hora', fim);
-    const ft = filtroTenant(tenantAtivoId || undefined);
-    if (ft) q = q.or(ft);
+    q = aplicarFiltroTenant(q, tenantAtivoId || undefined);
     const { data, error } = await q;
     if (error) { setProducao(null); return null; }
     const res = { viagens: data?.length || 0, volumeM3: (data || []).reduce((s, t) => s + (Number(t.volume_m3) || 0), 0) };

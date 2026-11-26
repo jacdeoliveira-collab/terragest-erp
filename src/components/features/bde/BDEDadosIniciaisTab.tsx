@@ -2,7 +2,7 @@ import React from 'react';
 import { Truck, User, HardHat, Calendar } from 'lucide-react';
 import { useEquipments } from '../../../hooks/useEquipments';
 import { useFuncionarios } from '../../../hooks/useFuncionarios';
-import { useObras } from '../../../hooks/useObras';
+import { useCentrosCusto } from '../../../hooks/useCentrosCusto';
 import { formatMeasurementValue } from '../../../utils/equipmentMeasurement';
 
 interface BDEDadosIniciaisTabProps {
@@ -29,7 +29,7 @@ export const BDEDadosIniciaisTab: React.FC<BDEDadosIniciaisTabProps> = ({
 }) => {
   const { data: equipments, isLoading: loadingEquips } = useEquipments({ onlyActives: true });
   const { data: funcionarios, isLoading: loadingFuncs } = useFuncionarios({ onlyActives: true });
-  const { obras, loading: loadingObras } = useObras();
+  const { obras, loading: loadingObras } = useCentrosCusto();
 
   const equipamentosAtivos = equipments.filter(
     (eq) => eq.status === 'AVAILABLE' || (eq.status as string) === 'ATIVO'

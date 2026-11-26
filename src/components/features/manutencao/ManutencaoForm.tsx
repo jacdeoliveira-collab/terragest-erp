@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, Wrench, DollarSign } from 'lucide-react';
 import { useEquipments } from '../../../hooks/useEquipments';
-import { useObras } from '../../../hooks/useObras';
+import { useCentrosCusto } from '../../../hooks/useCentrosCusto';
 import { useObraContext } from '../../../contexts/ObraContext';
 import { useCategoriasCustos } from '../../../hooks/useCategoriasCustos';
 import { useContasBancarias } from '../../../hooks/useContasBancarias';
@@ -19,7 +19,7 @@ interface ManutencaoFormProps {
 
 export const ManutencaoForm: React.FC<ManutencaoFormProps> = ({ initialData, onSuccess, onCancel }) => {
   const { data: equipments, isLoading: loadingEquips } = useEquipments({ onlyActives: true });
-  const { obras, loading: loadingObras } = useObras();
+  const { obras, loading: loadingObras } = useCentrosCusto();
   const { obraSelecionada } = useObraContext();
   const { categorias, loading: loadingCategorias } = useCategoriasCustos('MANUTENCAO');
   const { contaPadrao } = useContasBancarias();

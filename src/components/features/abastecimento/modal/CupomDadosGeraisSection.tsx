@@ -5,7 +5,7 @@ import { useFormaContaSync } from '../../../../hooks/useFormaContaSync';
 import { EmprestimoFieldsBox } from '../../../common/EmprestimoFieldsBox';
 import type { FormaPagamentoDespesa } from '../../../../types/contasPagar.types';
 import type { ServicoHorimetro } from '../../../../types/servicoHorimetro.types';
-import type { Obra } from '../../../../types/obra.types';
+import type { CentroCusto } from '../../../../types/centroCusto.types';
 
 interface CupomDadosGeraisSectionProps {
   data: string; setData: (val: string) => void;
@@ -19,7 +19,7 @@ interface CupomDadosGeraisSectionProps {
   dataPagarEmprestimo: string; setDataPagarEmprestimo: (val: string) => void;
   obraId: string; setObraId: (val: string) => void;
   servicoId: string; setServicoId: (val: string) => void;
-  obras: Obra[]; servicos: ServicoHorimetro[];
+  obras: CentroCusto[]; servicos: ServicoHorimetro[];
   fotoCupomUrl?: string; onUploadFoto: (e: React.ChangeEvent<HTMLInputElement>) => void; uploadingFoto: boolean;
 }
 

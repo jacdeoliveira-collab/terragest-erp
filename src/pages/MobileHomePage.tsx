@@ -5,8 +5,8 @@ import {
   Eye, EyeOff, Fuel, Lock, Truck, Users, Wallet
 } from 'lucide-react';
 import { useTenantContext } from '../contexts/TenantContext';
+import { usePlanosContext } from '../contexts/PlanosContext';
 import { useDashboardGlobal } from '../hooks/useDashboardGlobal';
-import { temAcessoModuloPorPlano } from '../utils/planosCatalogo';
 
 const CARDS = [
   { label: 'Pedidos / Horímetro', to: '/comercial', icon: ClipboardList, bg: 'bg-indigo-500/20 text-indigo-300' },
@@ -27,6 +27,7 @@ const ATALHOS = [
 export const MobileHomePage: React.FC = () => {
   const navigate = useNavigate();
   const { tenantAtivo, isMaster } = useTenantContext();
+  const { temAcessoModulo } = usePlanosContext();
   const { metrics } = useDashboardGlobal();
   const [ocultarValores, setOcultarValores] = useState(false);
 
@@ -38,7 +39,7 @@ export const MobileHomePage: React.FC = () => {
       <div className="grid grid-cols-2 gap-3">
         {CARDS.map((card) => {
           const Icon = card.icon;
-          const bloqueado = !temAcessoModuloPorPlano(tenantAtivo?.plano, card.to, isMaster);
+          const bloqueado = !temAcessoModulo(tenantAtivo?.plano, card.to, isMaster);
           return (
             <button
               key={card.to}

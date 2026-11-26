@@ -5,7 +5,7 @@ export const ROTAS_OPERACIONAL = ['/producao', '/bde', '/checklist'];
 
 export const ROTAS_ENGENHARIA = [
   ...ROTAS_OPERACIONAL,
-  '/obras',
+  '/centros-custo',
   '/frota',
   '/almoxarifado',
   '/manutencao',
@@ -13,7 +13,7 @@ export const ROTAS_ENGENHARIA = [
 ];
 
 export const ROTAS_RH = ['/rh'];
-export const ROTAS_FINANCEIRO = ['/financeiro', '/faturamento', '/receber', '/pagar', '/comercial'];
+export const ROTAS_FINANCEIRO = ['/financeiro', '/faturamento', '/receber', '/pagar', '/comercial', '/centros-custo'];
 
 export const ROTAS_ADMIN = [
   '/',
@@ -21,7 +21,7 @@ export const ROTAS_ADMIN = [
   '/comercial',
   '/agenda',
   '/clientes',
-  '/obras',
+  '/centros-custo',
   '/frota',
   '/bde',
   '/producao',

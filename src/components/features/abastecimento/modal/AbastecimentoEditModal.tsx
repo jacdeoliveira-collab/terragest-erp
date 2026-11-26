@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../../../ui/Modal';
 import { useEquipments } from '../../../../hooks/useEquipments';
-import { useObras } from '../../../../hooks/useObras';
+import { useCentrosCusto } from '../../../../hooks/useCentrosCusto';
 import { useServicosHorimetro } from '../../../../hooks/useServicosHorimetro';
 import { AbastecimentoEditFields } from './AbastecimentoEditFields';
 import { AbastecimentoEditVinculoFields } from './AbastecimentoEditVinculoFields';
@@ -16,7 +16,7 @@ interface Props {
 
 export const AbastecimentoEditModal: React.FC<Props> = ({ isOpen, onClose, abastecimento, onSalvar }) => {
   const { data: equipments } = useEquipments();
-  const { obras } = useObras();
+  const { obras } = useCentrosCusto();
   const { servicos } = useServicosHorimetro();
 
   const [maquinaId, setMaquinaId] = useState('');

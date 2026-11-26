@@ -27,14 +27,14 @@ export const MobileDrawer: React.FC<Props> = ({ isOpen, onClose }) => {
   };
 
   const items = [
-    { label: 'Serviços & Pedidos', to: '/comercial', icon: ClipboardList },
+    { label: 'Serviços por Horímetro', to: '/comercial', icon: ClipboardList, highlight: true },
     { label: 'Boletins (BDE)', to: '/bde', icon: FileText },
     { label: 'Finanças & pagamentos', to: '/financeiro', icon: CircleDollarSign },
-    { label: 'Agenda de Máquinas', to: '/agenda', icon: Calendar },
+    { label: 'Agenda e Fila de Máquinas', to: '/agenda', icon: Calendar },
     { label: 'Clientes', to: '/clientes', icon: Users },
-    { label: 'Frota & Maquinário', to: '/frota', icon: Truck },
-    { label: 'Obras & Centros de Custo', to: '/obras', icon: HardHat },
-    { label: 'Planos e preços', to: '/planos', icon: Rocket, highlight: true },
+    { label: 'Gestão de Maquinário', to: '/frota', icon: Truck },
+    { label: 'Centros de Custo', to: '/centros-custo', icon: HardHat },
+    { label: 'Planos e preços', to: '/planos', icon: Rocket },
     { label: 'Outras configurações', to: '/minha-empresa', icon: Settings }
   ];
 

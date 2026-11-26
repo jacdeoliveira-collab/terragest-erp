@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { TenantProvider } from './contexts/TenantContext';
+import { PlanosProvider } from './contexts/PlanosContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { MainLayout } from './components/layout/MainLayout';
 import { Login } from './pages/Login';
@@ -13,7 +14,6 @@ import { RH } from './pages/RH';
 import { Checklist } from './pages/Checklist';
 import { Abastecimento } from './pages/Abastecimento';
 import { Manutencao } from './pages/Manutencao';
-import { Obras } from './pages/Obras';
 import { Comercial } from './pages/Comercial';
 import { AgendaPage } from './pages/AgendaPage';
 import { ClientesPage } from './pages/ClientesPage';
@@ -25,6 +25,7 @@ import { EmpresaSettings } from './pages/EmpresaSettings';
 import { Producao } from './pages/Producao';
 import { Almoxarifado } from './pages/Almoxarifado';
 import { Financeiro } from './pages/Financeiro';
+import { CentrosCustoTab } from './components/features/financeiro/CentrosCustoTab';
 import { SuperAdminRoute } from './components/auth/SuperAdminRoute';
 import { GoogleOAuthCallback } from './pages/GoogleOAuthCallback';
 import { HomeRoute } from './components/auth/HomeRoute';
@@ -35,6 +36,7 @@ export const App: React.FC = () => {
   return (
     <AuthProvider>
       <TenantProvider>
+        <PlanosProvider>
         <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -65,7 +67,7 @@ export const App: React.FC = () => {
             <Route path="agenda" element={<AgendaPage />} />
             <Route path="clientes" element={<ClientesPage />} />
             <Route path="frota" element={<Frota />} />
-            <Route path="obras" element={<Obras />} />
+            <Route path="centros-custo" element={<CentrosCustoTab />} />
             <Route path="bde" element={<Boletim />} />
             <Route path="producao" element={<Producao />} />
             <Route path="almoxarifado" element={<Almoxarifado />} />
@@ -95,6 +97,7 @@ export const App: React.FC = () => {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
+        </PlanosProvider>
       </TenantProvider>
     </AuthProvider>
   );

@@ -2,7 +2,7 @@ import React from 'react';
 import { Modal } from '../../../ui/Modal';
 import { AlertCircle, Receipt, CheckCircle2, RefreshCw } from 'lucide-react';
 import { useEquipments } from '../../../../hooks/useEquipments';
-import { useObras } from '../../../../hooks/useObras';
+import { useCentrosCusto } from '../../../../hooks/useCentrosCusto';
 import { useServicosHorimetro } from '../../../../hooks/useServicosHorimetro';
 import { CupomDadosGeraisSection } from './CupomDadosGeraisSection';
 import { CupomItensCombustivelSection } from './CupomItensCombustivelSection';
@@ -17,7 +17,7 @@ interface CupomCombustivelModalProps {
 
 export const CupomCombustivelModal: React.FC<CupomCombustivelModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { data: equipments } = useEquipments({ onlyActives: true });
-  const { obras } = useObras();
+  const { obras } = useCentrosCusto();
   const { servicos } = useServicosHorimetro();
 
   const form = useCupomFormState({

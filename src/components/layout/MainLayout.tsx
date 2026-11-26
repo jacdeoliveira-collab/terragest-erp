@@ -5,26 +5,25 @@ import { MobileDrawer } from './MobileDrawer';
 import { MobileBottomNav } from './MobileBottomNav';
 import { Header } from './Header';
 import { ObraProvider } from '../../contexts/ObraContext';
-import { WorkspaceModeProvider } from '../../contexts/WorkspaceModeContext';
 import { AppearanceProvider } from '../../contexts/AppearanceContext';
 import { useTenantContext } from '../../contexts/TenantContext';
+import { usePlanosContext } from '../../contexts/PlanosContext';
 import { RoleRoute } from '../auth/RoleRoute';
 import { VersionUpdateAlert } from './VersionUpdateAlert';
 import { PlanoBloqueadoGate } from '../features/planos/PlanoBloqueadoGate';
-import { temAcessoModuloPorPlano } from '../../utils/planosCatalogo';
 
 export const MainLayout: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const { tenantAtivo, isMaster } = useTenantContext();
-  const moduloLiberado = temAcessoModuloPorPlano(tenantAtivo?.plano, location.pathname, isMaster);
+  const { temAcessoModulo } = usePlanosContext();
+  const moduloLiberado = temAcessoModulo(tenantAtivo?.plano, location.pathname, isMaster);
   const nomeModulo = location.pathname.replace(/^\//, '').toUpperCase() || 'DASHBOARD';
 
   return (
     <AppearanceProvider>
-      <WorkspaceModeProvider>
-        <ObraProvider>
-          <VersionUpdateAlert />
+      <ObraProvider>
+        <VersionUpdateAlert />
           <div className="flex h-screen overflow-hidden bg-gray-50 text-slate-900 relative app-shell-root">
             {/* Backdrop para fechar a gaveta no celular ao clicar em qualquer lugar fora */}
             {isMobileMenuOpen && (
@@ -54,8 +53,7 @@ export const MainLayout: React.FC = () => {
             </div>
             <MobileBottomNav />
           </div>
-        </ObraProvider>
-      </WorkspaceModeProvider>
+      </ObraProvider>
     </AppearanceProvider>
   );
 };

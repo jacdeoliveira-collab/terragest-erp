@@ -1,6 +1,6 @@
 import React from 'react';
 import { MapPin, Layers, Calendar } from 'lucide-react';
-import { useObras } from '../../../hooks/useObras';
+import { useCentrosCusto } from '../../../hooks/useCentrosCusto';
 
 interface Props {
   obraId: string;
@@ -56,7 +56,7 @@ export const OrcamentoObraEscopoSection: React.FC<Props> = ({
   previsaoInicio, setPrevisaoInicio,
   descricaoServico, setDescricaoServico
 }) => {
-  const { obras } = useObras();
+  const { obras } = useCentrosCusto();
 
   return (
     <div className="p-3 bg-slate-50/80 border border-slate-200 rounded-xl space-y-2.5 text-xs text-left">

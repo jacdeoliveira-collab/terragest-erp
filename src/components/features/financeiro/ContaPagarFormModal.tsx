@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, Check, DollarSign, Calendar, Building, Tag, Landmark, CreditCard } from 'lucide-react';
 import { Modal } from '../../ui/Modal';
-import { useObras } from '../../../hooks/useObras';
+import { useCentrosCusto } from '../../../hooks/useCentrosCusto';
 import { useFormaContaSync } from '../../../hooks/useFormaContaSync';
 import { EmprestimoFieldsBox } from '../../common/EmprestimoFieldsBox';
 import { formatarTagEmprestimo } from '../../../utils/emprestimoHelper';
@@ -18,7 +18,7 @@ export const ContaPagarFormModal: React.FC<ContaPagarFormModalProps> = ({
   isOpen, onClose, onSalvar, defaultEmprestimo = false
 }) => {
   const hoje = new Date().toISOString().slice(0, 10);
-  const { obras } = useObras();
+  const { obras } = useCentrosCusto();
   const [descricao, setDescricao] = useState('');
   const [fornecedor, setFornecedor] = useState('');
   const [categoria, setCategoria] = useState<CategoriaContaPagar>(defaultEmprestimo ? 'EMPRESTIMOS' : 'PECAS_MANUTENCAO');
