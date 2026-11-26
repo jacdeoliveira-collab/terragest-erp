@@ -44,12 +44,6 @@ export async function registerEmpresa(params: RegisterEmpresaParams): Promise<Re
       return { success: false, error: 'Preencha todos os campos obrigatórios (Razão Social, CPF/CNPJ, E-mail e Senha).' };
     }
 
-    const hoje = new Date();
-    const dataInicio = hoje.toISOString().slice(0, 10);
-    const dataFimObj = new Date(hoje);
-    dataFimObj.setDate(dataFimObj.getDate() + 30);
-    const dataFim = dataFimObj.toISOString().slice(0, 10);
-
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: cleanEmail,
       password: params.senha,
@@ -58,33 +52,18 @@ export async function registerEmpresa(params: RegisterEmpresaParams): Promise<Re
     if (authError) return { success: false, error: authError.message };
 
     const userId = authData.user?.id;
-    const tenantPayload = {
-      nome: cleanNome,
-      cnpj: cleanCnpj,
-      documento: cleanCnpj,
-      admin_email: cleanEmail,
-      contato_email: cleanEmail,
-      contato_telefone: cleanTel || null,
-      endereco: `${params.endereco.trim()}${params.numero ? `, ${params.numero.trim()}` : ''}${params.cep ? ` - CEP ${params.cep.trim()}` : ''}`,
-      plano: params.planoCodigo,
-      status_conta: 'ativo',
-      assinatura_inicio: dataInicio,
-      assinatura_fim: dataFim,
-      limite_usuarios: params.limiteUsuarios || 5,
-      valor_mensalidade: params.planoValor,
-      plano_valor: params.planoValor
-    };
+    if (!userId) return { success: false, error: 'Não foi possível criar o usuário de acesso.' };
 
-    let createdTenantId = userId;
-    const { data: insTenant, error: tenantError } = await supabase
-      .from('tenants').insert([{ ...(userId ? { id: userId } : {}), ...tenantPayload }]).select('id').single();
-
-    if (tenantError) {
-      const { data: fbTenant } = await supabase.from('tenants').insert([tenantPayload]).select('id').single();
-      if (fbTenant?.id) createdTenantId = fbTenant.id;
-    } else if (insTenant?.id) {
-      createdTenantId = insTenant.id;
+    const enderecoCompleto = `${params.endereco.trim()}${params.numero ? `, ${params.numero.trim()}` : ''}${params.cep ? ` - CEP ${params.cep.trim()}` : ''}`;
+    const { data: regData, error: regError } = await supabase.rpc('registrar_tenant_publico', {
+      p_user_id: userId, p_nome: cleanNome, p_cnpj: cleanCnpj, p_email: cleanEmail,
+      p_telefone: cleanTel || null, p_endereco: enderecoCompleto, p_plano: params.planoCodigo,
+      p_valor: params.planoValor, p_limite_usuarios: params.limiteUsuarios || 5
+    });
+    if (regError || regData?.ok === false) {
+      return { success: false, error: `Falha ao registrar a empresa: ${regError?.message || regData?.error}. Execute a migração 66 no Supabase.` };
     }
+    const createdTenantId = userId;
 
     let session = authData.session;
     if (!session) {
