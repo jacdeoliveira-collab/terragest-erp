@@ -99,7 +99,7 @@ export function useOperadorHistorico(operadorNome?: string, operadorId?: string)
       });
 
       const totValesRh = vales.reduce((acc, v) => acc + v.valor, 0);
-      const totValesConsolidado = Number((totValesServicos + totValesRh).toFixed(2));
+      const totValesConsolidado = Number((totValesRh > 0 ? totValesRh : totValesServicos).toFixed(2));
       const saldo = Math.max(0, Number((totGanho - totValesConsolidado).toFixed(2)));
 
       setData({

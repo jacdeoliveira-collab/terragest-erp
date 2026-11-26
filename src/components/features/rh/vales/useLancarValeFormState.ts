@@ -3,6 +3,7 @@ import { useFuncionarios } from '../../../../hooks/useFuncionarios';
 import { useFormaContaSync } from '../../../../hooks/useFormaContaSync';
 import { useTenantContext } from '../../../../contexts/TenantContext';
 import { lancarValeColaborador } from '../../../../services/valeRhService';
+import { reconciliarBaixasOperador } from '../../../../services/operadorRepasseBaixaService';
 import { uploadParaGoogleDrive } from '../../../../services/driveService';
 import { notificarFalhaDrive } from '../../../../utils/driveFeedback';
 import { comprimirImagem, salvarComprovante } from '../../../../services/comprovanteStorageService';
@@ -82,6 +83,14 @@ export function useLancarValeFormState(funcionarioInicial?: Funcionario | null, 
       });
 
       if (!res.success) throw new Error(res.error || 'Erro ao registrar');
+
+      // Dá baixa automática (FIFO) nos serviços e contas a pagar pendentes deste operador
+      await reconciliarBaixasOperador({
+        tenantId: tenantAtivoId,
+        operadorId: colaboradorId || undefined,
+        operadorNome: colaboradorNome,
+        dataReferencia: data
+      }).catch(() => {});
 
       if (imprimir) {
         gerarReciboValeRhPDF({
