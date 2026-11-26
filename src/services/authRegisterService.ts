@@ -47,7 +47,10 @@ export async function registerEmpresa(params: RegisterEmpresaParams): Promise<Re
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: cleanEmail,
       password: params.senha,
-      options: { data: { nome: cleanNome, empresa: cleanNome, role: 'admin', perfil_acesso: 'ADMIN' } }
+      options: {
+        emailRedirectTo: 'https://terragest.agrodronesma.com.br/login',
+        data: { nome: cleanNome, empresa: cleanNome, role: 'admin', perfil_acesso: 'ADMIN' }
+      }
     });
     if (authError) return { success: false, error: authError.message };
 
