@@ -3,24 +3,34 @@ import type { PlanoSaasRecord } from '../types/planos.types';
 export interface TenantAssinaturaRef {
   plano?: string | null;
   plano_valor?: number | null;
+  valor_mensalidade?: number | null;
   assinatura_fim?: string | null;
 }
 
 export interface CalculoMudancaPlano {
-  tipoMudanca: 'NOVA_ASSINATURA' | 'UPGRADE' | 'DOWNGRADE' | 'RENOVACAO';
+  tipoMudanca: 'NOVA_ASSINATURA' | 'UPGRADE' | 'DOWNGRADE' | 'RENOVACAO' | 'ATRASADO';
+  estaAtrasado: boolean;
+  diasAtraso: number;
+  precisaPagamentoImediato: boolean;
   planoAtualCodigo: string;
   planoAtualNome: string;
   valorPlanoAtual: number;
   valorPlanoNovo: number;
   diasRestantesAtuais: number;
   creditoProporcionalAtual: number;
-  custoProporcionalNovo: number;
-  diferencaSuprirUpgrade: number;
-  creditoRetornoDowngrade: number;
-  diasExtrasConvertidos: number;
+  diasConvertidosNovoPlano: number;
   diasAcessoTotalNovo: number;
+  novaDataVencimento: string;
+  novaDataVencimentoBr: string;
   valorCobrarAgora: number;
   resumoExplicativo: string;
+}
+
+function addDiasIso(dias: number): { iso: string; br: string } {
+  const d = new Date();
+  d.setDate(d.getDate() + Math.max(1, dias));
+  const iso = d.toISOString().slice(0, 10);
+  return { iso, br: iso.split('-').reverse().join('/') };
 }
 
 export function calcularProRataMudancaPlano(
@@ -30,101 +40,78 @@ export function calcularProRataMudancaPlano(
 ): CalculoMudancaPlano {
   const codigoAtual = (tenant?.plano || 'GRATIS').toUpperCase();
   const planoAtualObj = todosPlanos.find((p) => p.codigo.toUpperCase() === codigoAtual);
-  const valorAtual = planoAtualObj ? Number(planoAtualObj.valor_mensal) : Number(tenant?.plano_valor || 0);
+  const valorAtual = planoAtualObj
+    ? Number(planoAtualObj.valor_mensal)
+    : Number(tenant?.plano_valor || tenant?.valor_mensalidade || 0);
   const nomeAtual = planoAtualObj?.nome || codigoAtual;
   const valorNovo = Number(planoNovo.valor_mensal || 0);
 
   let diasRestantes = 0;
-  if (tenant && codigoAtual !== 'GRATIS' && valorAtual > 0) {
+  let diasAtraso = 0;
+  if (tenant?.assinatura_fim) {
     const hoje = new Date();
-    const fimStr = tenant.assinatura_fim;
-    if (fimStr) {
-      const fim = new Date(`${fimStr}T23:59:59`);
-      const diff = Math.ceil((fim.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
-      diasRestantes = diff > 0 && diff <= 365 ? diff : 0;
-    }
+    hoje.setHours(0, 0, 0, 0);
+    const fim = new Date(`${tenant.assinatura_fim}T00:00:00`);
+    const diff = Math.round((fim.getTime() - hoje.getTime()) / (1000 * 60 * 60 * 24));
+    if (diff > 0) diasRestantes = Math.min(365, diff);
+    else if (diff < 0) diasAtraso = Math.abs(diff);
   }
 
+  const venc30 = addDiasIso(30);
+
+  // 1. Em atraso: obriga pagamento imediato
+  if (diasAtraso > 0) {
+    return {
+      tipoMudanca: 'ATRASADO', estaAtrasado: true, diasAtraso, precisaPagamentoImediato: true,
+      planoAtualCodigo: codigoAtual, planoAtualNome: nomeAtual, valorPlanoAtual: valorAtual, valorPlanoNovo: valorNovo,
+      diasRestantesAtuais: 0, creditoProporcionalAtual: 0, diasConvertidosNovoPlano: 30,
+      diasAcessoTotalNovo: 30, novaDataVencimento: venc30.iso, novaDataVencimentoBr: venc30.br,
+      valorCobrarAgora: valorNovo,
+      resumoExplicativo: `Assinatura vencida há ${diasAtraso} dia(s). Pagamento imediato necessário para ativar o ${planoNovo.nome} (próximo vencimento: ${venc30.br}).`
+    };
+  }
+
+  // 2. Sem plano pago ativo / sem dias restantes: nova assinatura com pagamento imediato
+  if (diasRestantes <= 0 || valorAtual <= 0 || codigoAtual === 'GRATIS') {
+    return {
+      tipoMudanca: 'NOVA_ASSINATURA', estaAtrasado: false, diasAtraso: 0, precisaPagamentoImediato: valorNovo > 0,
+      planoAtualCodigo: codigoAtual, planoAtualNome: nomeAtual, valorPlanoAtual: valorAtual, valorPlanoNovo: valorNovo,
+      diasRestantesAtuais: 0, creditoProporcionalAtual: 0, diasConvertidosNovoPlano: 30,
+      diasAcessoTotalNovo: 30, novaDataVencimento: venc30.iso, novaDataVencimentoBr: venc30.br,
+      valorCobrarAgora: valorNovo,
+      resumoExplicativo: `Nova assinatura do ${planoNovo.nome} por R$ ${valorNovo.toFixed(2)}/mês com vigência de 30 dias (até ${venc30.br}).`
+    };
+  }
+
+  // 3. Empresa ativa em dia com saldo de créditos: converte crédito em dias do novo plano e altera o vencimento
   const diariaAtual = valorAtual / 30;
   const diariaNova = valorNovo / 30;
   const creditoAtual = Number((diariaAtual * diasRestantes).toFixed(2));
-  const custoNovo = Number((diariaNova * diasRestantes).toFixed(2));
+  const diasConvertidos = diariaNova > 0 ? Math.floor(creditoAtual / diariaNova) : 30;
+  const tipoMudanca = valorNovo > valorAtual ? 'UPGRADE' : valorNovo < valorAtual ? 'DOWNGRADE' : 'RENOVACAO';
 
-  if (diasRestantes <= 0 || valorAtual <= 0 || codigoAtual === 'GRATIS') {
+  if (diasConvertidos >= 1 && tipoMudanca !== 'RENOVACAO') {
+    const novoVenc = addDiasIso(diasConvertidos);
     return {
-      tipoMudanca: 'NOVA_ASSINATURA',
-      planoAtualCodigo: codigoAtual,
-      planoAtualNome: nomeAtual,
-      valorPlanoAtual: valorAtual,
-      valorPlanoNovo: valorNovo,
-      diasRestantesAtuais: 0,
-      creditoProporcionalAtual: 0,
-      custoProporcionalNovo: valorNovo,
-      diferencaSuprirUpgrade: 0,
-      creditoRetornoDowngrade: 0,
-      diasExtrasConvertidos: 0,
-      diasAcessoTotalNovo: 30,
-      valorCobrarAgora: valorNovo,
-      resumoExplicativo: `Ciclo integral de 30 dias no ${planoNovo.nome} por R$ ${valorNovo.toFixed(2)}/mês.`
+      tipoMudanca, estaAtrasado: false, diasAtraso: 0, precisaPagamentoImediato: false,
+      planoAtualCodigo: codigoAtual, planoAtualNome: nomeAtual, valorPlanoAtual: valorAtual, valorPlanoNovo: valorNovo,
+      diasRestantesAtuais: diasRestantes, creditoProporcionalAtual: creditoAtual,
+      diasConvertidosNovoPlano: diasConvertidos, diasAcessoTotalNovo: diasConvertidos,
+      novaDataVencimento: novoVenc.iso, novaDataVencimentoBr: novoVenc.br,
+      valorCobrarAgora: 0,
+      resumoExplicativo: `Seu saldo de R$ ${creditoAtual.toFixed(2)} (${diasRestantes}d no ${nomeAtual}) equivale a ${diasConvertidos} dia(s) no ${planoNovo.nome}. Troca imediata sem cobrança hoje; novo vencimento: ${novoVenc.br}.`
     };
   }
 
-  if (valorNovo > valorAtual) {
-    const diferenca = Number(Math.max(5, custoNovo - creditoAtual).toFixed(2));
-    return {
-      tipoMudanca: 'UPGRADE',
-      planoAtualCodigo: codigoAtual,
-      planoAtualNome: nomeAtual,
-      valorPlanoAtual: valorAtual,
-      valorPlanoNovo: valorNovo,
-      diasRestantesAtuais: diasRestantes,
-      creditoProporcionalAtual: creditoAtual,
-      custoProporcionalNovo: custoNovo,
-      diferencaSuprirUpgrade: diferenca,
-      creditoRetornoDowngrade: 0,
-      diasExtrasConvertidos: 0,
-      diasAcessoTotalNovo: diasRestantes,
-      valorCobrarAgora: diferenca,
-      resumoExplicativo: `Upgrade proporcional (${diasRestantes} dias restantes): crédito de R$ ${creditoAtual.toFixed(2)} do ${nomeAtual}. Valor a suprir agora: R$ ${diferenca.toFixed(2)}.`
-    };
-  }
-
-  if (valorNovo < valorAtual) {
-    const sobra = Number(Math.max(0, creditoAtual - custoNovo).toFixed(2));
-    const diasExtras = diariaNova > 0 ? Math.round(sobra / diariaNova) : 0;
-    const valorProximaComAbatimento = Number(Math.max(5, valorNovo - sobra).toFixed(2));
-    return {
-      tipoMudanca: 'DOWNGRADE',
-      planoAtualCodigo: codigoAtual,
-      planoAtualNome: nomeAtual,
-      valorPlanoAtual: valorAtual,
-      valorPlanoNovo: valorNovo,
-      diasRestantesAtuais: diasRestantes,
-      creditoProporcionalAtual: creditoAtual,
-      custoProporcionalNovo: custoNovo,
-      diferencaSuprirUpgrade: 0,
-      creditoRetornoDowngrade: sobra,
-      diasExtrasConvertidos: diasExtras,
-      diasAcessoTotalNovo: 30 + diasExtras,
-      valorCobrarAgora: valorProximaComAbatimento,
-      resumoExplicativo: `Redução de plano (${diasRestantes} dias restantes): crédito excedente de R$ ${sobra.toFixed(2)} (+${diasExtras} dias de acesso ou desconto na fatura para R$ ${valorProximaComAbatimento.toFixed(2)}).`
-    };
-  }
-
+  // Crédito insuficiente para 1 dia no novo plano (ou renovação): pagamento imediato
+  const diferenca = Number(Math.max(5, valorNovo - creditoAtual).toFixed(2));
   return {
-    tipoMudanca: 'RENOVACAO',
-    planoAtualCodigo: codigoAtual,
-    planoAtualNome: nomeAtual,
-    valorPlanoAtual: valorAtual,
-    valorPlanoNovo: valorNovo,
-    diasRestantesAtuais: diasRestantes,
-    creditoProporcionalAtual: creditoAtual,
-    custoProporcionalNovo: valorNovo,
-    diferencaSuprirUpgrade: 0,
-    creditoRetornoDowngrade: 0,
-    diasExtrasConvertidos: 0,
-    diasAcessoTotalNovo: diasRestantes + 30,
-    valorCobrarAgora: valorNovo,
-    resumoExplicativo: `Renovação mensal (+30 dias adicionados aos ${diasRestantes} dias atuais = ${diasRestantes + 30} dias de acesso).`
+    tipoMudanca, estaAtrasado: false, diasAtraso: 0, precisaPagamentoImediato: true,
+    planoAtualCodigo: codigoAtual, planoAtualNome: nomeAtual, valorPlanoAtual: valorAtual, valorPlanoNovo: valorNovo,
+    diasRestantesAtuais: diasRestantes, creditoProporcionalAtual: creditoAtual,
+    diasConvertidosNovoPlano: 30, diasAcessoTotalNovo: 30,
+    novaDataVencimento: venc30.iso, novaDataVencimentoBr: venc30.br,
+    valorCobrarAgora: diferenca,
+    resumoExplicativo: `Saldo de crédito R$ ${creditoAtual.toFixed(2)} abatido da mensalidade. Valor a pagar agora: R$ ${diferenca.toFixed(2)} (novo vencimento: ${venc30.br}).`
   };
 }

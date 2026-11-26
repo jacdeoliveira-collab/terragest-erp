@@ -60,6 +60,11 @@ export interface TenantUserItem {
   nome: string;
   razao_social: string;
   plano?: TipoPlanoTenant;
+  plano_valor?: number;
+  valor_mensalidade?: number;
+  assinatura_inicio?: string | null;
+  assinatura_fim?: string | null;
+  asaas_subscription_id?: string | null;
   status_conta?: StatusContaTenant;
   role?: string;
   perfil_acesso?: PerfilAcesso;

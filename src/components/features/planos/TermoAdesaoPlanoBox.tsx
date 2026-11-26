@@ -45,16 +45,20 @@ export const TermoAdesaoPlanoBox: React.FC<Props> = ({
       </div>
 
       {calculoProRata && calculoProRata.tipoMudanca !== 'NOVA_ASSINATURA' && (
-        <div className={`p-2.5 rounded-lg border text-[11px] space-y-1 ${dark ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-200' : 'bg-emerald-50 border-emerald-200 text-emerald-900'}`}>
-          <div className="font-bold flex items-center justify-between">
-            <span>Cálculo Automático Pro-Rata ({calculoProRata.tipoMudanca})</span>
-            <span className="font-mono">{calculoProRata.diasRestantesAtuais} dia(s) restantes no ciclo</span>
+        <div className={`p-2.5 rounded-lg border text-[11px] space-y-1 ${
+          calculoProRata.estaAtrasado
+            ? (dark ? 'bg-rose-950/50 border-rose-500/40 text-rose-200' : 'bg-rose-50 border-rose-200 text-rose-900')
+            : (dark ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-200' : 'bg-emerald-50 border-emerald-200 text-emerald-900')
+        }`}>
+          <div className="font-bold flex items-center justify-between gap-2">
+            <span>{calculoProRata.estaAtrasado ? `Assinatura em Atraso (${calculoProRata.diasAtraso}d)` : `Calculadora de Créditos (${calculoProRata.tipoMudanca})`}</span>
+            <span className="font-mono">Vencimento: {calculoProRata.novaDataVencimentoBr}</span>
           </div>
           <p className="text-[10px] leading-relaxed">{calculoProRata.resumoExplicativo}</p>
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-emerald-500/20 font-mono text-[10px]">
-            <span>Crédito atual: <strong>{fmt(calculoProRata.creditoProporcionalAtual)}</strong></span>
-            <span>Vigência garantida: <strong>{calculoProRata.diasAcessoTotalNovo} dias</strong></span>
-            <span>Valor agora: <strong>{fmt(calculoProRata.valorCobrarAgora)}</strong></span>
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-current/15 font-mono text-[10px]">
+            <span>Saldo crédito: <strong>{fmt(calculoProRata.creditoProporcionalAtual)}</strong></span>
+            <span>Dias no novo plano: <strong>{calculoProRata.diasConvertidosNovoPlano}d</strong></span>
+            <span>Cobrança hoje: <strong>{calculoProRata.precisaPagamentoImediato ? fmt(calculoProRata.valorCobrarAgora) : 'R$ 0,00 (Crédito)'}</strong></span>
           </div>
         </div>
       )}

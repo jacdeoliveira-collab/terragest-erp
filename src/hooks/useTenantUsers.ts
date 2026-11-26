@@ -5,12 +5,19 @@ import { isMasterEmail, isUserSuperAdmin } from '../services/adminService';
 import { lerTenantsOffline, salvarTenantsOffline } from '../services/offlineAuthService';
 import type { TenantUserItem } from '../types/tenant.types';
 
+const TENANT_COLS = 'id, nome, razao_social, plano, plano_valor, valor_mensalidade, assinatura_inicio, assinatura_fim, asaas_subscription_id, status_conta, logo_url';
+
 function mapTenantRow(t: any, role: string, perfil: TenantUserItem['perfil_acesso']): TenantUserItem {
   return {
     id: t.id,
     nome: t.nome || t.razao_social || 'Empresa',
     razao_social: t.razao_social || t.nome || 'Empresa',
     plano: t.plano,
+    plano_valor: Number(t.plano_valor ?? t.valor_mensalidade ?? 0),
+    valor_mensalidade: Number(t.valor_mensalidade ?? t.plano_valor ?? 0),
+    assinatura_inicio: t.assinatura_inicio || null,
+    assinatura_fim: t.assinatura_fim || null,
+    asaas_subscription_id: t.asaas_subscription_id || null,
     status_conta: t.status_conta,
     role,
     perfil_acesso: perfil,
@@ -46,7 +53,7 @@ export function useTenantUsers() {
       if (userIsMaster) {
         const { data, error: err } = await supabase
           .from('tenants')
-          .select('id, nome, razao_social, plano, status_conta, logo_url')
+          .select(TENANT_COLS)
           .neq('status_conta', 'bloqueado')
           .order('nome', { ascending: true });
 
@@ -68,7 +75,7 @@ export function useTenantUsers() {
         const tIds = utData.map((u) => u.tenant_id);
         const { data: tList } = await supabase
           .from('tenants')
-          .select('id, nome, razao_social, plano, status_conta, logo_url')
+          .select(TENANT_COLS)
           .in('id', tIds)
           .neq('status_conta', 'bloqueado');
 
@@ -84,7 +91,7 @@ export function useTenantUsers() {
         const emailClean = user.email.trim();
         const { data: byEmail } = await supabase
           .from('tenants')
-          .select('id, nome, razao_social, plano, status_conta, logo_url')
+          .select(TENANT_COLS)
           .or(`admin_email.ilike.${emailClean},contato_email.ilike.${emailClean}`);
 
         const byEmailAtivos = (byEmail || []).filter((t) => t.status_conta !== 'bloqueado');
@@ -100,7 +107,7 @@ export function useTenantUsers() {
         } else if (rows.length === 0) {
           const { data: byMeta } = await supabase
             .from('tenants')
-            .select('id, nome, razao_social, plano, status_conta, logo_url')
+            .select(TENANT_COLS)
             .eq('id', user.user_metadata.tenant_id)
             .neq('status_conta', 'bloqueado');
           if (byMeta && byMeta.length > 0) {

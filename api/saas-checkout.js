@@ -159,6 +159,51 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, tenantsAtualizados: (tenantsPlano || []).length, atualizadosAsaas });
     }
 
+    if (action === 'trocar_plano_com_credito') {
+      const { valorMensalRecorrente, limiteUsuarios, novaDataVencimento } = req.body || {};
+      if (!tenantId || !plano || !novaDataVencimento) {
+        return res.status(400).json({ error: 'tenantId, plano e novaDataVencimento são obrigatórios.' });
+      }
+
+      const { data: tRow } = await supabase
+        .from('tenants')
+        .select('id, asaas_subscription_id')
+        .eq('id', tenantId)
+        .maybeSingle();
+
+      if (tRow?.asaas_subscription_id && Number(valorMensalRecorrente) > 0) {
+        await fetch(`${asaasUrl}/subscriptions/${tRow.asaas_subscription_id}`, {
+          method: 'PUT',
+          headers: asaasHeaders,
+          body: JSON.stringify({
+            value: Number(valorMensalRecorrente),
+            nextDueDate: novaDataVencimento,
+            description: `Assinatura Mensal TerraGest ERP - Plano ${plano}`,
+            updatePendingPayments: true
+          })
+        });
+      }
+
+      const { error: updErr } = await supabase.from('tenants').update({
+        plano,
+        plano_valor: Number(valorMensalRecorrente || 0),
+        valor_mensalidade: Number(valorMensalRecorrente || 0),
+        ...(limiteUsuarios ? { limite_usuarios: Number(limiteUsuarios) } : {}),
+        assinatura_fim: novaDataVencimento,
+        status_conta: 'ativo',
+        updated_at: new Date().toISOString()
+      }).eq('id', tenantId);
+
+      if (updErr) throw new Error(updErr.message);
+
+      return res.status(200).json({
+        success: true,
+        trocadoComCredito: true,
+        plano,
+        novaDataVencimento
+      });
+    }
+
     if (action === 'criar') {
       if (!plano || !valor || !tenantId) {
         return res.status(400).json({ error: 'plano, valor e tenantId são obrigatórios' });
