@@ -8,7 +8,7 @@ interface Props {
 
 export const PlanoBloqueadoGate: React.FC<Props> = ({ nomeModulo }) => {
   const navigate = useNavigate();
-  const whatsappUrl = 'https://wa.me/5598984242792?text=Ol%C3%A1%2C%20tenho%20interesse%20em%20ativar%20o%20TerraGest%20ERP';
+  const whatsappUrl = 'https://wa.me/5599981228668?text=Ol%C3%A1%2C%20tenho%20interesse%20em%20ativar%20o%20TerraGest%20ERP';
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center p-6 text-center">

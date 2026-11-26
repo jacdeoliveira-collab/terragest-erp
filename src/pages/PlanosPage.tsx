@@ -11,7 +11,7 @@ export const PlanosPage: React.FC = () => {
   const [planoSelecionado, setPlanoSelecionado] = useState<PlanoSaasRecord | null>(null);
 
   const planoAtual = (tenantAtivo?.plano || 'GRATIS').toUpperCase();
-  const whatsappUrl = 'https://wa.me/5598984242792?text=Ol%C3%A1%2C%20quero%20tirar%20d%C3%BAvidas%20sobre%20os%20planos%20do%20TerraGest%20ERP';
+  const whatsappUrl = 'https://wa.me/5599981228668?text=Ol%C3%A1%2C%20quero%20tirar%20d%C3%BAvidas%20sobre%20os%20planos%20do%20TerraGest%20ERP';
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 p-4 md:p-6 text-left">

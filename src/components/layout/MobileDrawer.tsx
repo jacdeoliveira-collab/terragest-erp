@@ -104,7 +104,7 @@ export const MobileDrawer: React.FC<Props> = ({ isOpen, onClose }) => {
           </button>
 
           <a
-            href="https://wa.me/5598984242792?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20no%20TerraGest%20ERP"
+            href="https://wa.me/5599981228668?text=Ol%C3%A1%2C%20preciso%20de%20ajuda%20no%20TerraGest%20ERP"
             target="_blank"
             rel="noreferrer"
             className="w-full flex items-center justify-between px-3 py-3 rounded-xl text-sm text-slate-200 hover:bg-slate-800/70 transition-colors"

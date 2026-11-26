@@ -140,7 +140,7 @@ export const PlanoCheckoutModal: React.FC<Props> = ({ plano, tenantId, onClose, 
             {checkout.invoiceUrl && <a href={checkout.invoiceUrl} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 rounded-lg border border-slate-700 py-2 text-xs font-medium text-slate-300 hover:bg-slate-800"><ExternalLink className="h-3.5 w-3.5" /> Abrir fatura no Asaas</a>}
             {erro && <p className="rounded-lg bg-amber-500/10 p-2 text-xs text-amber-300 border border-amber-500/30">{erro}</p>}
             <button onClick={handleVerificar} disabled={checking} className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-xs font-bold text-white hover:bg-emerald-500 disabled:opacity-60 cursor-pointer">{checking ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} Já paguei — Verificar e Liberar Plano</button>
-            <a href={`https://wa.me/5598984242792?text=Ol%C3%A1%2C%20suporte%20${encodeURIComponent(plano.nome)}`} target="_blank" rel="noreferrer" className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-800 border border-slate-700 py-2 text-xs font-bold text-slate-300 hover:bg-slate-700"><MessageCircle className="h-4 w-4 text-emerald-400" /> Suporte WhatsApp</a>
+            <a href={`https://wa.me/5599981228668?text=Ol%C3%A1%2C%20suporte%20${encodeURIComponent(plano.nome)}`} target="_blank" rel="noreferrer" className="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-800 border border-slate-700 py-2 text-xs font-bold text-slate-300 hover:bg-slate-700"><MessageCircle className="h-4 w-4 text-emerald-400" /> Suporte WhatsApp</a>
           </div>
         )}
       </div>
