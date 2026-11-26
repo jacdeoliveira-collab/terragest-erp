@@ -15,32 +15,33 @@ export default defineConfig(({ mode }) => {
     {
       name: 'saas-checkout-local-api',
       configureServer(server) {
-        server.middlewares.use('/api/saas-checkout', (req, res) => {
-          let rawBody = '';
-          req.on('data', (chunk) => { rawBody += chunk; });
-          req.on('end', async () => {
-            try {
-              (req as any).body = rawBody ? JSON.parse(rawBody) : {};
-              const vercelRes: any = res;
-              vercelRes.status = (code: number) => {
-                res.statusCode = code;
-                return vercelRes;
-              };
-              vercelRes.json = (payload: unknown) => {
+        const mountLocalApi = (route: string, relFile: string) => {
+          server.middlewares.use(route, (req, res) => {
+            let rawBody = '';
+            req.on('data', (chunk) => { rawBody += chunk; });
+            req.on('end', async () => {
+              try {
+                (req as any).body = rawBody ? JSON.parse(rawBody) : {};
+                const vercelRes: any = res;
+                vercelRes.status = (code: number) => { res.statusCode = code; return vercelRes; };
+                vercelRes.json = (payload: unknown) => {
+                  res.setHeader('Content-Type', 'application/json');
+                  res.end(JSON.stringify(payload));
+                  return vercelRes;
+                };
+                const apiFileUrl = pathToFileURL(path.resolve(process.cwd(), relFile)).href;
+                const mod = await import(/* @vite-ignore */ apiFileUrl);
+                await mod.default(req, vercelRes);
+              } catch (err: unknown) {
+                res.statusCode = 500;
                 res.setHeader('Content-Type', 'application/json');
-                res.end(JSON.stringify(payload));
-                return vercelRes;
-              };
-              const apiFileUrl = pathToFileURL(path.resolve(process.cwd(), 'api/saas-checkout.js')).href;
-              const mod = await import(/* @vite-ignore */ apiFileUrl);
-              await mod.default(req, vercelRes);
-            } catch (err: unknown) {
-              res.statusCode = 500;
-              res.setHeader('Content-Type', 'application/json');
-              res.end(JSON.stringify({ error: err instanceof Error ? err.message : 'Erro local saas-checkout' }));
-            }
+                res.end(JSON.stringify({ error: err instanceof Error ? err.message : `Erro local ${route}` }));
+              }
+            });
           });
-        });
+        };
+        mountLocalApi('/api/saas-checkout', 'api/saas-checkout.js');
+        mountLocalApi('/api/google-drive-auth', 'api/google-drive-auth.js');
       }
     },
     {

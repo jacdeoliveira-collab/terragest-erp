@@ -14,15 +14,18 @@ export const MinhaEmpresaIntegracoesTab: React.FC<MinhaEmpresaIntegracoesTabProp
 
   const driveIntegration = getIntegration('GOOGLE_DRIVE') || getIntegration('google_drive');
   const isDriveConnected = driveIntegration?.status === 'connected' || Boolean(driveIntegration?.access_token);
+  const isDrivePermanent = Boolean(driveIntegration?.refresh_token || driveIntegration?.metadata?.permanent_oauth);
 
   const handleConnectDrive = () => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    if (!clientId) {
-      alert('VITE_GOOGLE_CLIENT_ID não configurado no .env');
-      return;
-    }
-    const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${window.location.origin}/oauth/google/callback&response_type=token&scope=https://www.googleapis.com/auth/drive.file`;
-    window.location.href = url;
+    if (!clientId) return alert('VITE_GOOGLE_CLIENT_ID não configurado no .env');
+    const params = new URLSearchParams({
+      client_id: clientId, redirect_uri: `${window.location.origin}/oauth/google/callback`,
+      response_type: 'code', access_type: 'offline', prompt: 'select_account consent',
+      include_granted_scopes: 'true',
+      scope: 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email'
+    });
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
   };
 
   const handleDisconnectDrive = async () => {
@@ -68,8 +71,9 @@ export const MinhaEmpresaIntegracoesTab: React.FC<MinhaEmpresaIntegracoesTabProp
               </div>
 
               {isDriveConnected ? (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-full text-[11px] font-bold">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Conectado (Ativo)
+                <span className={`inline-flex items-center gap-1 px-2.5 py-1 border rounded-full text-[11px] font-bold ${isDrivePermanent ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-amber-50 border-amber-200 text-amber-700'}`}>
+                  <CheckCircle2 className={`w-3.5 h-3.5 ${isDrivePermanent ? 'text-emerald-600' : 'text-amber-600'}`} />
+                  {isDrivePermanent ? 'Permanente (Auto-Renovação)' : 'Temporário (Reconectar)'}
                 </span>
               ) : (
                 <span className="inline-flex items-center px-2 py-0.5 bg-gray-100 text-gray-500 rounded-md text-[10px] font-medium">
